@@ -57,8 +57,32 @@ and clean stability record qualify the candidate for confirmation.
 
 ## Powered confirmation
 
-A preregistered maximum 5,000-game confirmation is running under
+The preregistered confirmation completed under
 `E:\Dev\Forklift-Research\matches\staged-move-picker-confirmation-20260830`.
-Its contract is `10+0.1`, one thread, 256 MiB hash, six concurrent games,
-opening seed 5902 and SPRT Elo0 = 0 / Elo1 = 5. The candidate is retained only
-if it satisfies the registered decision rule.
+Its contract was a maximum 5,000 games at `10+0.1`, one thread, 256 MiB hash,
+six concurrent games, opening seed 5902 and SPRT Elo0 = 0 / Elo1 = 5.
+
+- Decisive scored games: 2,593
+- Candidate W-D-L: `906-931-756`
+- Candidate score: 52.9%
+- Relative Elo: `+20.1 +/- 10.7`
+- LOS: 100.0%
+- SPRT: H1 accepted, LLR `2.96` above the `2.94` boundary
+
+## Technical-termination audit
+
+The match recorded 35 time forfeits, requiring investigation under the
+registered rule. They were balanced between the engines: 18 by the candidate
+and 17 by the baseline. Excluding every time-forfeit game leaves
+`889-931-738` from the candidate perspective, a 52.95% score and approximately
+`+20.5` Elo. The five unscored games were the concurrently running games
+terminated after the SPRT boundary had already been crossed, rather than
+engine crashes or illegal moves. Crashes, illegal moves and disconnects were
+all zero.
+
+## Decision
+
+Retained. The candidate crossed the preregistered H1 boundary, and the
+technical audit found no asymmetric failure signal capable of explaining the
+gain. It advances to the separate frozen-champion promotion gate; the result
+is not yet a champion-registry update.
