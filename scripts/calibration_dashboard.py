@@ -12,6 +12,8 @@ import math
 import os
 from pathlib import Path
 import re
+import subprocess
+import sys
 import threading
 import time
 from urllib.parse import urlparse
@@ -60,6 +62,11 @@ def arguments() -> argparse.Namespace:
     )
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8766)
+    parser.add_argument(
+        "--enable-match-controls",
+        action="store_true",
+        help="allow same-origin web requests to pause and restart the displayed match",
+    )
     parser.add_argument("--snapshot", action="store_true")
     return parser.parse_args()
 
@@ -100,6 +107,242 @@ def process_alive(pid: int) -> bool:
         return True
     except OSError:
         return False
+
+
+def write_json(path: Path, value: dict[str, object]) -> None:
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8"
+    )
+    temporary.replace(path)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def next_resume_directory(run_dir: Path) -> Path:
+    base_name = re.sub(r"-resume-\d{3}$", "", run_dir.name)
+    for index in range(1, 1000):
+        candidate = run_dir.parent / f"{base_name}-resume-{index:03d}"
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError("unable to allocate a fresh resume directory")
+
+
+def latest_control_run(run_dir: Path) -> Path:
+    current = run_dir.resolve()
+    visited: set[Path] = set()
+    while current not in visited:
+        visited.add(current)
+        state = read_json(current / "dashboard-control.json")
+        resumed_as = state.get("resumedAs")
+        if not isinstance(resumed_as, str) or not resumed_as:
+            break
+        next_run = Path(resumed_as).expanduser().resolve()
+        if next_run.parent != current.parent or not next_run.is_dir():
+            break
+        current = next_run
+    return current
+
+
+def champion_resume_command(run_dir: Path, destination: Path) -> tuple[list[str], int]:
+    manifest = read_json(run_dir / "gate-manifest.json")
+    candidate = manifest.get("candidateCommit")
+    contract = manifest.get("contract")
+    contract = contract if isinstance(contract, dict) else {}
+    if not isinstance(candidate, str) or len(candidate) != 40 or not contract:
+        raise RuntimeError("this stopped run is not a resumable champion gate")
+
+    seed = int(contract.get("seed", 0) or 0) + 1
+    command = [sys.executable, str(ROOT / "scripts" / "champion_gate.py")]
+    champion_registry = manifest.get("championRegistry")
+    if isinstance(champion_registry, str) and champion_registry:
+        command.extend(["--champion-file", champion_registry])
+    command.extend(
+        [
+            "run",
+            "--candidate",
+            candidate,
+            "--run-dir",
+            str(destination),
+            "--games",
+            str(int(contract.get("games", 0) or 0)),
+            "--tc",
+            str(contract.get("timeControl", "")),
+            "--threads",
+            str(int(contract.get("threads", 1) or 1)),
+            "--hash",
+            str(int(contract.get("hashMb", 256) or 256)),
+            "--concurrency",
+            str(int(contract.get("concurrency", 1) or 1)),
+            "--seed",
+            str(seed),
+            "--elo0",
+            str(float(contract.get("elo0", 0.0) or 0.0)),
+            "--elo1",
+            str(float(contract.get("elo1", 5.0) or 5.0)),
+            "--build-jobs",
+            "12",
+        ]
+    )
+    return command, seed
+
+
+def windows_process_command_line(pid: int) -> str:
+    if os.name != "nt":
+        return ""
+    script = (
+        f"$p=Get-CimInstance Win32_Process -Filter 'ProcessId={pid}' "
+        "-ErrorAction SilentlyContinue; if($p){$p.CommandLine}"
+    )
+    result = subprocess.run(
+        ["powershell.exe", "-NoProfile", "-Command", script],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    return result.stdout.strip()
+
+
+class MatchController:
+    def __init__(self, run_dir: Path, enabled: bool):
+        self._run_dir = latest_control_run(run_dir)
+        self.enabled = enabled and os.name == "nt"
+        self._lock = threading.Lock()
+        self.message = ""
+
+    @property
+    def run_dir(self) -> Path:
+        with self._lock:
+            return self._run_dir
+
+    def capabilities(self, snapshot: dict[str, object]) -> dict[str, object]:
+        resumable = bool(read_json(self.run_dir / "gate-manifest.json"))
+        running = snapshot.get("running") is True
+        complete = snapshot.get("state") == "complete"
+        return {
+            "enabled": self.enabled,
+            "canPause": self.enabled and running,
+            "canResume": self.enabled and not running and not complete and resumable,
+            "resumeStartsFresh": True,
+            "message": self.message,
+            "runDirectory": str(self.run_dir),
+        }
+
+    def pause(self, snapshot: dict[str, object]) -> dict[str, object]:
+        if not self.enabled:
+            raise RuntimeError("web match controls are disabled")
+        with self._lock:
+            run_dir = self._run_dir
+            pid = read_pid(run_dir / "match.pid")
+            if not process_alive(pid):
+                raise RuntimeError("the match is not running")
+            command_line = windows_process_command_line(pid)
+            if (
+                str(run_dir).casefold() not in command_line.casefold()
+                or not re.search(r"(?:champion_gate|compare_engines)\.py", command_line)
+            ):
+                raise RuntimeError("refusing to stop an unverified process")
+
+            result = subprocess.run(
+                ["taskkill.exe", "/PID", str(pid), "/T", "/F"],
+                capture_output=True,
+                text=True,
+                timeout=20,
+                check=False,
+            )
+            if result.returncode != 0 and process_alive(pid):
+                detail = result.stderr.strip() or result.stdout.strip()
+                raise RuntimeError(f"unable to stop the match: {detail}")
+
+            state = {
+                "schemaVersion": 1,
+                "status": "paused",
+                "pausedAt": utc_now(),
+                "pid": pid,
+                "partial": {
+                    key: snapshot.get(key)
+                    for key in ("games", "wins", "draws", "losses", "scorePercent")
+                },
+            }
+            write_json(run_dir / "dashboard-control.json", state)
+            self.message = "Paused; partial evidence preserved"
+            return {"ok": True, "state": "paused", "message": self.message}
+
+    def resume(self) -> dict[str, object]:
+        if not self.enabled:
+            raise RuntimeError("web match controls are disabled")
+        with self._lock:
+            source = self._run_dir
+            pid = read_pid(source / "match.pid")
+            if process_alive(pid):
+                raise RuntimeError("the match is already running")
+            if read_json(source / "match" / "result.json").get("completed") is True:
+                raise RuntimeError("a completed match cannot be resumed")
+
+            destination = next_resume_directory(source)
+            command, seed = champion_resume_command(source, destination)
+            stdout_path = destination.parent / f"{destination.name}.stdout.log"
+            stderr_path = destination.parent / f"{destination.name}.stderr.log"
+            creation_flags = 0x08000000 | 0x00000200  # no window, new process group
+            with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open(
+                "w", encoding="utf-8"
+            ) as stderr:
+                process = subprocess.Popen(
+                    command,
+                    cwd=ROOT,
+                    stdout=stdout,
+                    stderr=stderr,
+                    creationflags=creation_flags,
+                )
+
+            deadline = time.monotonic() + 10.0
+            while time.monotonic() < deadline:
+                if destination.is_dir():
+                    break
+                if process.poll() is not None:
+                    detail = read_text(stderr_path).strip() or read_text(stdout_path).strip()
+                    raise RuntimeError(f"new match failed to start: {detail}")
+                time.sleep(0.1)
+            if not destination.is_dir():
+                process.terminate()
+                raise RuntimeError("new match did not create its run directory")
+
+            (destination / "match.pid").write_text(str(process.pid), encoding="ascii")
+            (destination / "gate.pid").write_text(str(process.pid), encoding="ascii")
+            write_json(
+                source / "dashboard-control.json",
+                {
+                    "schemaVersion": 1,
+                    "status": "resumed",
+                    "resumedAt": utc_now(),
+                    "resumedAs": str(destination),
+                    "seed": seed,
+                },
+            )
+            write_json(
+                destination / "dashboard-control.json",
+                {
+                    "schemaVersion": 1,
+                    "status": "running",
+                    "startedAt": utc_now(),
+                    "resumedFrom": str(source),
+                    "pid": process.pid,
+                    "seed": seed,
+                },
+            )
+            self._run_dir = destination
+            self.message = f"Fresh attempt started with seed {seed}"
+            return {
+                "ok": True,
+                "state": "running",
+                "message": self.message,
+                "runDirectory": str(destination),
+                "pid": process.pid,
+                "seed": seed,
+            }
 
 
 def parse_datetime(value: object) -> datetime | None:
@@ -763,14 +1006,23 @@ def make_handler(
     run_dir: Path,
     history_run_dirs: list[Path] | None = None,
     match_run_dir: Path | None = None,
+    match_controller: MatchController | None = None,
 ) -> type[BaseHTTPRequestHandler]:
+    def snapshot() -> dict[str, object]:
+        current_match_dir = (
+            match_controller.run_dir if match_controller else match_run_dir
+        )
+        value = build_snapshot(run_dir, history_run_dirs, current_match_dir)
+        match = value.get("match")
+        if match_controller and isinstance(match, dict):
+            match["controls"] = match_controller.capabilities(match)
+        return value
+
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             route = urlparse(self.path).path
             if route == "/api/status":
-                payload = json.dumps(
-                    build_snapshot(run_dir, history_run_dirs, match_run_dir)
-                ).encode("utf-8")
+                payload = json.dumps(snapshot()).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Cache-Control", "no-store")
@@ -788,6 +1040,41 @@ def make_handler(
                 self.wfile.write(payload)
                 return
             self.send_error(404)
+
+        def do_POST(self) -> None:
+            route = urlparse(self.path).path
+            if route not in {"/api/match/pause", "/api/match/resume"}:
+                self.send_error(404)
+                return
+            if not match_controller or not match_controller.enabled:
+                self.send_error(403, "match controls are disabled")
+                return
+            if self.headers.get("X-Forklift-Control") != "1":
+                self.send_error(403, "missing control header")
+                return
+            origin = self.headers.get("Origin")
+            host = self.headers.get("Host")
+            if origin and host and urlparse(origin).netloc != host:
+                self.send_error(403, "cross-origin control request refused")
+                return
+
+            try:
+                if route.endswith("/pause"):
+                    current = build_match_snapshot(match_controller.run_dir)
+                    result = match_controller.pause(current)
+                else:
+                    result = match_controller.resume()
+                status = 200
+            except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+                result = {"ok": False, "message": str(error)}
+                status = 409
+            payload = json.dumps(result).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
 
         def log_message(self, format: str, *args: object) -> None:
             return
@@ -811,10 +1098,15 @@ def main() -> int:
         return 0
     if not HTML_PATH.is_file():
         raise FileNotFoundError(HTML_PATH)
+    match_controller = (
+        MatchController(match_run_dir, args.enable_match_controls)
+        if match_run_dir
+        else None
+    )
     threading.Thread(target=keep_system_awake, args=(run_dir,), daemon=True).start()
     server = ThreadingHTTPServer(
         (args.host, args.port),
-        make_handler(run_dir, history_run_dirs, match_run_dir),
+        make_handler(run_dir, history_run_dirs, match_run_dir, match_controller),
     )
     print(f"Calibration dashboard: http://{args.host}:{args.port}", flush=True)
     server.serve_forever()

@@ -8,7 +8,8 @@ param(
     [int]$Port = 8766,
     [string]$EngineRef = 'HEAD',
     [string[]]$HistoryRunDir = @(),
-    [string]$MatchRunDir = ''
+    [string]$MatchRunDir = '',
+    [switch]$EnableMatchControls
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,6 +52,9 @@ if (-not (Test-RecordedProcess $dashboardPidPath)) {
     }
     if ($MatchRunDir) {
         $dashboardArguments += @('--match-run-dir', [System.IO.Path]::GetFullPath($MatchRunDir))
+        if ($EnableMatchControls) {
+            $dashboardArguments += '--enable-match-controls'
+        }
     }
     $dashboard = Start-Process -FilePath $pythonLauncher `
         -ArgumentList $dashboardArguments `

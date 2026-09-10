@@ -228,6 +228,25 @@ py -3 scripts\champion_gate.py run `
   --run-dir E:\Dev\Forklift-Research\matches\champion-gates\candidate-001
 ```
 
+The live dashboard can expose pause/resume controls for a displayed champion
+gate:
+
+```powershell
+py -3 scripts\calibration_dashboard.py `
+  --run-dir E:\Dev\Forklift-Research\matches\absolute-calibration-extension-2550-20260829 `
+  --match-run-dir E:\Dev\Forklift-Research\matches\champion-gates\candidate-001 `
+  --enable-match-controls `
+  --port 8766
+```
+
+Pause terminates the gate process tree and preserves its partial PGN, logs and
+manifest. Resume deliberately does not append to that interrupted SPRT sample:
+it creates a new `-resume-NNN` sibling directory, increments the opening seed
+and starts the same immutable champion/candidate contract there. This keeps the
+buttons convenient without presenting stitched evidence as one experiment.
+The controls accept same-origin requests only and remain disabled unless the
+explicit flag is present.
+
 The default contract permits up to 10,000 paired-opening games at `10+0.1`,
 one thread and 256 MiB hash per engine, concurrency six, and an SPRT interval
 of 0 to +5 Elo. A valid early SPRT boundary is classified as `promote` or

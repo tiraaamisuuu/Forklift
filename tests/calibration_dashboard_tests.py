@@ -21,6 +21,67 @@ SPEC.loader.exec_module(dashboard)
 
 
 class CalibrationDashboardTests(unittest.TestCase):
+    def test_allocates_a_new_resume_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "gate"
+            source.mkdir()
+            (root / "gate-resume-001").mkdir()
+
+            self.assertEqual(
+                dashboard.next_resume_directory(source),
+                root / "gate-resume-002",
+            )
+            self.assertEqual(
+                dashboard.next_resume_directory(root / "gate-resume-001"),
+                root / "gate-resume-002",
+            )
+
+    def test_follows_dashboard_resume_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "gate"
+            resumed = root / "gate-resume-001"
+            source.mkdir()
+            resumed.mkdir()
+            (source / "dashboard-control.json").write_text(
+                json.dumps({"resumedAs": str(resumed)})
+            )
+
+            self.assertEqual(dashboard.latest_control_run(source), resumed.resolve())
+
+    def test_rebuilds_champion_gate_with_a_new_seed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "gate"
+            destination = Path(temporary) / "gate-resume-001"
+            source.mkdir()
+            (source / "gate-manifest.json").write_text(
+                json.dumps(
+                    {
+                        "championRegistry": str(ROOT / "research" / "champion.json"),
+                        "candidateCommit": "a" * 40,
+                        "contract": {
+                            "games": 10000,
+                            "timeControl": "30+0.3",
+                            "threads": 1,
+                            "hashMb": 256,
+                            "concurrency": 6,
+                            "seed": 6002,
+                            "elo0": 0,
+                            "elo1": 5,
+                        },
+                    }
+                )
+            )
+
+            command, seed = dashboard.champion_resume_command(source, destination)
+
+            self.assertEqual(seed, 6003)
+            self.assertIn(str(destination), command)
+            self.assertEqual(command[command.index("--candidate") + 1], "a" * 40)
+            self.assertEqual(command[command.index("--seed") + 1], "6003")
+            self.assertEqual(command[command.index("--tc") + 1], "30+0.3")
+
     def test_parses_live_score_and_elo(self) -> None:
         result = dashboard.parse_live_result(
             "Score of Forklift vs Stockfish 18 @ 2600: 17 - 11 - 12 [0.575] 40\n"

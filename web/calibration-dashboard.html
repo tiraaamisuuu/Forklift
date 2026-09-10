@@ -72,6 +72,25 @@
     .match-progress { margin-top: 28px; }
     .match-summary { margin-top: 16px; color: var(--muted); font-size: 11px; line-height: 1.7; }
     .match-summary strong { color: var(--fg); font-weight: 400; }
+    .match-actions { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+    .control-button {
+      min-width: 92px;
+      padding: 9px 15px;
+      border: 1px solid var(--faint);
+      border-radius: 3px;
+      background: #101211;
+      color: var(--fg);
+      font: inherit;
+      cursor: pointer;
+      box-shadow: inset 0 1px rgba(255,255,255,.035), 0 1px 1px rgba(0,0,0,.4);
+      transition: border-color 120ms ease, background 120ms ease, transform 80ms ease;
+    }
+    .control-button:hover { border-color: var(--muted); background: #151715; }
+    .control-button:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0,0,0,.55); }
+    .control-button:focus-visible { outline: 1px solid var(--active); outline-offset: 3px; }
+    .control-button:disabled { color: var(--faint); cursor: wait; }
+    .control-button.resume { border-color: #4d6741; color: var(--active); }
+    .control-note { color: var(--muted); font-size: 11px; line-height: 1.5; }
     footer { margin-top: 18px; font-size: 11px; }
     @media (max-width: 620px) {
       main { width: calc(100% - 28px); padding-top: 28px; }
@@ -80,6 +99,7 @@
       .target { display: block; margin-top: 10px; font-size: .52em; letter-spacing: -.03em; }
       .resource-grid { grid-template-columns: 1fr; gap: 28px; }
       .match-grid { grid-template-columns: 1fr 1fr; }
+      .match-actions { align-items: flex-start; flex-direction: column; }
       th:nth-child(5), td:nth-child(5), th:nth-child(6), td:nth-child(6) { display: none; }
       th, td { padding-left: 4px; padding-right: 4px; }
     }
@@ -106,6 +126,11 @@
       <div class="track match-progress" role="progressbar" aria-label="Maximum match progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="bar" id="match-bar"></span></div>
       <div class="spread progress-caption"><span id="match-percent">—</span><span id="match-eta">maximum ETA calculating</span></div>
       <div class="match-summary"><div><strong id="match-sprt">SPRT collecting</strong></div><div id="match-contract">waiting for match contract</div></div>
+      <div class="match-actions" id="match-actions" hidden>
+        <button class="control-button" id="match-pause" type="button" hidden>pause</button>
+        <button class="control-button resume" id="match-resume" type="button" hidden>resume</button>
+        <span class="control-note" id="match-control-note">resume starts a fresh evidence attempt</span>
+      </div>
     </section>
 
     <section class="hero" aria-live="polite">
@@ -173,6 +198,7 @@
       while (amount >= 1024 && index < units.length - 1) { amount /= 1024; index += 1; }
       return `${amount.toFixed(1)} ${units[index]}`;
     };
+    let controlBusy = false;
 
     function renderRungs(rows) {
       el("rungs").innerHTML = rows.map(row => {
@@ -198,6 +224,7 @@
       const baseline = match.baseline || {};
       const cfg = match.configuration || {};
       const sprt = match.sprt || {};
+      const controls = match.controls || {};
       el("match-state").textContent = match.state || "starting";
       el("match-opponents").textContent = `${candidate.name || "candidate"} ${shortCommit(candidate.commit)} vs ${baseline.name || "baseline"} ${shortCommit(baseline.commit)}`;
       el("match-games").textContent = number(match.games);
@@ -225,6 +252,39 @@
 
       const failureTotal = Object.values(match.failures || {}).reduce((sum, value) => sum + Number(value || 0), 0);
       el("match-contract").textContent = `${cfg.timeControl || "—"} · ${number(cfg.concurrency)} concurrent · ${number(cfg.threads)} thread · ${number(cfg.hashMb)} MB hash · seed ${number(cfg.seed)}${failureTotal ? ` · ${number(failureTotal)} technical failure${failureTotal === 1 ? "" : "s"}` : ""}`;
+      el("match-actions").hidden = !controls.enabled;
+      el("match-pause").hidden = !controls.canPause;
+      el("match-resume").hidden = !controls.canResume;
+      el("match-pause").disabled = controlBusy;
+      el("match-resume").disabled = controlBusy;
+      el("match-control-note").textContent = controls.message || (controls.canResume
+        ? "resume starts a fresh evidence attempt with a new seed"
+        : controls.canPause
+          ? "pause preserves this partial run; it will not count as evidence"
+          : "match controls unavailable for this state");
+    }
+
+    async function controlMatch(action) {
+      if (controlBusy) return;
+      if (action === "pause" && !window.confirm("Pause this match? Partial evidence will be preserved, and Resume will start a fresh attempt.")) return;
+      controlBusy = true;
+      el("match-control-note").textContent = action === "pause" ? "pausing…" : "starting fresh attempt…";
+      el("match-pause").disabled = true;
+      el("match-resume").disabled = true;
+      try {
+        const response = await fetch(`/api/match/${action}`, {
+          method: "POST",
+          headers: {"X-Forklift-Control": "1"}
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.message || `${action} failed`);
+        el("match-control-note").textContent = result.message;
+      } catch (error) {
+        el("match-control-note").textContent = error.message || `${action} failed`;
+      } finally {
+        controlBusy = false;
+        await refresh();
+      }
     }
 
     async function refresh() {
@@ -291,6 +351,8 @@
         el("status").textContent = "disconnected";
       }
     }
+    el("match-pause").addEventListener("click", () => controlMatch("pause"));
+    el("match-resume").addEventListener("click", () => controlMatch("resume"));
     refresh();
     setInterval(refresh, 2000);
   </script>
