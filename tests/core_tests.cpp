@@ -601,6 +601,58 @@ void testStagedMovePicker(const Zobrist& zobrist){
            "losing captures should follow ordinary quiet moves");
 }
 
+void testSearchPlySafety(const Zobrist& zobrist){
+    Board checkedRepetition;
+    checkedRepetition.setZobrist(&zobrist);
+    expect(checkedRepetition.loadFEN("4k3/8/8/8/8/8/4R3/4K3 b - - 10 1"),
+           "checked repetition fixture should load");
+    SearchContext repetitionContext;
+    repetitionContext.start = std::chrono::steady_clock::now();
+    repetitionContext.softTimeLimitMs = 60'000;
+    repetitionContext.hardTimeLimitMs = 60'000;
+    repetitionContext.repetition = {
+        checkedRepetition.hash, checkedRepetition.hash, checkedRepetition.hash
+    };
+    expect(quiescence(checkedRepetition, repetitionContext, -INF, INF, 4) == 0,
+           "quiescence should recognise a repeated position while in check");
+    expect(repetitionContext.stats.qnodes == 1,
+           "checked repetition should terminate without another quiescence ply");
+
+    Board checkmate;
+    checkmate.setZobrist(&zobrist);
+    expect(checkmate.loadFEN("7k/6Q1/5K2/8/8/8/8/8 b - - 10 1"),
+           "checkmate repetition fixture should load");
+    SearchContext mateContext;
+    mateContext.start = std::chrono::steady_clock::now();
+    mateContext.softTimeLimitMs = 60'000;
+    mateContext.hardTimeLimitMs = 60'000;
+    mateContext.repetition = {checkmate.hash, checkmate.hash, checkmate.hash};
+    expect(quiescence(checkmate, mateContext, -INF, INF, 4) == -MATE + 4,
+           "checkmate should take precedence over a repetition draw");
+
+    Board horizon;
+    horizon.setZobrist(&zobrist);
+    horizon.reset();
+    SearchContext horizonContext;
+    horizonContext.start = std::chrono::steady_clock::now();
+    horizonContext.softTimeLimitMs = 60'000;
+    horizonContext.hardTimeLimitMs = 60'000;
+    horizonContext.repetition = {horizon.hash};
+    const int expectedEvaluation = evaluateClassical(horizon);
+    expect(quiescence(horizon, horizonContext, -INF, INF,
+                      SearchContext::MaxSearchPly) == expectedEvaluation,
+           "quiescence should return a bounded evaluation at the ply limit");
+
+    SearchContext principalContext;
+    principalContext.start = std::chrono::steady_clock::now();
+    principalContext.softTimeLimitMs = 60'000;
+    principalContext.hardTimeLimitMs = 60'000;
+    principalContext.repetition = {horizon.hash};
+    expect(negamax(horizon, principalContext, 4, -INF, INF,
+                   SearchContext::MaxSearchPly, invalidMove(), true) == expectedEvaluation,
+           "principal search should return a bounded evaluation at the ply limit");
+}
+
 void testClockTimeManagement(const Zobrist& zobrist){
     Board board;
     board.setZobrist(&zobrist);
@@ -701,6 +753,7 @@ int main(){
     testStaticExchange(zobrist);
     testContinuationHistoryOrdering(zobrist);
     testStagedMovePicker(zobrist);
+    testSearchPlySafety(zobrist);
     testClockTimeManagement(zobrist);
     testParallelSearchSafety(zobrist);
 

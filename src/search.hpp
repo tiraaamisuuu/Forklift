@@ -21,6 +21,7 @@ struct SearchStats {
 };
 
 struct SearchContext {
+    static constexpr int MaxSearchPly = 127;
     static constexpr size_t NnueStackSize = 129;
     TranspositionTable tt;
     TranspositionTable* sharedTT=nullptr;
@@ -403,11 +404,36 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
     if(timeUp(ctx)) return 0;
     ctx.stats.qnodes++;
 
+    const bool inCheck = bd.inCheck(bd.stm);
+    const bool ruleDraw = bd.halfmoveClock >= 100 || isThreefoldRepetition(bd, ctx);
+    if(ruleDraw){
+        // A checkmated position is terminal before a draw can be claimed.
+        if(inCheck){
+            MoveList evasions;
+            bd.genLegalMoves(evasions);
+            if(evasions.empty()) return -MATE + ply;
+        }
+        return 0;
+    }
+    if(bd.insufficientMaterial()) return 0;
+
+    // Check extensions and check evasions can otherwise recurse indefinitely
+    // through pathological checking cycles. Keep every search inside the
+    // fixed per-ply state arrays and the process stack.
+    if(ply >= SearchContext::MaxSearchPly){
+        if(inCheck){
+            MoveList evasions;
+            bd.genLegalMoves(evasions);
+            if(evasions.empty()) return -MATE + ply;
+            return 0;
+        }
+        return evaluatePosition(bd, ctx, ply);
+    }
+
     alpha = std::max(alpha, -MATE + ply);
     beta = std::min(beta, MATE - ply - 1);
     if(alpha >= beta) return alpha;
 
-    const bool inCheck = bd.inCheck(bd.stm);
     if(inCheck){
         MoveList evasions;
         bd.genLegalMoves(evasions);
@@ -429,8 +455,6 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
         }
         return best;
     }
-
-    if(isThreefoldRepetition(bd, ctx)) return 0;
 
     int stand = evaluatePosition(bd, ctx, ply);
     if(stand >= beta) return stand;
@@ -490,6 +514,21 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
 inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta, int ply, const Move& prevMove, bool allowNullMove){
     if(timeUp(ctx)) return 0;
     ctx.stats.nodes++;
+
+    if(ply >= SearchContext::MaxSearchPly){
+        const bool inCheck = bd.inCheck(bd.stm);
+        if(inCheck){
+            MoveList evasions;
+            bd.genLegalMoves(evasions);
+            if(evasions.empty()) return -MATE + ply;
+            return 0;
+        }
+        if(bd.halfmoveClock >= 100 || isThreefoldRepetition(bd, ctx) ||
+           bd.insufficientMaterial()){
+            return 0;
+        }
+        return evaluatePosition(bd, ctx, ply);
+    }
 
     // Mate-distance pruning keeps mate scores consistent and trims impossible windows.
     alpha = std::max(alpha, -MATE + ply);
