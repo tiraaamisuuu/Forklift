@@ -17,6 +17,7 @@
       --bad: #c87979;
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -113,6 +114,24 @@
       <div class="status"><span class="dot" id="status-dot"></span><span id="status">connecting</span></div>
     </header>
 
+    <section class="match-panel" id="training-panel" aria-label="Neural network learning" hidden>
+      <div class="spread"><span class="caption">neural network learning</span><span class="active" id="training-state"></span></div>
+      <h1 class="match-title">shared piece-square features</h1>
+      <div class="detail">New network first, matched original-feature control second. No strength claim until tested.</div>
+      <div class="match-grid">
+        <div><div class="caption">positions this epoch</div><div class="match-value" id="training-count">—</div></div>
+        <div><div class="caption">epoch</div><div class="match-value" id="training-epoch">—</div></div>
+        <div><div class="caption">positions / second</div><div class="match-value" id="training-rate">—</div></div>
+        <div><div class="caption">GPU allocated</div><div class="match-value" id="training-memory">—</div></div>
+      </div>
+      <div class="track"><span class="bar" id="training-bar"></span></div>
+      <div class="detail" id="training-eta"></div>
+      <svg id="training-chart" viewBox="0 0 800 190" role="img" aria-label="Training and validation loss by epoch" style="width:100%; margin-top:24px"></svg>
+      <div class="detail">Dashed: training loss · green: validation loss · lower is better · horizontal axis: epoch</div>
+      <div class="log" id="training-variants"></div>
+      <div class="log error" id="training-error"></div>
+    </section>
+
     <section class="match-panel" id="match-panel" aria-label="Active search experiment" hidden>
       <div class="spread"><span class="caption">active experiment</span><span class="active" id="match-state">starting</span></div>
       <h1 class="match-title">retained search confirmation</h1>
@@ -199,6 +218,40 @@
       return `${amount.toFixed(1)} ${units[index]}`;
     };
     let controlBusy = false;
+
+    function renderTraining(training) {
+      el("training-panel").hidden = !training;
+      if (!training) return;
+      const variants = training.variants || [];
+      const current = variants.find(v => !["queued", "complete"].includes(v.state)) || variants.find(v => v.state === "complete") || {};
+      const p = current.progress || {};
+      el("training-state").textContent = `${current.name || "network"} · ${training.state === "running" ? current.state : training.state}`;
+      el("training-count").textContent = `${number(p.positions)} / ${number(p.trainingPositions)}`;
+      el("training-epoch").textContent = `${number(p.epoch)} / ${number(p.epochs)}`;
+      el("training-rate").textContent = p.positionsPerSecond ? number(Math.round(p.positionsPerSecond)) : "—";
+      el("training-memory").textContent = bytes(p.gpuMemoryBytes);
+      el("training-bar").style.width = width(100 * (p.positions || 0) / (p.trainingPositions || 1));
+      const remaining = Math.max(0, (p.trainingPositions || 0) - (p.positions || 0));
+      el("training-eta").textContent = current.state === "training" && p.positionsPerSecond
+        ? `this epoch: about ${Math.ceil(remaining / p.positionsPerSecond / 60)} min remaining · validation/export extra · early stopping enabled`
+        : `${current.state || "preparing"} · checkpoint saved after each epoch`;
+      el("training-error").textContent = training.error || p.error || "";
+      el("training-variants").innerHTML = variants.map(v => {
+        const losses = (v.metrics || []).map(m => Number(m.validationLoss)).filter(Number.isFinite);
+        return `<div>${text(v.name)} · ${text(v.state)}${losses.length ? ` · best validation loss ${Math.min(...losses).toFixed(6)}` : ""}</div>`;
+      }).join("");
+      const rows = (current.metrics || []).filter(m => Number.isFinite(m.trainingLoss) && Number.isFinite(m.validationLoss));
+      if (!rows.length) {
+        el("training-chart").innerHTML = '<text x="0" y="95" fill="#777b78" font-size="13">Learning curves appear after the first epoch.</text>';
+        return;
+      }
+      const max = Math.max(...rows.flatMap(m => [m.trainingLoss, m.validationLoss]), 0.000001);
+      const x = m => 65 + 710 * (m.epoch - 1) / Math.max(1, rows.at(-1).epoch - 1);
+      const y = value => 160 - 145 * value / max;
+      el("training-chart").innerHTML = `<path d="M65 15V160H775" fill="none" stroke="#3c403d"/><text x="0" y="20" fill="#777b78" font-size="11">${max.toFixed(4)}</text><text x="30" y="160" fill="#777b78" font-size="11">0</text>` +
+        ["trainingLoss", "validationLoss"].map((key, i) => `<polyline fill="none" stroke="${i ? "#a2d77f" : "#777b78"}" stroke-width="2" ${i ? "" : 'stroke-dasharray="5 4"'} points="${rows.map(m => `${x(m)},${y(m[key])}`).join(" ")}"/>` + rows.map(m => `<circle cx="${x(m)}" cy="${y(m[key])}" r="3" fill="${i ? "#a2d77f" : "#777b78"}"/>`).join("")).join("") +
+        rows.map(m => `<text x="${x(m)}" y="183" text-anchor="middle" fill="#777b78" font-size="11">${m.epoch}</text>`).join("");
+    }
 
     function renderRungs(rows) {
       el("rungs").innerHTML = rows.map(row => {
@@ -298,12 +351,17 @@
         const resources = data.resources || {};
         const match = data.match || null;
         renderMatch(match);
+        renderTraining(data.training);
         const activeMatch = match && match.state === "running";
         const stopped = match
           ? !match.running && match.state !== "complete" && match.state !== "starting"
           : !data.running && data.state !== "complete" && data.state !== "starting";
         el("status-dot").classList.toggle("stopped", stopped);
         el("status").textContent = activeMatch ? "search test running" : (match?.state || data.state);
+        if (data.training) {
+          el("status").textContent = `NNUE · ${data.training.state}`;
+          el("status-dot").classList.toggle("stopped", ["failed", "stopped"].includes(data.training.state));
+        }
         el("completed").textContent = number(data.completedGames);
         el("total").textContent = ` / ${number(data.totalGames)}`;
         el("eta").textContent = data.eta;

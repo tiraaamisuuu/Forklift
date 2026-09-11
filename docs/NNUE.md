@@ -286,6 +286,20 @@ trade throughput for complementary positional information.
 
 ## Later experiments
 
+The first NNUE v2 experiment adds optional shared piece-square features during
+training (`--feature-factorization`). A shared 640-row embedding is summed with
+the existing king-conditioned embedding. At export it is folded into the existing
+40,960 rows, preserving the HalfKP-v1 file format and C++ inference cost. This is
+an application of established feature factorization, not a novel-method claim.
+See [the experiment contract](results/2026-09-12-nnue-feature-sharing.md).
+
+`scripts/nnue/run_factorization_experiment.py` runs the shared model followed by a
+matched original-feature control. Both use the same data, seed and training
+settings; it verifies dataset hashes and requires exact Python/C++ export checks.
+The live dashboard accepts `--training-run-dir` to show epoch progress, GPU memory
+and training/validation learning curves. Checkpoints are saved every epoch.
+
+
 The five-million 256-wide baseline scored 32.5% over 400 games and was rejected.
 Follow-up probability-space WDL training and classical/NNUE blending improved
 small screens but did not establish a gain. Full results are in

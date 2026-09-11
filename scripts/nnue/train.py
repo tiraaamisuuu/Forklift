@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
 import math
+import os
 from pathlib import Path
 import random
 import re
@@ -55,6 +56,10 @@ def parse_args() -> argparse.Namespace:
                         help="Permit a random position split for pipeline smoke only")
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--hidden", type=int, default=256)
+    parser.add_argument("--feature-factorization", action="store_true",
+                        help="Share piece-square learning across king squares; fold weights at export")
+    parser.add_argument("--cpu-threads", type=int, default=2,
+                        help="PyTorch CPU threads (data loader workers are separate)")
     parser.add_argument("--epochs", type=int, default=8)
     parser.add_argument("--batch-size", type=int, default=2048)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
@@ -302,7 +307,7 @@ def collate(samples: list[tuple]) -> tuple[torch.Tensor, ...]:
 
 
 class HalfKpV1(nn.Module):
-    def __init__(self, hidden: int):
+    def __init__(self, hidden: int, feature_factorization: bool = False):
         super().__init__()
         self.hidden = hidden
         self.feature_weights = nn.EmbeddingBag(FEATURE_COUNT, hidden, mode="sum")
@@ -310,15 +315,30 @@ class HalfKpV1(nn.Module):
         self.output = nn.Linear(hidden * 2, 1)
         nn.init.normal_(self.feature_weights.weight, mean=0.0, std=0.005)
         nn.init.normal_(self.output.weight, mean=0.0, std=0.05)
+        self.feature_factorization = feature_factorization
+        self.piece_square_weights = None
+        if feature_factorization:
+            # Preserve baseline initialization and shuffle RNG; the shared part starts at zero.
+            with torch.random.fork_rng(devices=[]):
+                self.piece_square_weights = nn.EmbeddingBag(640, hidden, mode="sum")
+                nn.init.zeros_(self.piece_square_weights.weight)
+
+    def effective_input_weights(self) -> torch.Tensor:
+        weights = self.feature_weights.weight
+        if self.piece_square_weights is not None:
+            weights = weights + self.piece_square_weights.weight.repeat(64, 1)
+        return weights
+
+    def accumulator(self, features: torch.Tensor, offsets: torch.Tensor) -> torch.Tensor:
+        value = self.feature_weights(features, offsets) + self.hidden_bias
+        if self.piece_square_weights is not None:
+            value = value + self.piece_square_weights(features % 640, offsets)
+        return torch.clamp(value, 0.0, 1.0)
 
     def forward(self, first: torch.Tensor, first_offsets: torch.Tensor,
                 second: torch.Tensor, second_offsets: torch.Tensor) -> torch.Tensor:
-        first_activation = torch.clamp(
-            self.feature_weights(first, first_offsets) + self.hidden_bias, 0.0, 1.0,
-        )
-        second_activation = torch.clamp(
-            self.feature_weights(second, second_offsets) + self.hidden_bias, 0.0, 1.0,
-        )
+        first_activation = self.accumulator(first, first_offsets)
+        second_activation = self.accumulator(second, second_offsets)
         return self.output(torch.cat((first_activation, second_activation), dim=1)).squeeze(1)
 
 
@@ -342,7 +362,8 @@ def quantize_network(model: HalfKpV1, hidden_scale: int = 1024,
     if hidden_scale <= 0 or output_scale <= 0 or target_scale <= 0:
         raise ValueError("quantization scales must be positive")
     state = model.cpu().eval()
-    input_weights = np.rint(state.feature_weights.weight.detach().numpy() * hidden_scale)
+    # Coalesce virtual features before rounding, preserving the deployed HalfKP-v1 layout.
+    input_weights = np.rint(state.effective_input_weights().detach().numpy() * hidden_scale)
     if np.any(input_weights < -32768) or np.any(input_weights > 32767):
         raise ValueError("input weights exceed int16 at the requested hidden scale")
     input_weights = input_weights.astype("<i2")
@@ -715,6 +736,7 @@ def checkpoint_payload(model: HalfKpV1, optimizer: torch.optim.Optimizer,
             "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
         },
         "training": {
+            "featureFactorization": args.feature_factorization,
             "resultWeight": args.result_weight,
             "loss": args.loss,
             "wdlScale": args.wdl_scale,
@@ -744,6 +766,7 @@ def validate_resume_configuration(payload: dict[str, object], args: argparse.Nam
     if not isinstance(saved, dict):
         raise SystemExit("resume checkpoint is missing training configuration")
     exact_settings = {
+        "featureFactorization": args.feature_factorization,
         "resultWeight": args.result_weight,
         "loss": args.loss,
         "wdlScale": args.wdl_scale,
@@ -758,6 +781,7 @@ def validate_resume_configuration(payload: dict[str, object], args: argparse.Nam
     for key, requested in exact_settings.items():
         saved_value = saved.get(
             key,
+            False if key == "featureFactorization" else
             "centipawn-huber" if key == "loss" else (400.0 if key == "wdlScale" else None),
         )
         if saved_value != requested:
@@ -769,6 +793,8 @@ def validate_resume_configuration(payload: dict[str, object], args: argparse.Nam
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if args.cpu_threads < 1:
+        raise SystemExit("--cpu-threads must be positive")
     if not 1 <= args.hidden <= 1024:
         raise SystemExit("--hidden must be between 1 and 1024 (the C++ loader limit)")
     if args.epochs < 1 or args.batch_size < 1 or args.workers < 0:
@@ -793,9 +819,9 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("CUDA was requested but the installed PyTorch build cannot use it")
 
 
-def main() -> int:
-    args = parse_args()
+def train(args: argparse.Namespace) -> int:
     validate_args(args)
+    torch.set_num_threads(args.cpu_threads)
     started_at = datetime.now(timezone.utc)
     root = Path(__file__).resolve().parents[2]
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -804,6 +830,19 @@ def main() -> int:
     checkpoint_path = args.output.with_suffix(".checkpoint.pt")
     best_checkpoint_path = args.output.with_suffix(".best.checkpoint.pt")
     periodic_directory = args.output.with_suffix(".checkpoints")
+    progress_path = args.output.with_suffix(".progress.json")
+    progress = {
+        "schemaVersion": 1, "state": "preparing", "pid": os.getpid(),
+        "startedAt": started_at.isoformat(), "epoch": 0, "epochs": args.epochs,
+        "featureFactorization": args.feature_factorization, "device": args.device,
+    }
+
+    def update_progress(state: str, **values: object) -> None:
+        progress.update(values)
+        progress.update(state=state, updatedAt=datetime.now(timezone.utc).isoformat())
+        write_json_atomic(progress_path, progress)
+
+    update_progress("preparing")
 
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -841,7 +880,7 @@ def main() -> int:
     training_loader = DataLoader(training, shuffle=True, **loader_options)
     validation_loader = DataLoader(validation, shuffle=False, **loader_options)
 
-    model = HalfKpV1(args.hidden).to(device)
+    model = HalfKpV1(args.hidden, args.feature_factorization).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=1e-6)
     scheduler = None
     if args.scheduler == "cosine":
@@ -886,6 +925,9 @@ def main() -> int:
         epoch_started = time.perf_counter()
         total_loss = 0.0
         samples = 0
+        last_progress = 0.0
+        update_progress("training", epoch=epoch, positions=0, trainingPositions=len(training),
+                        validationPositions=len(validation))
         for (first, first_offsets, second, second_offsets, target,
              target_wdl, _teacher_score) in batches(training_loader, device):
             optimizer.zero_grad(set_to_none=True)
@@ -898,9 +940,17 @@ def main() -> int:
             optimizer.step()
             total_loss += loss.item() * target.numel()
             samples += target.numel()
+            now = time.perf_counter()
+            if now - last_progress >= 2.0:
+                update_progress("training", positions=samples,
+                                positionsPerSecond=round(samples / max(now - epoch_started, 1e-9), 1),
+                                trainingLoss=total_loss / max(1, samples),
+                                gpuMemoryBytes=torch.cuda.memory_allocated(device) if device.type == "cuda" else 0)
+                last_progress = now
         if device.type == "cuda":
             torch.cuda.synchronize(device)
         duration = time.perf_counter() - epoch_started
+        update_progress("validating", positions=samples)
         validation_metrics = evaluate(
             model, validation_loader, device, args.target_scale,
             args.loss, args.huber_beta_cp, args.wdl_scale,
@@ -949,6 +999,7 @@ def main() -> int:
         if epoch % args.checkpoint_every == 0:
             atomic_torch_save(payload, periodic_directory / f"epoch-{epoch:04d}.pt")
         save_metrics(metrics, metrics_path)
+        update_progress("checkpointed", latestMetric=metric, bestObjective=best_objective)
         print(
             f"epoch={epoch} train_loss_normalized={metric['trainingLossNormalized']:.4f} "
             f"validation_loss={validation_loss:.6f} "
@@ -969,6 +1020,7 @@ def main() -> int:
         best_payload = torch.load(best_checkpoint_path, map_location=device, weights_only=False)
         model.load_state_dict(best_payload["model"])
 
+    update_progress("diagnosing")
     best_validation_metrics = evaluate(
         model, validation_loader, device, args.target_scale,
         args.loss, args.huber_beta_cp, args.wdl_scale,
@@ -977,6 +1029,7 @@ def main() -> int:
         model, validation, device, args.target_scale, args.batch_size,
     )
 
+    update_progress("exporting")
     quantization = verify_quantization(
         model, validation, args.verify_samples, args.seed,
         args.hidden_scale, args.output_scale, args.target_scale,
@@ -1042,6 +1095,8 @@ def main() -> int:
             "inputs": data_inputs,
         },
         "configuration": {
+            "featureFactorization": args.feature_factorization,
+            "cpuThreads": args.cpu_threads,
             "hidden": args.hidden,
             "epochsRequested": args.epochs,
             "epochsCompleted": metrics[-1]["epoch"] if metrics else 0,
@@ -1081,6 +1136,8 @@ def main() -> int:
         },
     }
     write_json_atomic(manifest_path, manifest)
+    update_progress("complete", network=str(args.output.resolve()),
+                    bestValidation=best_validation_metrics, cppVerification=cpp_verification)
     print(
         f"exported={args.output} hidden={args.hidden} train_positions={len(training)} "
         f"validation_positions={len(validation)} "
@@ -1089,6 +1146,22 @@ def main() -> int:
         f"quantization_rmse_cp={quantization['rmseCp']:.3f} manifest={manifest_path}"
     )
     return 0
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        return train(args)
+    except (Exception, KeyboardInterrupt) as error:
+        progress_path = args.output.with_suffix(".progress.json")
+        try:
+            progress = json.loads(progress_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            progress = {}
+        progress.update(state="failed", error=str(error) or type(error).__name__,
+                        updatedAt=datetime.now(timezone.utc).isoformat())
+        write_json_atomic(progress_path, progress)
+        raise
 
 
 if __name__ == "__main__":

@@ -61,6 +61,8 @@ def arguments() -> argparse.Namespace:
         help="direct engine-match run directory to show above the calibration",
     )
     parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--training-run-dir", type=Path,
+                        help="NNUE experiment directory with live learning progress")
     parser.add_argument("--port", type=int, default=8766)
     parser.add_argument(
         "--enable-match-controls",
@@ -1006,17 +1008,48 @@ def keep_system_awake(run_dir: Path) -> None:
         ctypes.windll.kernel32.SetThreadExecutionState(continuous)
 
 
+def build_training_snapshot(run_dir: Path) -> dict[str, object]:
+    experiment = read_json(run_dir / "experiment.json")
+    if not experiment:
+        return {"state": "preparing", "variants": []}
+    variants = []
+    for variant in experiment.get("variants", []):
+        if variant.get("id") not in {"shared", "control"}:
+            continue
+        directory = run_dir / variant["id"]
+        progress = read_json(directory / "model.progress.json")
+        try:
+            metrics = json.loads(read_text(directory / "model.metrics.json"))
+        except ValueError:
+            metrics = []
+        if not isinstance(metrics, list):
+            metrics = []
+        state = progress.get("state", variant.get("state", "queued"))
+        if state not in {"complete", "failed", "queued"} and not process_alive(int(progress.get("pid", experiment.get("pid", 0)))):
+            state = "stopped"
+        variants.append({**variant, "state": state, "progress": progress, "metrics": metrics[-100:]})
+    state = experiment.get("state")
+    if state == "running" and not process_alive(int(experiment.get("pid", 0))):
+        state = "stopped"
+    return {"name": experiment.get("name"), "state": state,
+            "error": experiment.get("error"), "variants": variants,
+            "comparison": experiment.get("comparison")}
+
+
 def make_handler(
     run_dir: Path,
     history_run_dirs: list[Path] | None = None,
     match_run_dir: Path | None = None,
     match_controller: MatchController | None = None,
+    training_run_dir: Path | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     def snapshot() -> dict[str, object]:
         current_match_dir = (
             match_controller.run_dir if match_controller else match_run_dir
         )
         value = build_snapshot(run_dir, history_run_dirs, current_match_dir)
+        if training_run_dir:
+            value["training"] = build_training_snapshot(training_run_dir)
         match = value.get("match")
         if match_controller and isinstance(match, dict):
             match["controls"] = match_controller.capabilities(match)
@@ -1094,11 +1127,10 @@ def main() -> int:
         args.match_run_dir.expanduser().resolve() if args.match_run_dir else None
     )
     if args.snapshot:
-        print(
-            json.dumps(
-                build_snapshot(run_dir, history_run_dirs, match_run_dir), indent=2
-            )
-        )
+        value = build_snapshot(run_dir, history_run_dirs, match_run_dir)
+        if args.training_run_dir:
+            value["training"] = build_training_snapshot(args.training_run_dir)
+        print(json.dumps(value, indent=2))
         return 0
     if not HTML_PATH.is_file():
         raise FileNotFoundError(HTML_PATH)
@@ -1110,7 +1142,7 @@ def main() -> int:
     threading.Thread(target=keep_system_awake, args=(run_dir,), daemon=True).start()
     server = ThreadingHTTPServer(
         (args.host, args.port),
-        make_handler(run_dir, history_run_dirs, match_run_dir, match_controller),
+        make_handler(run_dir, history_run_dirs, match_run_dir, match_controller, args.training_run_dir),
     )
     print(f"Calibration dashboard: http://{args.host}:{args.port}", flush=True)
     server.serve_forever()

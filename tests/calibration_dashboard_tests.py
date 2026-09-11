@@ -21,6 +21,24 @@ SPEC.loader.exec_module(dashboard)
 
 
 class CalibrationDashboardTests(unittest.TestCase):
+    def test_training_snapshot_preserves_completed_metrics(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "shared").mkdir()
+            (root / "experiment.json").write_text(json.dumps({"state": "complete", "variants": [{"id": "shared", "state": "complete"}]}))
+            (root / "shared/model.metrics.json").write_text('[{"epoch": 1, "validationLoss": 0.02}]')
+            snapshot = dashboard.build_training_snapshot(root)
+            self.assertEqual(snapshot["state"], "complete")
+            self.assertEqual(snapshot["variants"][0]["metrics"][0]["epoch"], 1)
+
+    def test_training_snapshot_detects_dead_process(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "experiment.json").write_text(json.dumps({"state": "running", "pid": 0, "variants": [{"id": "shared", "state": "running"}]}))
+            snapshot = dashboard.build_training_snapshot(root)
+            self.assertEqual(snapshot["state"], "stopped")
+            self.assertEqual(snapshot["variants"][0]["state"], "stopped")
+
     def test_allocates_a_new_resume_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

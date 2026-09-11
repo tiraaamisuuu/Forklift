@@ -45,6 +45,39 @@ from train import (  # noqa: E402
 
 
 class NnueTrainingTests(unittest.TestCase):
+    def test_factorization_preserves_initialization_and_folds_exactly(self) -> None:
+        torch.manual_seed(41)
+        plain = HalfKpV1(8)
+        expected_rng = torch.get_rng_state().clone()
+        torch.manual_seed(41)
+        shared = HalfKpV1(8, feature_factorization=True)
+        self.assertTrue(torch.equal(expected_rng, torch.get_rng_state()))
+        self.assertTrue(torch.equal(plain.feature_weights.weight, shared.effective_input_weights()))
+        self.assertTrue(torch.equal(plain.output.weight, shared.output.weight))
+        with torch.no_grad():
+            shared.piece_square_weights.weight.uniform_(-0.01, 0.01)
+            plain.feature_weights.weight.copy_(shared.effective_input_weights())
+        for fen in (chess.STARTING_FEN, "8/8/4k3/3p4/4P3/3K4/8/8 w - - 0 1"):
+            board = chess.Board(fen)
+            batch = collate([(active_features(board, board.turn), active_features(board, not board.turn), 0.0)])
+            with torch.no_grad():
+                torch.testing.assert_close(shared(*batch[:4]), plain(*batch[:4]), atol=1e-6, rtol=1e-6)
+        a, b = quantize_network(shared), quantize_network(plain)
+        np.testing.assert_array_equal(a.input_weights, b.input_weights)
+
+    def test_shared_training_updates_unseen_king_bucket(self) -> None:
+        model = HalfKpV1(2, feature_factorization=True)
+        with torch.no_grad():
+            model.feature_weights.weight.fill_(0.1)
+        before = model.effective_input_weights().detach().clone()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+        # Training one king bucket must also improve the shared component of unseen buckets.
+        model.accumulator(torch.tensor([5]), torch.tensor([0])).sum().backward()
+        optimizer.step()
+        after = model.effective_input_weights().detach()
+        self.assertFalse(torch.equal(before[640 + 5], after[640 + 5]))
+        self.assertTrue(torch.equal(before[640 + 6], after[640 + 6]))
+
     def test_compact_and_jsonl_datasets_match(self) -> None:
         board = chess.Board()
         board.push_uci("e2e4")
@@ -192,13 +225,15 @@ class NnueTrainingTests(unittest.TestCase):
                 "--hidden", "4", "--epochs", "2", "--batch-size", "16",
                 "--workers", "0", "--device", "cpu", "--loss", "wdl",
                 "--result-weight", "0.15", "--wdl-scale", "400",
-                "--target-scale", "600", "--verify-samples", "4",
+                "--target-scale", "600", "--verify-samples", "4", "--feature-factorization",
             ]
             with mock.patch.object(sys, "argv", arguments), redirect_stdout(io.StringIO()):
                 self.assertEqual(main(), 0)
 
             manifest = json.loads(output.with_suffix(".manifest.json").read_text())
             self.assertTrue(output.is_file())
+            self.assertTrue(manifest["configuration"]["featureFactorization"])
+            self.assertEqual(json.loads(output.with_suffix(".progress.json").read_text())["state"], "complete")
             self.assertEqual(manifest["configuration"]["loss"], "wdl")
             self.assertEqual(manifest["configuration"]["wdlScale"], 400.0)
             self.assertEqual(
