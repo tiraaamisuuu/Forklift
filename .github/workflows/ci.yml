@@ -20,6 +20,9 @@ jobs:
         run: cmake --build build --config Release --parallel
       - name: Core and UCI tests
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: Windows UCI clock regression
+        if: runner.os == 'Windows'
+        run: python tests/uci_clock_regression.py build/Release/chess-engine-uci.exe
       - name: Match and research tooling tests
         run: |
           python tests/compare_engines_tests.py

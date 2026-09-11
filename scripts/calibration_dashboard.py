@@ -516,6 +516,7 @@ def build_match_snapshot(run_dir: Path) -> dict[str, object]:
     configuration = configuration if isinstance(configuration, dict) else {}
     result = read_json(match_dir / "result.json")
     completed = result.get("completed") is True
+    gate = read_json(run_dir / "gate-result.json")
     log_text = read_text(match_dir / "match.log")
 
     if completed:
@@ -621,6 +622,8 @@ def build_match_snapshot(run_dir: Path) -> dict[str, object]:
         "elapsed": duration(elapsed_seconds),
         "eta": duration(eta_seconds),
         "sprt": sprt,
+        "gateDecision": gate.get("decision"),
+        "gateReason": gate.get("reason"),
         "failures": {
             key: int(failures.get(key, 0) or 0)
             for key in ("timeForfeits", "crashes", "illegalMoves", "disconnects")

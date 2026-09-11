@@ -328,11 +328,11 @@ inline bool timeUp(SearchContext& ctx){
         ctx.stop = true;
         return true;
     }
-    // A steady-clock syscall at every node is measurable search overhead.
-    // At current throughput, checking every 256 nodes keeps hard-limit drift
-    // comfortably below the GUI's 50 ms minimum while removing most calls.
-    ctx.timeCheckCounter++;
-    if((ctx.timeCheckCounter & 255U) != 0) return false;
+    // Check immediately on entry, then more frequently for emergency budgets.
+    // The first check must include time spent waiting for the UCI worker.
+    const u32 mask = ctx.hardTimeLimitMs <= 10 ? 0U
+                   : ctx.hardTimeLimitMs <= 100 ? 31U : 255U;
+    if((ctx.timeCheckCounter++ & mask) != 0) return false;
     auto now = std::chrono::steady_clock::now();
     int ms = (int)std::chrono::duration_cast<std::chrono::milliseconds>(now - ctx.start).count();
     if(ms >= ctx.hardTimeLimitMs){
@@ -790,14 +790,15 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
 }
 
 inline Move searchBestMoveSingle(Board& bd, SearchContext& ctx, int maxDepth, int softTimeLimitMs, int hardTimeLimitMs,
-                                 const std::vector<Move>* rootRestriction = nullptr){
+                                 const std::vector<Move>* rootRestriction = nullptr,
+                                 std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now()){
     ctx.stats = {};
     ctx.stats.softTimeLimitMs = softTimeLimitMs;
     ctx.stats.hardTimeLimitMs = hardTimeLimitMs;
     ctx.stats.configuredThreads = 1;
     ctx.stats.workersUsed = 1;
     ctx.stats.hardwareThreads = std::max(1, int(std::thread::hardware_concurrency()));
-    ctx.start = std::chrono::steady_clock::now();
+    ctx.start = started;
     ctx.softTimeLimitMs = softTimeLimitMs;
     ctx.hardTimeLimitMs = std::max(softTimeLimitMs, hardTimeLimitMs);
     ctx.stop = false;
@@ -952,15 +953,16 @@ inline Move searchBestMoveSingle(Board& bd, SearchContext& ctx, int maxDepth, in
             const int scoreSwing = std::abs(bestScore - previousScore);
             int extraTime = 0;
             if(bestMoveChanges > 0){
-                extraTime += std::min(ctx.softTimeLimitMs / 3, bestMoveChanges * std::max(20, ctx.softTimeLimitMs / 12));
+                extraTime += std::min(softTimeLimitMs / 3, bestMoveChanges * std::max(20, softTimeLimitMs / 12));
             }
             if(aspirationResearches > 0){
-                extraTime += std::min(ctx.softTimeLimitMs / 4, aspirationResearches * std::max(15, ctx.softTimeLimitMs / 20));
+                extraTime += std::min(softTimeLimitMs / 4, aspirationResearches * std::max(15, softTimeLimitMs / 20));
             }
             if(scoreSwing >= 80){
-                extraTime += std::max(25, ctx.softTimeLimitMs / 8);
+                extraTime += std::max(25, softTimeLimitMs / 8);
             }
-            dynamicSoftLimitMs = std::min(ctx.hardTimeLimitMs, ctx.softTimeLimitMs + extraTime);
+            // Recompute from the original allocation, never a previous extension.
+            dynamicSoftLimitMs = std::min(ctx.hardTimeLimitMs, softTimeLimitMs + extraTime);
             ctx.softTimeLimitMs = dynamicSoftLimitMs;
             ctx.stats.softTimeLimitMs = ctx.softTimeLimitMs;
         }
@@ -972,13 +974,14 @@ inline Move searchBestMoveSingle(Board& bd, SearchContext& ctx, int maxDepth, in
 }
 
 inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, int softTimeLimitMs, int hardTimeLimitMs,
-                                   int threadCount, const std::vector<Move>* rootRestriction = nullptr){
+                                   int threadCount, const std::vector<Move>* rootRestriction = nullptr,
+                                   std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now()){
     ctx.stats = {};
     ctx.stats.softTimeLimitMs = softTimeLimitMs;
     ctx.stats.hardTimeLimitMs = hardTimeLimitMs;
     ctx.stats.configuredThreads = std::max(1, threadCount);
     ctx.stats.hardwareThreads = std::max(1, int(std::thread::hardware_concurrency()));
-    ctx.start = std::chrono::steady_clock::now();
+    ctx.start = started;
     ctx.softTimeLimitMs = softTimeLimitMs;
     ctx.hardTimeLimitMs = std::max(softTimeLimitMs, hardTimeLimitMs);
     ctx.stop = false;
@@ -1178,12 +1181,12 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             const int scoreSwing = std::abs(bestScore - previousScore);
             int extraTime = 0;
             if(bestMoveChanges > 0){
-                extraTime += std::min(ctx.softTimeLimitMs / 3, bestMoveChanges * std::max(20, ctx.softTimeLimitMs / 12));
+                extraTime += std::min(softTimeLimitMs / 3, bestMoveChanges * std::max(20, softTimeLimitMs / 12));
             }
             if(scoreSwing >= 80){
-                extraTime += std::max(25, ctx.softTimeLimitMs / 8);
+                extraTime += std::max(25, softTimeLimitMs / 8);
             }
-            dynamicSoftLimitMs = std::min(ctx.hardTimeLimitMs, ctx.stats.softTimeLimitMs + extraTime);
+            dynamicSoftLimitMs = std::min(ctx.hardTimeLimitMs, softTimeLimitMs + extraTime);
             ctx.softTimeLimitMs = dynamicSoftLimitMs;
             ctx.stats.softTimeLimitMs = ctx.softTimeLimitMs;
         }
@@ -1208,15 +1211,16 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
 }
 
 inline Move searchBestMove(Board& bd, SearchContext& ctx, int maxDepth, int softTimeLimitMs, int hardTimeLimitMs,
-                           int threadCount=1, const std::vector<Move>* rootRestriction = nullptr){
+                           int threadCount=1, const std::vector<Move>* rootRestriction = nullptr,
+                           std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now()){
     constexpr int MinimumParallelSearchMs = 100;
     const int requestedThreads = std::max(1, threadCount);
     if(requestedThreads <= 1 || hardTimeLimitMs < MinimumParallelSearchMs){
-        Move best = searchBestMoveSingle(bd, ctx, maxDepth, softTimeLimitMs, hardTimeLimitMs, rootRestriction);
+        Move best = searchBestMoveSingle(bd, ctx, maxDepth, softTimeLimitMs, hardTimeLimitMs, rootRestriction, started);
         ctx.stats.configuredThreads = requestedThreads;
         return best;
     }
-    return searchBestMoveParallel(bd, ctx, maxDepth, softTimeLimitMs, hardTimeLimitMs, requestedThreads, rootRestriction);
+    return searchBestMoveParallel(bd, ctx, maxDepth, softTimeLimitMs, hardTimeLimitMs, requestedThreads, rootRestriction, started);
 }
 
 inline std::string extractPVFromTT(Board bd, SearchContext& ctx, int maxPlies=12){

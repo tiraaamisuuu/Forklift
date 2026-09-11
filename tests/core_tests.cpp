@@ -653,6 +653,35 @@ void testSearchPlySafety(const Zobrist& zobrist){
            "principal search should return a bounded evaluation at the ply limit");
 }
 
+void testSearchDeadlineAndBudget(const Zobrist& zobrist){
+    Board board;
+    board.setZobrist(&zobrist);
+    expect(board.loadFEN("2N5/4kp2/1p4p1/4P3/p4P2/4P3/2K4p/4r3 b - - 3 58"),
+           "timeout regression position should load");
+    const Board original = board;
+    auto ctx = std::make_unique<SearchContext>();
+    ctx->tt.resizeMB(1);
+    const auto expiredStart = std::chrono::steady_clock::now() - std::chrono::seconds(2);
+    const Move fallback = searchBestMove(board, *ctx, 64, 100, 100, 1, nullptr, expiredStart);
+    MoveList legal;
+    board.genLegalMoves(legal);
+    expect(std::any_of(legal.begin(), legal.end(), [&](const Move& m){ return sameMove(m, fallback); }),
+           "an expired UCI deadline must still return a legal fallback");
+    expect(ctx->stats.nodes == 0 && ctx->stats.qnodes == 0 && ctx->stop,
+           "worker delay must count against the deadline before searching any nodes");
+    expect(samePosition(board, original), "expired search must preserve the board");
+
+    for(int threads : {1, 2}){
+        ctx->tt.resizeMB(1);
+        searchBestMove(board, *ctx, 6, 60'000, 600'000, threads);
+        expect(ctx->stats.depthReached == 6, "budget regression must finish all six iterations");
+        // Even maximal instability cannot grow beyond these original-budget allowances.
+        const int maximumSoft = 60'000 + 60'000 / 3 + 60'000 / 4 + 60'000 / 8;
+        expect(ctx->stats.softTimeLimitMs <= maximumSoft,
+               "iterative deepening must not compound earlier soft-budget extensions");
+    }
+}
+
 void testClockTimeManagement(const Zobrist& zobrist){
     Board board;
     board.setZobrist(&zobrist);
@@ -754,6 +783,7 @@ int main(){
     testContinuationHistoryOrdering(zobrist);
     testStagedMovePicker(zobrist);
     testSearchPlySafety(zobrist);
+    testSearchDeadlineAndBudget(zobrist);
     testClockTimeManagement(zobrist);
     testParallelSearchSafety(zobrist);
 

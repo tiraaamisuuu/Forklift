@@ -226,6 +226,8 @@
       const sprt = match.sprt || {};
       const controls = match.controls || {};
       el("match-state").textContent = match.state || "starting";
+      const gateLabels = {technical_failure: "complete · technical failure", promote: "complete · promotion eligible", reject: "complete · rejected", inconclusive: "complete · inconclusive"};
+      if (gateLabels[match.gateDecision]) el("match-state").textContent = gateLabels[match.gateDecision];
       el("match-opponents").textContent = `${candidate.name || "candidate"} ${shortCommit(candidate.commit)} vs ${baseline.name || "baseline"} ${shortCommit(baseline.commit)}`;
       el("match-games").textContent = number(match.games);
       el("match-total").textContent = ` / ${number(match.totalGames)}`;
@@ -243,12 +245,13 @@
 
       let sprtText = "SPRT collecting";
       if (!sprt.enabled) sprtText = "fixed-length match";
-      else if (sprt.decision === "accepted_h1") sprtText = "H1 accepted · candidate confirmed";
+      else if (sprt.decision === "accepted_h1") sprtText = "H1 accepted · strength threshold passed";
       else if (sprt.decision === "accepted_h0") sprtText = "H0 accepted · candidate not confirmed";
       else if (sprt.llr != null) sprtText = `SPRT LLR ${Number(sprt.llr).toFixed(2)} · bounds ${Number(sprt.lowerBound).toFixed(2)} to ${Number(sprt.upperBound).toFixed(2)}`;
       else if (match.state === "complete") sprtText = "SPRT inconclusive";
       else if (cfg.elo0 != null && cfg.elo1 != null) sprtText = `SPRT collecting · target ${signed(cfg.elo0)} to ${signed(cfg.elo1)} Elo`;
       el("match-sprt").textContent = sprtText;
+      if (match.gateDecision === "technical_failure") el("match-sprt").textContent += " · promotion blocked by technical failure";
 
       const failureTotal = Object.values(match.failures || {}).reduce((sum, value) => sum + Number(value || 0), 0);
       el("match-contract").textContent = `${cfg.timeControl || "—"} · ${number(cfg.concurrency)} concurrent · ${number(cfg.threads)} thread · ${number(cfg.hashMb)} MB hash · seed ${number(cfg.seed)}${failureTotal ? ` · ${number(failureTotal)} technical failure${failureTotal === 1 ? "" : "s"}` : ""}`;

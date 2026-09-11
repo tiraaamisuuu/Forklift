@@ -146,6 +146,21 @@ class CalibrationDashboardTests(unittest.TestCase):
             self.assertEqual(snapshot["sprt"]["llr"], 0.42)
             self.assertEqual(snapshot["candidate"]["commit"], "candidate123")
 
+    def test_completed_strength_pass_retains_technical_gate_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            run = Path(temporary)
+            (run / "match").mkdir()
+            (run / "match" / "result.json").write_text(json.dumps({
+                "completed": True, "sprt": {"enabled": True, "decision": "accepted_h1"},
+                "failures": {"timeForfeits": 1}}))
+            (run / "gate-result.json").write_text(json.dumps({
+                "decision": "technical_failure", "reason": "match contained a technical termination"}))
+            snapshot = dashboard.build_match_snapshot(run)
+            self.assertEqual(snapshot["state"], "complete")
+            self.assertEqual(snapshot["sprt"]["decision"], "accepted_h1")
+            self.assertEqual(snapshot["gateDecision"], "technical_failure")
+            self.assertEqual(snapshot["failures"]["timeForfeits"], 1)
+
     def test_interpolates_completed_rating_bracket(self) -> None:
         estimate = dashboard.local_pool_estimate(
             [

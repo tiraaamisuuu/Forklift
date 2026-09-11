@@ -149,7 +149,7 @@ TimeBudget pickUCITimeBudget(const Board& board, const GoParameters& parameters,
     const bool white = board.stm == Color::White;
     const int sideTime = white ? parameters.wtimeMs : parameters.btimeMs;
     const int sideIncrement = white ? parameters.wincMs : parameters.bincMs;
-    if(sideTime <= 0) return TimeBudget{1000, 1500};
+    if(sideTime < 0) return TimeBudget{1000, 1500};
     return pickClockTimeBudget(board, sideTime, sideIncrement,
                                parameters.movesToGo, moveOverheadMs);
 }
@@ -190,21 +190,22 @@ int runUCILoop(int defaultThreads){
         search.evaluator = &evaluator;
     };
 
-    auto launchSearch = [&](int depth, TimeBudget budget, std::vector<Move> rootRestriction, bool restrictRootMoves){
+    auto launchSearch = [&](int depth, TimeBudget budget, std::vector<Move> rootRestriction, bool restrictRootMoves,
+                            std::chrono::steady_clock::time_point started){
         stopSearch();
         Board root = board;
         const std::vector<u64> rootHistory = positionHistory;
         const int threadsForSearch = searchThreads;
         abortSearch.store(false, std::memory_order_relaxed);
 
-        worker = std::thread([&, root, rootHistory, depth, budget, threadsForSearch,
+        worker = std::thread([&, root, rootHistory, depth, budget, threadsForSearch, started,
                               rootRestriction = std::move(rootRestriction), restrictRootMoves]() mutable {
             search.abortFlag = &abortSearch;
             search.gameHistory = rootHistory;
             search.evaluator = &evaluator;
             const std::vector<Move>* restriction = restrictRootMoves ? &rootRestriction : nullptr;
             Move best = searchBestMove(root, search, depth, budget.softMs, budget.hardMs,
-                                       threadsForSearch, restriction);
+                                       threadsForSearch, restriction, started);
 
             std::vector<Move> legal;
             root.genLegalMoves(legal);
@@ -321,6 +322,7 @@ int runUCILoop(int defaultThreads){
                 std::cout << "info string invalid position command\n" << std::flush;
             }
         } else if(startsWith(lower, "go")){
+            const auto started = std::chrono::steady_clock::now();
             const GoParameters parameters = parseGoCommand(line);
             constexpr int oneDayMs = 24 * 60 * 60 * 1000;
             TimeBudget budget = pickUCITimeBudget(board, parameters, moveOverheadMs);
@@ -337,7 +339,7 @@ int runUCILoop(int defaultThreads){
                 }
             }
             launchSearch(parameters.depth > 0 ? parameters.depth : 64, budget,
-                         std::move(rootRestriction), parameters.restrictRootMoves);
+                         std::move(rootRestriction), parameters.restrictRootMoves, started);
         } else if(lower == "stop"){
             stopSearch();
         } else if(lower == "quit"){
