@@ -67,6 +67,24 @@ py -3 tests/uci_clock_regression.py build-clock-safe/Release/chess-engine-uci.ex
   --output E:/Dev/Forklift-Research/diagnostics/clock-20260911/after-release.json
 ```
 
-Next: a short paired clock-stress diagnostic, followed by a new immutable
-`30+0.3` champion gate with seed 6102 if the diagnostic has no candidate
-technical failure. Promotion still requires a clean passing gate.
+## Fast-clock diagnostic
+
+Committed candidate `8b9bd9a7a7e11368631ee3d0129000774573a448` played the
+previous candidate `e90bfdbd476f5dce3fe744b5a5489dd582c3cffc` for 100 paired
+UHO games at `2+0.02`, one thread, 256 MiB hash, concurrency six, seed 6101.
+Both binaries were built from committed sources using the same MSVC Release
+configuration.
+
+- W-D-L: **53-27-20**, score **66.5%**.
+- Relative Elo: **+119.1 +/- 61.0** in this fast-clock diagnostic only.
+- Zero time forfeits, crashes, illegal moves or disconnects on either side.
+- Full match: `E:\Dev\Forklift-Research\matches\clock-stress-20260911`.
+- All six GitHub CI jobs passed for the candidate, including the new Windows
+  raw UCI clock regression and Windows desktop packaging.
+
+This is preliminary evidence that the revised allocation helps under time
+pressure. It does not establish a +119 Elo gain at longer controls or a new
+absolute rating. The predeclared next step is a new immutable `30+0.3`
+champion gate with seed 6102, maximum 10,000 games and unchanged resources,
+at `E:\Dev\Forklift-Research\matches\champion-gates\staged-picker-clock-safe-20260911`.
+Promotion still requires a clean passing gate.

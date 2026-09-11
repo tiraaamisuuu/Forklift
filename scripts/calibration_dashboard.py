@@ -241,7 +241,8 @@ class MatchController:
                 raise RuntimeError("the match is not running")
             command_line = windows_process_command_line(pid)
             if (
-                str(run_dir).casefold() not in command_line.casefold()
+                str(run_dir).replace("/", "\\").casefold()
+                not in command_line.replace("/", "\\").casefold()
                 or not re.search(r"(?:champion_gate|compare_engines)\.py", command_line)
             ):
                 raise RuntimeError("refusing to stop an unverified process")

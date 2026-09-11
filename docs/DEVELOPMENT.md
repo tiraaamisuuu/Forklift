@@ -6,6 +6,13 @@ after the v1 release.
 
 ## Repository state
 
+Latest search work (2026-09-11): the staged move picker repeatedly passed the
+strength boundary against the frozen champion, but a stack overflow and then
+one time forfeit blocked promotion. Stack recursion is bounded; the next
+candidate also corrects compounding time extensions and UCI deadline handling.
+See [clock investigation and validation](results/2026-09-11-clock-management.md)
+for the evidence and current confirmation plan.
+
 - Canonical development and release branch: `main`
 - `v1.1.0` is tagged and published with the completed Forklift desktop
   overhaul and an independently verified bundled Windows GUI archive.
@@ -97,9 +104,10 @@ includes:
 - time management with configurable move overhead and safe stop checks
 - optional persistent root-parallel workers and a shared concurrent TT
 
-Move ordering still uses a full sort. A lazy selection experiment was slower on
-this engine and was rejected; a future staged picker should avoid rescanning
-and be benchmarked against the present implementation.
+Recursive move ordering now uses a staged picker; the root still uses a full
+sort. The earlier selection-scan experiment was rejected. The staged picker
+has positive match evidence, with formal champion promotion pending a clean
+technical gate as documented above.
 
 ### Evaluation
 
