@@ -7,6 +7,7 @@ import random
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import chess
@@ -27,6 +28,7 @@ from nnue_dataset import (  # noqa: E402
     pack_board,
     read_shard_header,
     sha256_file,
+    write_json_atomic,
 )
 from generate_dataset import (  # noqa: E402
     TeacherComparison,
@@ -52,6 +54,28 @@ from merge_datasets import (  # noqa: E402
 
 
 class NnueDatasetTests(unittest.TestCase):
+    def test_atomic_json_retries_transient_windows_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "progress.json"
+            original = Path.replace
+            attempts = []
+            def replace(source, target):
+                attempts.append(target)
+                if len(attempts) < 3:
+                    raise PermissionError("reader lock")
+                return original(source, target)
+            with mock.patch.object(Path, "replace", replace), mock.patch("nnue_dataset.time.sleep"):
+                write_json_atomic(destination, {"state": "training"})
+            self.assertEqual(len(attempts), 3)
+            self.assertEqual(json.loads(destination.read_text())["state"], "training")
+
+    def test_atomic_json_does_not_hide_persistent_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(Path, "replace", side_effect=PermissionError("locked")) as replace, mock.patch("nnue_dataset.time.sleep"):
+                with self.assertRaises(PermissionError):
+                    write_json_atomic(Path(directory) / "progress.json", {})
+            self.assertEqual(replace.call_count, 6)
+
     def test_packed_features_match_board_features(self) -> None:
         board = chess.Board()
         random_generator = random.Random(20260727)

@@ -840,7 +840,11 @@ def train(args: argparse.Namespace) -> int:
     def update_progress(state: str, **values: object) -> None:
         progress.update(values)
         progress.update(state=state, updatedAt=datetime.now(timezone.utc).isoformat())
-        write_json_atomic(progress_path, progress)
+        try:
+            write_json_atomic(progress_path, progress)
+        except OSError as error:
+            # Telemetry must never abort training; checkpoints remain mandatory writes.
+            print(f"warning: progress update skipped: {error}", flush=True)
 
     update_progress("preparing")
 

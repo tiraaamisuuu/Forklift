@@ -22,9 +22,11 @@ def main():
     parser.add_argument("--cpp-tools", required=True, type=Path)
     parser.add_argument("--epochs", type=int, default=16)
     parser.add_argument("--seed", type=int, default=11)
+    parser.add_argument("--resume-failed", action="store_true",
+                        help="Resume a failed experiment from its last saved epoch")
     args = parser.parse_args()
     run = args.run_dir.resolve()
-    if run.exists() and any(run.iterdir()):
+    if run.exists() and any(run.iterdir()) and not args.resume_failed:
         raise SystemExit("Use a new run directory; existing evidence is preserved.")
     if not args.cpp_tools.is_file():
         raise SystemExit("C++ verification executable is missing")
@@ -57,6 +59,23 @@ def main():
                      {"id": "control", "name": "original features", "state": "queued"}],
     }
     manifest = run / "experiment.json"
+    if args.resume_failed:
+        previous = json.loads(manifest.read_text(encoding="utf-8"))
+        if previous.get("state") != "failed":
+            raise SystemExit("Only a failed experiment can be resumed")
+        if previous.get("contract") != experiment["contract"] or previous.get("data") != inputs:
+            raise SystemExit("Resume settings or dataset differ from the original experiment")
+        if [v.get("id") for v in previous.get("variants", [])] != ["shared", "control"]:
+            raise SystemExit("Unexpected experiment variants")
+        attempt = len(previous.get("recoveries", [])) + 1
+        write_json_atomic(run / f"experiment.failed-{attempt}.json", previous)
+        previous.setdefault("recoveries", []).append({
+            "at": experiment["startedAt"], "commit": experiment["commit"],
+            "reason": previous.get("error"),
+        })
+        previous.update(state="running", pid=os.getpid())
+        previous.pop("error", None)
+        experiment = previous
     write_json_atomic(manifest, experiment)
     # Keep training awake while allowing displays to sleep.
     if os.name == "nt":
@@ -64,8 +83,10 @@ def main():
         ctypes.windll.kernel32.SetThreadExecutionState(0x80000001)
     try:
         for variant in experiment["variants"]:
+            if variant["state"] == "complete":
+                continue
             directory = run / variant["id"]
-            directory.mkdir()
+            directory.mkdir(exist_ok=args.resume_failed)
             output = directory / "model.nnue"
             command = [sys.executable, "-u", str(ROOT / "scripts/nnue/train.py"),
                        "--data", str(dataset / "train.nnuebin"),
@@ -81,10 +102,17 @@ def main():
                        "--cpp-tools", str(args.cpp_tools.resolve())]
             if variant["id"] == "shared":
                 command.append("--feature-factorization")
+            checkpoint = output.with_suffix(".checkpoint.pt")
+            if args.resume_failed and checkpoint.is_file():
+                command.extend(["--resume", str(checkpoint)])
+            variant.pop("exitCode", None)
             variant.update(state="running", command=command)
             write_json_atomic(manifest, experiment)
             print(f"Training {variant['name']}", flush=True)
-            with (directory / "train.log").open("w", encoding="utf-8") as log:
+            with (directory / "train.log").open("a" if args.resume_failed else "w", encoding="utf-8") as log:
+                if args.resume_failed:
+                    log.write("\n--- recovery attempt ---\n")
+                    log.flush()
                 result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
             if result.returncode:
                 variant.update(state="failed", exitCode=result.returncode)

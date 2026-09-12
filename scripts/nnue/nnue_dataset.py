@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import time
 from typing import BinaryIO, Iterable
 
 import chess
@@ -214,7 +215,15 @@ def write_json_atomic(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + ".tmp")
     temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    temporary.replace(path)
+    for attempt in range(6):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError:
+            if attempt == 5:
+                raise
+            # Windows readers/antivirus can briefly deny replacement of an open file.
+            time.sleep(0.02 * 2 ** attempt)
 
 
 def iter_compact_records(paths: Iterable[Path]) -> Iterable[ShardRecord]:

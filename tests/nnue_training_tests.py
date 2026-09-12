@@ -241,6 +241,18 @@ class NnueTrainingTests(unittest.TestCase):
             )
             self.assertEqual(manifest["cppVerification"], None)
 
+            # Even a permanently unavailable progress file must not abort learning/export.
+            import train as trainer
+            original_write = trainer.write_json_atomic
+            def locked_progress(path, value):
+                if path.name.endswith(".progress.json"):
+                    raise PermissionError("dashboard reader lock")
+                return original_write(path, value)
+            arguments[arguments.index("--output") + 1] = str(root / "locked.nnue")
+            with mock.patch.object(sys, "argv", arguments), mock.patch.object(trainer, "write_json_atomic", side_effect=locked_progress), redirect_stdout(io.StringIO()):
+                self.assertEqual(main(), 0)
+            self.assertTrue((root / "locked.nnue").is_file())
+
     def test_validation_error_slices_cover_position_groups(self) -> None:
         model = HalfKpV1(hidden=4)
         with torch.no_grad():

@@ -45,5 +45,15 @@ it does not change the default evaluator or establish a playing-strength gain.
 The previously paused search match remains paused. No automatic promotion.
 
 If interrupted, checkpoints are retained; the trainer supports `--resume` with
-matching configuration. The experiment runner deliberately refuses to overwrite
-a nonempty run directory. Do not relaunch it into an existing evidence directory.
+matching configuration. The experiment runner refuses a nonempty run directory
+unless `--resume-failed` is explicitly supplied. Recovery validates settings/data,
+archives the failed manifest, appends logs and resumes the last saved epoch.
+
+## Recovery
+
+The initial run completed epoch 1, then failed in epoch 2 with Windows error 5
+replacing `model.progress.json`. This was a telemetry write failure, not a CUDA
+or training-loss failure. JSON replacement now retries transient permission errors;
+progress-only write errors are non-fatal, while checkpoint/evidence failures still
+propagate. Recovery repeats unfinished epoch 2 from the saved epoch-1 checkpoint.
+The recovery revision is recorded separately from the original experiment commit.
