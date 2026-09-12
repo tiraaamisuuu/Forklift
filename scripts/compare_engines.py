@@ -786,6 +786,7 @@ def main() -> int:
     if output.exists() and any(output.iterdir()):
         raise RuntimeError(f"Output directory must be empty: {output}")
     output.mkdir(parents=True, exist_ok=True)
+    (output / "match.pid").write_text(str(os.getpid()), encoding="ascii")
     pgn = output / "games.pgn"
     log = output / "match.log"
     manifest_path = output / "manifest.json"
