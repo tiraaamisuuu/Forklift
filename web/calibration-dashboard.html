@@ -134,7 +134,8 @@
 
     <section class="match-panel" id="match-panel" aria-label="Active search experiment" hidden>
       <div class="spread"><span class="caption">active experiment</span><span class="active" id="match-state">starting</span></div>
-      <h1 class="match-title">retained search confirmation</h1>
+      <h1 class="match-title" id="match-title">retained search confirmation</h1>
+      <div class="detail" id="match-series"></div>
       <div class="detail" id="match-opponents">loading committed revisions</div>
       <div class="match-grid">
         <div><div class="caption">games</div><div class="match-value"><span id="match-games">—</span><span class="target" id="match-total"> / —</span></div></div>
@@ -351,6 +352,10 @@
         const resources = data.resources || {};
         const match = data.match || null;
         renderMatch(match);
+        if (data.matchSeries) {
+          el("match-title").textContent = "NNUE strength screens";
+          el("match-series").textContent = (data.matchSeries.stages || []).map(s => `${s.name}: ${s.state}`).join(" · ") + (data.matchSeries.error ? ` · ${data.matchSeries.error}` : "");
+        }
         renderTraining(data.training);
         const activeMatch = match && match.state === "running";
         const stopped = match
@@ -358,7 +363,7 @@
           : !data.running && data.state !== "complete" && data.state !== "starting";
         el("status-dot").classList.toggle("stopped", stopped);
         el("status").textContent = activeMatch ? "search test running" : (match?.state || data.state);
-        if (data.training) {
+        if (data.training && !data.matchSeries) {
           el("status").textContent = `NNUE · ${data.training.state}`;
           el("status-dot").classList.toggle("stopped", ["failed", "stopped"].includes(data.training.state));
         }

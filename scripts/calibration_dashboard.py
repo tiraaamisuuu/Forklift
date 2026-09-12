@@ -63,6 +63,8 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--training-run-dir", type=Path,
                         help="NNUE experiment directory with live learning progress")
+    parser.add_argument("--match-series-dir", type=Path,
+                        help="NNUE strength-screen series; automatically follow the active match")
     parser.add_argument("--port", type=int, default=8766)
     parser.add_argument(
         "--enable-match-controls",
@@ -1042,12 +1044,17 @@ def make_handler(
     match_run_dir: Path | None = None,
     match_controller: MatchController | None = None,
     training_run_dir: Path | None = None,
+    match_series_dir: Path | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     def snapshot() -> dict[str, object]:
         current_match_dir = (
             match_controller.run_dir if match_controller else match_run_dir
         )
+        series = read_json(match_series_dir / "series.json") if match_series_dir else {}
+        if series.get("current") in {"network", "classical"}:
+            current_match_dir = match_series_dir / series["current"]
         value = build_snapshot(run_dir, history_run_dirs, current_match_dir)
+        value["matchSeries"] = series or None
         if training_run_dir:
             value["training"] = build_training_snapshot(training_run_dir)
         match = value.get("match")
@@ -1142,7 +1149,7 @@ def main() -> int:
     threading.Thread(target=keep_system_awake, args=(run_dir,), daemon=True).start()
     server = ThreadingHTTPServer(
         (args.host, args.port),
-        make_handler(run_dir, history_run_dirs, match_run_dir, match_controller, args.training_run_dir),
+        make_handler(run_dir, history_run_dirs, match_run_dir, match_controller, args.training_run_dir, args.match_series_dir),
     )
     print(f"Calibration dashboard: http://{args.host}:{args.port}", flush=True)
     server.serve_forever()

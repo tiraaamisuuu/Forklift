@@ -57,3 +57,24 @@ or training-loss failure. JSON replacement now retries transient permission erro
 progress-only write errors are non-fatal, while checkpoint/evidence failures still
 propagate. Recovery repeats unfinished epoch 2 from the saved epoch-1 checkpoint.
 The recovery revision is recorded separately from the original experiment commit.
+
+## Offline result and playing-strength screen
+
+Both exports passed exact C++ checks. Shared features reduced held-out loss from
+0.010551882 to 0.009687731 (8.19%); MAE fell from 200.292 to 193.781 cp. Shared
+features peaked at epoch 3 and stopped at epoch 8; control stopped at epoch 9.
+This is one seed, with a checkpoint recovery, not a playing-strength conclusion.
+
+The next predeclared screen uses `scripts/nnue/run_strength_screen.py`: 400 games
+shared versus control, followed by 400 shared versus classical; 30+0.3, eight
+concurrent games, one thread and 128 MiB hash per engine, paired random UHO
+openings, seeds 20260912 and 20260913. Both sides use the same clock-safe Release
+UCI executable, with its checksum and configured options recorded. Neural sides
+use pure NNUE (default weight 100); the classical side explicitly disables NNUE.
+Fixed-length screens, not SPRT or automatic promotion. Technical failures block
+the next stage for investigation. GPU training is finished; matches use CPU.
+
+Evidence: `E:\Dev\Forklift-Research\matches\nnue-v2-strength-20260912`.
+The dashboard follows `series.json` through both matches and retains each result.
+The separate four-game-per-stage `nnue-v2-screen-smoke-20260912` checks only the
+workflow and is excluded from strength evidence.
