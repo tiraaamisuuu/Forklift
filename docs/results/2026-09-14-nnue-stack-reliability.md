@@ -56,6 +56,12 @@ its last match finished. The coordinator marks that stage failed, not running.
 - Failed-game replay: 72/72 five-second searches passed on Release, using one
   and two threads across three rounds of its 12 white-to-move positions. Another
   24/24 two-second searches passed under AddressSanitizer.
+- The identical 15-second replay that crashed both old-binary workers completed
+  **24/24 searches** on the repaired Release binary, with no illegal moves or
+  process deaths. Evidence: `nnue-stack-old-replay-20260914.json` versus
+  `nnue-stack-long-replay-20260914.json` under the same matches directory.
+- 79 Python tests, the real-engine web smoke, and eight quick paired games passed.
+  Quick games are workflow checks and are excluded from strength evidence.
 
 Replay evidence is checksummed JSON under
 `E:\Dev\Forklift-Research\matches\nnue-stack-{replay,asan-replay}-20260914.json`.
