@@ -18,6 +18,8 @@
     }
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
+    body.focus-match .archive { display: none; }
+    body.focus-match .match-panel { margin-top: 64px; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -153,7 +155,7 @@
       </div>
     </section>
 
-    <section class="hero" aria-live="polite">
+    <section class="hero archive" aria-live="polite">
       <div class="kicker" id="kicker">calibration archive · paired games completed</div>
       <div class="count"><span id="completed">—</span><span class="target" id="total"> / —</span></div>
       <div class="eta">estimated time remaining&nbsp;&nbsp;<strong id="eta">calculating</strong></div>
@@ -161,13 +163,13 @@
       <div class="spread progress-caption"><span id="percent">—</span><span id="current">waiting for first rung</span></div>
     </section>
 
-    <section class="panel" aria-label="Current rating estimate">
+    <section class="panel archive" aria-label="Current rating estimate">
       <div class="caption">local Stockfish pool estimate</div>
       <div class="estimate-value" id="estimate">collecting data</div>
       <div class="estimate-note">Not FIDE, Chess.com or universal Elo. The estimate becomes meaningful only after the score crosses 50% between completed rungs.</div>
     </section>
 
-    <section class="panel" aria-label="Calibration ladder">
+    <section class="panel archive" aria-label="Calibration ladder">
       <div>ladder</div>
       <table>
         <thead><tr><th>Stockfish</th><th>state</th><th>games</th><th>W–D–L</th><th>score</th><th>anchored</th></tr></thead>
@@ -175,7 +177,7 @@
       </table>
     </section>
 
-    <section class="panel" id="integrity-panel" aria-label="Result integrity" hidden>
+    <section class="panel archive" id="integrity-panel" aria-label="Result integrity" hidden>
       <div>integrity</div>
       <div class="log" id="integrity"></div>
     </section>
@@ -196,7 +198,7 @@
       </div>
     </section>
 
-    <section class="panel" aria-label="Recent activity">
+    <section class="panel archive" aria-label="Recent activity">
       <div>recent activity</div>
       <div class="log" id="recent">waiting for the runner</div>
       <div class="log error" id="errors"></div>
@@ -351,12 +353,16 @@
         const data = await response.json();
         const resources = data.resources || {};
         const match = data.match || null;
+        document.body.classList.toggle("focus-match", Boolean(match));
         renderMatch(match);
         if (data.matchSeries) {
-          el("match-title").textContent = "NNUE strength screens";
-          el("match-series").textContent = (data.matchSeries.stages || []).map(s => `${s.name}: ${s.state}`).join(" · ") + (data.matchSeries.error ? ` · ${data.matchSeries.error}` : "");
+          const stages = data.matchSeries.stages || [];
+          const index = stages.findIndex(s => s.id === data.matchSeries.current);
+          el("match-title").textContent = "NNUE vs classical";
+          el("match-series").textContent = data.matchSeries.error || `stage ${index + 1} of ${stages.length}${index + 1 < stages.length ? " · longer time control next" : " · longer time control"}`;
+          el("match-series").classList.toggle("error", Boolean(data.matchSeries.error));
         }
-        renderTraining(data.training);
+        renderTraining(match ? null : data.training);
         const activeMatch = match && match.state === "running";
         const stopped = match
           ? !match.running && match.state !== "complete" && match.state !== "starting"
@@ -409,12 +415,11 @@
         const recent = match?.recent?.length ? match.recent : (data.recent || []);
         el("recent").innerHTML = recent.map(line => `<div>${text(line)}</div>`).join("") || "waiting for the runner";
         el("errors").innerHTML = (data.errors || []).map(line => `<div>${text(line)}</div>`).join("");
-        const cfg = activeMatch ? (match.configuration || {}) : (data.configuration || {});
-        const workers = Number(cfg.concurrency) * 2 * Number(cfg.threads);
-        el("cpu-detail").textContent = Number.isFinite(workers) && workers > 0
-          ? `${number(cfg.concurrency)} simultaneous games · ${number(workers)} search workers`
+        const cfg = match ? (match.configuration || {}) : (data.configuration || {});
+        el("cpu-detail").textContent = Number(cfg.concurrency) > 0
+          ? `${number(cfg.concurrency)} concurrent games · ${number(cfg.threads)} thread per engine`
           : "waiting for match contract";
-        el("contract").textContent = `${cfg.timeControl || "—"} · ${cfg.concurrency || "—"} concurrent games · refreshes every 2 seconds`;
+        el("contract").textContent = "refreshes every 2 seconds";
         el("updated").textContent = `updated ${new Date(data.updatedAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"})}`;
       } catch (error) {
         el("status-dot").classList.add("stopped");
