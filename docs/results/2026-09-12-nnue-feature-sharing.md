@@ -78,3 +78,29 @@ Evidence: `E:\Dev\Forklift-Research\matches\nnue-v2-strength-20260912`.
 The dashboard follows `series.json` through both matches and retains each result.
 The separate four-game-per-stage `nnue-v2-screen-smoke-20260912` checks only the
 workflow and is excluded from strength evidence.
+
+### Completed screens
+
+Both full screens completed with zero crashes, disconnects, illegal moves or
+time forfeits. The shared network scored 186 wins / 122 draws / 92 losses against
+the control (61.75%, reported relative Elo +83.2 ±28.9) and 202 / 112 / 86 against
+classical (64.5%, +103.7 ±29.7). Error bars are Cute Chess's reported estimates,
+not an absolute rating or proof of an identical gain at other time controls.
+Artifacts and network hashes remain in the directories above.
+
+### Independent-seed confirmation contract (2026-09-13)
+
+Freeze the same network and executable. Run 800 games versus classical at
+30+0.3 (seed 202609130), then 400 at 60+0.6 (seed 202609131), one thread,
+128 MiB hash, eight concurrent games, pure NNUE weight 100. Same UHO opening
+pool, newly randomized paired selection: this is not a new opening distribution.
+Keep these results separate from the exploratory screens. Both matches must
+finish with no technical failures; require the reported relative-Elo lower bound
+above zero in both before considering default integration. Otherwise investigate
+or call the evidence inconclusive; do not keep adding games until it passes.
+
+Use `run_strength_screen.py --confirm-classical` with the same training directory
+and engine, and fresh evidence directory
+`E:\Dev\Forklift-Research\matches\nnue-v2-confirmation-20260913`.
+Even a pass does not automatically publish a release: packaging, default/fallback
+behavior, license/provenance and GUI/UCI integration still need verification.

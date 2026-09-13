@@ -6,6 +6,12 @@ after the v1 release.
 
 ## Repository state
 
+NNUE update (2026-09-13): shared piece-square training beat the matched original
+NNUE and classical evaluator in two clean 400-game screens (+83 and +104 reported
+relative Elo respectively at 30+0.3). A fresh-seed classical replication and
+longer-control confirmation are next; classical remains the default pending
+confirmation and integration checks. See [NNUE feature-sharing evidence](results/2026-09-12-nnue-feature-sharing.md).
+
 Latest search work (2026-09-11): the staged move picker repeatedly passed the
 strength boundary against the frozen champion, but a stack overflow and then
 one time forfeit blocked promotion. Stack recursion is bounded; the next
@@ -17,8 +23,9 @@ for the evidence and current confirmation plan.
 - `v1.1.0` is tagged and published with the completed Forklift desktop
   overhaul and an independently verified bundled Windows GUI archive.
 - Classical evaluation remains the default.
-- NNUE is optional and fully wired. The completed five-million-position
-  baseline and follow-up WDL/hybrid candidates did not earn promotion.
+- NNUE is optional and fully wired. Earlier five-million-position baseline and
+  WDL/hybrid candidates did not earn promotion; the new shared-feature candidate
+  has passed initial strength screens but is not yet the default.
 - Generated builds, datasets, downloaded engines, networks, match logs, and
   environments are intentionally ignored by Git.
 - The release gates below pass as of 2026-08-26 on the current mainline.

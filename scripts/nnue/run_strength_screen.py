@@ -12,12 +12,22 @@ from nnue_dataset import sha256_file, write_json_atomic
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def screen_plan(confirm: bool):
+    if confirm:
+        return [("network", "NNUE vs classical confirmation", 800, "30+0.3", 202609130, False),
+                ("classical", "NNUE vs classical longer control", 400, "60+0.6", 202609131, False)]
+    return [("network", "shared vs original NNUE", 400, "30+0.3", 20260912, True),
+            ("classical", "shared NNUE vs classical", 400, "30+0.3", 20260913, False)]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--training-dir", type=Path, required=True)
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument("--confirm-classical", action="store_true",
+                        help="800-game replication and 400-game longer-control classical test")
     args = parser.parse_args()
     run = args.run_dir.resolve()
     if run.exists() and any(run.iterdir()):
@@ -34,25 +44,27 @@ def main():
         if report["cppVerification"]["exactMatch"] is not True:
             raise SystemExit("Network did not pass C++ export verification")
         networks[variant["id"]] = str(path)
+    plan = screen_plan(args.confirm_classical)
     state = {"state": "running", "current": "network", "startedAt": datetime.now(timezone.utc).isoformat(),
              "engineSha256": sha256_file(args.engine), "training": str(args.training_dir.resolve()),
-             "stages": [{"id": "network", "name": "shared vs original NNUE", "state": "queued"},
-                        {"id": "classical", "name": "shared NNUE vs classical", "state": "queued"}]}
+             "stages": [{"id": item[0], "name": item[1], "state": "queued"} for item in plan]}
     run.mkdir(parents=True, exist_ok=True)
     status = run / "series.json"
     try:
         for index, stage in enumerate(state["stages"]):
+            _, _, games, tc, seed, neural_baseline = plan[index]
             state["current"] = stage["id"]
             stage["state"] = "running"
             command = [sys.executable, "-u", str(ROOT / "scripts/compare_engines.py"),
                        "--candidate-exe", str(args.engine.resolve()), "--baseline-exe", str(args.engine.resolve()),
-                       "--candidate-name", "NNUE-shared", "--baseline-name", "NNUE-original" if index == 0 else "Classical",
+                       "--candidate-name", "NNUE-shared", "--baseline-name", "NNUE-original" if neural_baseline else "Classical",
                        "--candidate-eval-file", networks["shared"],
-                       "--games", "400", "--tc", "30+0.3", "--threads", "1", "--hash", "128",
-                       "--concurrency", "8", "--seed", str(20260912 + index),
+                       "--candidate-option", "NNUE Weight=100",
+                       "--games", str(games), "--tc", tc, "--threads", "1", "--hash", "128",
+                       "--concurrency", "8", "--seed", str(seed),
                        "--output-dir", str(run / stage["id"])]
-            if index == 0:
-                command += ["--baseline-eval-file", networks["control"]]
+            if neural_baseline:
+                command += ["--baseline-eval-file", networks["control"], "--baseline-option", "NNUE Weight=100"]
             else:
                 command += ["--baseline-option", "Use NNUE=false"]
             if args.quick:

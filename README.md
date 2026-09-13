@@ -108,6 +108,12 @@ Enable with: ![Measured engine development](docs/assets/strength-development.svg
 
 ## NNUE
 
+The new shared-feature candidate won two clean 400-game screens: approximately
++83 Elo versus the original NNUE and +104 versus classical at 30+0.3. These are
+local relative estimates, not an absolute rating. Independent-seed and longer
+time-control confirmation precede any default change.
+[Experiment and results](docs/results/2026-09-12-nnue-feature-sharing.md).
+
 The custom `HalfKP-v1` pipeline turns licensed game archives into deterministic,
 game-disjoint datasets, labels sampled positions with Stockfish, trains on
 CUDA, quantizes the network, and verifies exact C++ predictions before match
