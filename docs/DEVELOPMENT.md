@@ -6,6 +6,12 @@ after the v1 release.
 
 ## Repository state
 
+Reliability update (2026-09-14): Windows confirmed stack overflow in the NNUE
+confirmation. Recursive move buffers now use reusable heap frames; Release,
+ASAN and failed-game replays pass. Fresh overnight confirmation is required;
+the +102 Elo failed-gate result is not promotion evidence. See
+[stack investigation and repair](results/2026-09-14-nnue-stack-reliability.md).
+
 NNUE update (2026-09-13): shared piece-square training beat the matched original
 NNUE and classical evaluator in two clean 400-game screens (+83 and +104 reported
 relative Elo respectively at 30+0.3). A fresh-seed classical replication and

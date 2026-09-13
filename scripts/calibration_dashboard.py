@@ -512,6 +512,17 @@ def parse_live_sprt(log_text: str, enabled: bool) -> dict[str, object]:
     }
 
 
+def live_failures(log_text: str) -> dict[str, int]:
+    counts = dict(timeForfeits=0, crashes=0, illegalMoves=0, disconnects=0)
+    for reason in re.findall(r"^Finished game \d+ .*?:\s+(?:1-0|0-1|1/2-1/2|\*)\s+\{(.+)\}\s*$", log_text, re.MULTILINE):
+        reason = reason.casefold()
+        counts["timeForfeits"] += int("time" in reason)
+        counts["crashes"] += int("crash" in reason or "exited" in reason)
+        counts["illegalMoves"] += int("illegal" in reason)
+        counts["disconnects"] += int("disconnect" in reason or "connection" in reason)
+    return counts
+
+
 def build_match_snapshot(run_dir: Path) -> dict[str, object]:
     match_dir = run_dir / "match"
     if not match_dir.is_dir():
@@ -605,7 +616,7 @@ def build_match_snapshot(run_dir: Path) -> dict[str, object]:
     if relative_elo is None and score_fraction is not None and 0.0 < score_fraction < 1.0:
         relative_elo = 400.0 * math.log10(score_fraction / (1.0 - score_fraction))
         relative_elo_estimated = True
-    failures = result.get("failures")
+    failures = result.get("failures") if completed else live_failures(log_text)
     failures = failures if isinstance(failures, dict) else {}
     recent = [line for line in log_text.splitlines() if line.strip()][-6:]
     return {

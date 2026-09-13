@@ -8,6 +8,13 @@ from run_strength_screen import screen_plan
 
 
 class StrengthPlanTests(unittest.TestCase):
+    def test_overnight_is_new_evidence_with_longer_control(self):
+        plan = screen_plan(False, True)
+        self.assertEqual([p[2] for p in plan], [800, 1200])
+        self.assertEqual(plan[1][3], "90+0.9")
+        previous = {p[4] for p in screen_plan(False) + screen_plan(True)}
+        self.assertTrue(previous.isdisjoint(p[4] for p in plan))
+        self.assertFalse(any(p[5] for p in plan))
     def test_confirmation_changes_seeds_and_tests_classical_only(self):
         original = screen_plan(False)
         confirmation = screen_plan(True)

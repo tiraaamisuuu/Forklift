@@ -12,7 +12,10 @@ from nnue_dataset import sha256_file, write_json_atomic
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def screen_plan(confirm: bool):
+def screen_plan(confirm: bool, overnight: bool = False):
+    if overnight:
+        return [("network", "repaired NNUE vs classical confirmation", 800, "30+0.3", 202609140, False),
+                ("classical", "repaired NNUE vs classical long control", 1200, "90+0.9", 202609141, False)]
     if confirm:
         return [("network", "NNUE vs classical confirmation", 800, "30+0.3", 202609130, False),
                 ("classical", "NNUE vs classical longer control", 400, "60+0.6", 202609131, False)]
@@ -28,6 +31,8 @@ def main():
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--confirm-classical", action="store_true",
                         help="800-game replication and 400-game longer-control classical test")
+    parser.add_argument("--overnight", action="store_true",
+                        help="Fresh repaired-engine confirmation, then 1200 longer games; no automatic promotion")
     args = parser.parse_args()
     run = args.run_dir.resolve()
     if run.exists() and any(run.iterdir()):
@@ -44,7 +49,7 @@ def main():
         if report["cppVerification"]["exactMatch"] is not True:
             raise SystemExit("Network did not pass C++ export verification")
         networks[variant["id"]] = str(path)
-    plan = screen_plan(args.confirm_classical)
+    plan = screen_plan(args.confirm_classical, args.overnight)
     state = {"state": "running", "current": "network", "startedAt": datetime.now(timezone.utc).isoformat(),
              "engineSha256": sha256_file(args.engine), "training": str(args.training_dir.resolve()),
              "stages": [{"id": item[0], "name": item[1], "state": "queued"} for item in plan]}
@@ -61,7 +66,7 @@ def main():
                        "--candidate-eval-file", networks["shared"],
                        "--candidate-option", "NNUE Weight=100",
                        "--games", str(games), "--tc", tc, "--threads", "1", "--hash", "128",
-                       "--concurrency", "8", "--seed", str(seed),
+                       "--concurrency", "6" if args.overnight else "8", "--seed", str(seed),
                        "--output-dir", str(run / stage["id"])]
             if neural_baseline:
                 command += ["--baseline-eval-file", networks["control"], "--baseline-option", "NNUE Weight=100"]
@@ -84,6 +89,9 @@ def main():
         state["state"] = "complete"
     except (Exception, KeyboardInterrupt) as error:
         state.update(state="failed", error=str(error))
+        for stage in state["stages"]:
+            if stage["state"] == "running":
+                stage["state"] = "failed"
         raise
     finally:
         write_json_atomic(status, state)

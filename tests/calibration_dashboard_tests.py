@@ -21,6 +21,20 @@ SPEC.loader.exec_module(dashboard)
 
 
 class CalibrationDashboardTests(unittest.TestCase):
+    def test_live_failure_counts_ignore_summary_duplicates(self):
+        log = 'Finished game 97 (NNUE vs Classical): 0-1 {White disconnects}\n  "Loss: White disconnects": 1\nFinished game 98 (A vs B): 1-0 {Black loses on time}\n'
+        failures = dashboard.live_failures(log)
+        self.assertEqual(failures["disconnects"], 1)
+        self.assertEqual(failures["timeForfeits"], 1)
+        self.assertEqual(failures["crashes"], 0)
+
+    def test_unfinished_match_exposes_failures_without_result_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "manifest.json").write_text('{"configuration": {"games": 800}}')
+            (root / "match.log").write_text('Finished game 97 (NNUE vs Classical): 0-1 {White disconnects}\n')
+            result = dashboard.build_match_snapshot(root)
+            self.assertEqual(result["failures"]["disconnects"], 1)
     def test_training_snapshot_preserves_completed_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

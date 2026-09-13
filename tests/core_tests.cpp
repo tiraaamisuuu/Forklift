@@ -602,6 +602,25 @@ void testStagedMovePicker(const Zobrist& zobrist){
 }
 
 void testSearchPlySafety(const Zobrist& zobrist){
+    static_assert(sizeof(StagedMovePicker) < 128,
+                  "recursive move picker must not embed large stack arrays");
+    SearchContext scratchContext;
+    {
+        SearchScratchScope parent(scratchContext);
+        parent.frame().lists[0].push_back(Move{});
+        auto* original = &parent.frame();
+        {
+            SearchScratchScope samePlyChild(scratchContext);
+            expect(&samePlyChild.frame() != original, "same-ply recursion needs distinct scratch storage");
+            expect(original->lists[0].size() == 1, "pool growth must preserve parent buffers");
+        }
+        expect(scratchContext.activeScratch == 1, "scratch scopes must release on return");
+    }
+    expect(scratchContext.activeScratch == 0, "all search scratch scopes must unwind");
+    const auto allocated = scratchContext.scratch.size();
+    { SearchScratchScope reuse(scratchContext);
+      expect(reuse.frame().lists[0].empty(), "reused scratch lists must be cleared"); }
+    expect(scratchContext.scratch.size() == allocated, "scratch storage must be reused");
     Board checkedRepetition;
     checkedRepetition.setZobrist(&zobrist);
     expect(checkedRepetition.loadFEN("4k3/8/8/8/8/8/4R3/4K3 b - - 10 1"),

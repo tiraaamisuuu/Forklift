@@ -363,6 +363,10 @@
           : !data.running && data.state !== "complete" && data.state !== "starting";
         el("status-dot").classList.toggle("stopped", stopped);
         el("status").textContent = activeMatch ? "search test running" : (match?.state || data.state);
+        if (data.matchSeries?.state === "failed") {
+          el("status").textContent = "experiment failed";
+          el("status-dot").classList.add("stopped");
+        }
         if (data.training && !data.matchSeries) {
           el("status").textContent = `NNUE · ${data.training.state}`;
           el("status-dot").classList.toggle("stopped", ["failed", "stopped"].includes(data.training.state));

@@ -20,6 +20,16 @@ struct SearchStats {
     int hardwareThreads=1;
 };
 
+enum class MoveStage : u8;
+
+// Reused heap storage, indexed by active call nesting (not chess ply: IID and
+// null verification can re-enter at the same ply). Pointers stay stable on growth.
+struct SearchScratch {
+    std::array<MoveList, 3> lists;
+    std::array<int, 320> scores{};
+    std::array<MoveStage, 320> stages{};
+};
+
 struct SearchContext {
     static constexpr int MaxSearchPly = 127;
     static constexpr size_t NnueStackSize = 129;
@@ -45,6 +55,27 @@ struct SearchContext {
     int staticEvalByPly[128]{};
     std::vector<u64> gameHistory; // position hashes from actual game (includes current root)
     std::vector<u64> repetition;
+    std::vector<std::unique_ptr<SearchScratch>> scratch;
+    size_t activeScratch=0;
+};
+
+class SearchScratchScope {
+public:
+    explicit SearchScratchScope(SearchContext& context) : context_(context){
+        const size_t index = context_.activeScratch;
+        if(index == context_.scratch.size())
+            context_.scratch.push_back(std::make_unique<SearchScratch>());
+        frame_ = context_.scratch[index].get();
+        for(auto& list : frame_->lists) list.clear();
+        context_.activeScratch++;
+    }
+    ~SearchScratchScope(){ context_.activeScratch--; }
+    SearchScratchScope(const SearchScratchScope&) = delete;
+    SearchScratchScope& operator=(const SearchScratchScope&) = delete;
+    SearchScratch& frame(){ return *frame_; }
+private:
+    SearchContext& context_;
+    SearchScratch* frame_;
 };
 
 inline TranspositionTable& searchTT(SearchContext& context){
@@ -241,7 +272,7 @@ class StagedMovePicker {
 public:
     StagedMovePicker(const Board& board, SearchContext& context, MoveList& moves,
                      const Move& ttMove, int ply, const Move& previousMove)
-        : moves_(moves){
+        : scratch_(context), moves_(moves), scores_(scratch_.frame().scores), stages_(scratch_.frame().stages){
         const int side = board.stm == Color::White ? 0 : 1;
         const Move counter = previousMove.from < 64 && previousMove.to < 64
             ? context.countermove[side][previousMove.from][previousMove.to]
@@ -295,9 +326,10 @@ public:
     }
 
 private:
+    SearchScratchScope scratch_;
     MoveList& moves_;
-    std::array<int, 320> scores_{};
-    std::array<MoveStage, 320> stages_{};
+    std::array<int, 320>& scores_;
+    std::array<MoveStage, 320>& stages_;
     size_t nextIndex_=0;
     MoveStage stage_=MoveStage::Transposition;
 };
@@ -402,6 +434,7 @@ inline bool isThreefoldRepetition(const Board& bd, const SearchContext& ctx){
 
 inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int ply){
     if(timeUp(ctx)) return 0;
+    SearchScratchScope scratch(ctx);
     ctx.stats.qnodes++;
 
     const bool inCheck = bd.inCheck(bd.stm);
@@ -409,7 +442,7 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
     if(ruleDraw){
         // A checkmated position is terminal before a draw can be claimed.
         if(inCheck){
-            MoveList evasions;
+            auto& evasions = scratch.frame().lists[0];
             bd.genLegalMoves(evasions);
             if(evasions.empty()) return -MATE + ply;
         }
@@ -422,7 +455,7 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
     // fixed per-ply state arrays and the process stack.
     if(ply >= SearchContext::MaxSearchPly){
         if(inCheck){
-            MoveList evasions;
+            auto& evasions = scratch.frame().lists[0];
             bd.genLegalMoves(evasions);
             if(evasions.empty()) return -MATE + ply;
             return 0;
@@ -435,7 +468,7 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
     if(alpha >= beta) return alpha;
 
     if(inCheck){
-        MoveList evasions;
+        auto& evasions = scratch.frame().lists[0];
         bd.genLegalMoves(evasions);
         if(evasions.empty()) return -MATE + ply;
 
@@ -460,10 +493,10 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
     if(stand >= beta) return stand;
     if(stand > alpha) alpha = stand;
 
-    MoveList pseudo;
+    auto& pseudo = scratch.frame().lists[0];
     bd.genPseudoMoves(pseudo);
 
-    MoveList moves;
+    auto& moves = scratch.frame().lists[1];
     moves.reserve(pseudo.size());
     for(const Move& m : pseudo){
         if(!(m.isCapture || m.isEnPassant || m.promo != PieceType::None)) continue;
@@ -513,12 +546,13 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
 
 inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta, int ply, const Move& prevMove, bool allowNullMove){
     if(timeUp(ctx)) return 0;
+    SearchScratchScope scratch(ctx);
     ctx.stats.nodes++;
 
     if(ply >= SearchContext::MaxSearchPly){
         const bool inCheck = bd.inCheck(bd.stm);
         if(inCheck){
-            MoveList evasions;
+            auto& evasions = scratch.frame().lists[0];
             bd.genLegalMoves(evasions);
             if(evasions.empty()) return -MATE + ply;
             return 0;
@@ -540,7 +574,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
     if(ruleDraw){
         // Checkmate ends the game before a draw claim can be made.
         if(bd.inCheck(bd.stm)){
-            MoveList evasions;
+            auto& evasions = scratch.frame().lists[0];
             bd.genLegalMoves(evasions);
             if(evasions.empty()) return -MATE + ply;
         }
@@ -635,7 +669,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
         }
     }
 
-    MoveList moves;
+    auto& moves = scratch.frame().lists[0];
     bd.genLegalMoves(moves);
 
     if(moves.empty()){
@@ -654,8 +688,8 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
 
     int originalAlpha = alpha;
     const int side = (bd.stm==Color::White)?0:1;
-    MoveList quietTried;
-    MoveList tacticalTried;
+    auto& quietTried = scratch.frame().lists[1];
+    auto& tacticalTried = scratch.frame().lists[2];
     quietTried.reserve(moves.size());
     tacticalTried.reserve(moves.size());
 
