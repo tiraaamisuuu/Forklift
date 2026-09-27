@@ -87,6 +87,55 @@ class CompareEnginesTests(unittest.TestCase):
             ],
         )
 
+    def test_configuration_probe_requires_explicit_forklift_nnue_load(self) -> None:
+        network = Path("approved.nnue").resolve()
+        output = "\n".join(
+            [
+                "id name Forklift v1.1.0",
+                "uciok",
+                f"info string NNUE loaded: {network}",
+                "readyok",
+            ]
+        )
+
+        report = compare_engines.classify_configuration_probe(
+            output, 0, network
+        )
+
+        self.assertTrue(report["successful"])
+        self.assertTrue(report["nnueConfirmed"])
+
+    def test_configuration_probe_rejects_silent_nnue_fallback(self) -> None:
+        report = compare_engines.classify_configuration_probe(
+            "uciok\nreadyok\n", 0, Path("approved.nnue").resolve()
+        )
+
+        self.assertFalse(report["successful"])
+        self.assertFalse(report["nnueConfirmed"])
+
+    def test_configuration_probe_rejects_reported_load_error(self) -> None:
+        output = "\n".join(
+            [
+                "uciok",
+                "info string NNUE load failed: checksum mismatch",
+                "info string Use NNUE requires a valid EvalFile",
+                "readyok",
+            ]
+        )
+
+        report = compare_engines.classify_configuration_probe(output, 0)
+
+        self.assertFalse(report["successful"])
+        self.assertEqual(len(report["errors"]), 2)
+
+    def test_generic_engine_probe_needs_protocol_success_not_custom_message(self) -> None:
+        report = compare_engines.classify_configuration_probe(
+            "uciok\nreadyok\n", 0
+        )
+
+        self.assertTrue(report["successful"])
+        self.assertFalse(report["nnueConfirmationRequired"])
+
     def test_rejects_option_outside_discovered_bounds(self) -> None:
         inspection = {
             "options": [

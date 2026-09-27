@@ -258,6 +258,12 @@ failure. `--quick` runs a four-game workflow smoke and can only produce
 Every gate preserves its immutable manifest, underlying match manifest, PGN,
 logs, strict JSON result, and a Markdown report. An interrupted directory is
 never overwritten or silently resumed; preserve it and use a new directory.
+Before starting Cute Chess, the lower-level runner now applies every configured
+UCI option in a disposable engine process and requires a clean `uciok`/`readyok`
+round trip. Reported load or option errors abort the run. Forklift NNUE matches
+additionally require the engine's explicit load confirmation for the resolved
+network path, preventing a missing or invalid network from silently turning a
+candidate into the classical evaluator.
 
 Only after reviewing a `promote` result, update the versioned registry:
 

@@ -271,6 +271,86 @@ def inspect_uci_engine(binary: Path, binary_args: list[str]) -> dict[str, object
     }
 
 
+def classify_configuration_probe(
+    output: str,
+    exit_code: int,
+    required_nnue_path: Path | None = None,
+) -> dict[str, object]:
+    lines = [line.strip() for line in output.splitlines()]
+    lowered = [line.casefold() for line in lines]
+    error_markers = (
+        "nnue load failed:",
+        "use nnue requires",
+        "unknown option",
+        "no such option",
+        "invalid option",
+        "invalid value",
+    )
+    errors = [
+        line
+        for line, folded in zip(lines, lowered)
+        if any(marker in folded for marker in error_markers)
+    ]
+    loaded_message = (
+        f"info string NNUE loaded: {required_nnue_path}"
+        if required_nnue_path is not None
+        else None
+    )
+    nnue_confirmed = loaded_message is None or loaded_message in lines
+    successful = (
+        exit_code == 0
+        and "uciok" in lines
+        and "readyok" in lines
+        and nnue_confirmed
+        and not errors
+    )
+    return {
+        "successful": successful,
+        "exitCode": exit_code,
+        "uciOk": "uciok" in lines,
+        "readyOk": "readyok" in lines,
+        "nnueConfirmationRequired": loaded_message is not None,
+        "nnueConfirmed": nnue_confirmed,
+        "errors": errors,
+    }
+
+
+def probe_uci_configuration(
+    binary: Path,
+    binary_args: list[str],
+    options: list[tuple[str, str]],
+    required_nnue_path: Path | None = None,
+) -> dict[str, object]:
+    commands = ["uci"]
+    for name, value in options:
+        suffix = f" value {value}" if value else ""
+        commands.append(f"setoption name {name}{suffix}")
+    commands.extend(("isready", "quit", ""))
+    try:
+        completed = subprocess.run(
+            [str(binary), *binary_args],
+            cwd=ROOT,
+            input="\n".join(commands),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+            env=dict(os.environ),
+        )
+    except subprocess.TimeoutExpired as error:
+        raise RuntimeError(f"UCI configuration probe timed out: {binary}") from error
+    report = classify_configuration_probe(
+        completed.stdout, completed.returncode, required_nnue_path
+    )
+    if not report["successful"]:
+        raise RuntimeError(
+            f"UCI configuration probe failed: {binary}\n"
+            f"{json.dumps(report, indent=2)}\n{completed.stdout}"
+        )
+    return report
+
+
 def configured_options(
     inspection: dict[str, object],
     side: str,
@@ -406,6 +486,15 @@ def resolve_engine(
     options = configured_options(
         inspection, side, threads, hash_mb, custom_options, eval_file
     )
+    required_nnue_path = None
+    if eval_file and str(inspection.get("name", "")).casefold().startswith("forklift"):
+        required_nnue_path = eval_file.expanduser().resolve()
+    configuration_probe = probe_uci_configuration(
+        binary,
+        effective_args,
+        options,
+        required_nnue_path,
+    )
     return {
         "side": side,
         "selector": selector,
@@ -418,6 +507,7 @@ def resolve_engine(
         "version": version,
         "identity": inspection,
         "configuredOptions": options,
+        "configurationProbe": configuration_probe,
         "sha256": file_sha256(binary),
     }
 
@@ -532,6 +622,7 @@ def engine_manifest(selection: dict[str, object]) -> dict[str, object]:
         "sha256": selection["sha256"],
         "args": selection["binaryArgs"],
         "uci": identity,
+        "configurationProbe": selection["configurationProbe"],
         "configuredOptions": [
             {"name": name, "value": value} for name, value in configured
         ],
