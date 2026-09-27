@@ -270,6 +270,26 @@ If the diagnostic is competitive, run the larger SPRT described in
 gates and statistically beats the current champion. Until then, leave classical
 evaluation as the default and keep rejected experiments documented.
 
+For the shared-feature candidate, `run_strength_screen.py --overnight` freezes a
+two-stage confirmation contract: 800 games at `30+0.3`, followed by 1,200 games
+at `90+0.9`, with distinct fixed seeds. Adjudicate its preserved evidence with:
+
+```powershell
+.\.venv-nnue\Scripts\python.exe scripts\nnue\verify_promotion.py `
+  --series-dir "D:\ChessMatches\shared-nnue-confirmation" `
+  --expected-network-sha256 <approved-64-character-sha256> `
+  --output "D:\ChessMatches\shared-nnue-confirmation\promotion-verification.json"
+```
+
+The verifier returns exit code 0 only when both stages contain every
+predeclared game, use the same checksummed executable and checksummed network,
+match the frozen time controls/options/seeds, have zero technical terminations,
+and report an Elo interval whose lower bound is above zero. Exit code 2 means a
+clean series is still running; exit code 1 means the evidence fails closed.
+It also requires the embedded series results to match the separately preserved
+`result.json` artifacts and rechecks exact Python/C++ export verification. The
+verifier never enables NNUE or changes a release by itself.
+
 UCI activation is independent of source code:
 
 ```text

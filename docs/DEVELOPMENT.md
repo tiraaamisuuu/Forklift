@@ -6,6 +6,14 @@ after the v1 release.
 
 ## Repository state
 
+Promotion-gate update (2026-09-27): the fresh shared-NNUE confirmation's first
+stage completed all 800 games at `30+0.3`, scoring `415-181-204` (+93.9 +/-
+21.7 Elo) with no technical terminations. The separate 1,200-game `90+0.9`
+stage is running, so NNUE remains opt-in. A fail-closed verifier now checks the
+frozen match contract, binary/network provenance, export agreement, preserved
+results, technical cleanliness, and positive lower Elo bounds before reporting
+a promotion pass.
+
 Low-clock update (2026-09-27): the repaired 800-game shared-NNUE confirmation
 scored +59.6 +/- 20.9 Elo with no crash recurrence, but four time forfeits split
 evenly between NNUE and classical blocked the gate. PGN clock reconstruction

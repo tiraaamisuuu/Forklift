@@ -27,6 +27,7 @@ jobs:
         run: |
           python tests/compare_engines_tests.py
           python tests/champion_gate_tests.py
+          python tests/nnue_promotion_tests.py
           python tests/calibrate_rating_tests.py
           python tests/calibration_dashboard_tests.py
           python tests/benchmark_threads_tests.py
