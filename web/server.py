@@ -18,6 +18,7 @@ import secrets
 import shutil
 import signal
 import stat
+import subprocess
 import tarfile
 import tempfile
 import threading
@@ -183,6 +184,61 @@ class EngineProfile:
             "removable": self.removable,
             "author": self.author,
         }
+
+
+def classify_nnue_activation(
+    output: str, exit_code: int, network: Path
+) -> dict[str, Any]:
+    lines = [line.strip() for line in output.splitlines()]
+    errors = [
+        line
+        for line in lines
+        if "NNUE load failed:" in line or "Use NNUE requires" in line
+    ]
+    loaded_message = f"info string NNUE loaded: {network}"
+    return {
+        "successful": (
+            exit_code == 0
+            and "uciok" in lines
+            and "readyok" in lines
+            and loaded_message in lines
+            and not errors
+        ),
+        "exitCode": exit_code,
+        "uciOk": "uciok" in lines,
+        "readyOk": "readyok" in lines,
+        "networkLoaded": loaded_message in lines,
+        "errors": errors,
+    }
+
+
+def probe_nnue_activation(command: tuple[str, ...], network: Path) -> dict[str, Any]:
+    commands = "\n".join((
+        "uci",
+        f"setoption name EvalFile value {network}",
+        "setoption name NNUE Weight value 100",
+        "setoption name Use NNUE value true",
+        "isready",
+        "quit",
+        "",
+    ))
+    try:
+        completed = subprocess.run(
+            list(command),
+            input=commands,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(f"NNUE activation probe failed: {error}") from error
+    report = classify_nnue_activation(completed.stdout, completed.returncode, network)
+    if not report["successful"]:
+        details = "; ".join(report["errors"]) or "load confirmation was missing"
+        raise RuntimeError(f"NNUE activation probe failed: {details}")
+    return report
 
 
 def load_user_engine_entries() -> list[dict[str, Any]]:
@@ -373,6 +429,8 @@ class EngineSession:
         self.engine_name = profile.name
         self.error: str | None = None
         try:
+            if profile.eval_file:
+                probe_nnue_activation(profile.command, profile.eval_file)
             self.engine = chess.engine.SimpleEngine.popen_uci(list(profile.command), timeout=10.0)
             self.engine_name = self.engine.id.get("name", profile.name)
             configuration: dict[str, Any] = {}

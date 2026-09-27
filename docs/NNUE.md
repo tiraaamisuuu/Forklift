@@ -293,6 +293,11 @@ an explicit UCI load-success response for the approved network, with no load or
 activation error. This probe changes only that temporary process; the verifier
 never changes a release by itself.
 
+The local web UI applies the same explicit activation check whenever an NNUE
+profile is first selected. A missing, corrupt, or silently rejected network is
+shown as a disconnected profile instead of playing games under the classical
+fallback while labelled as NNUE.
+
 UCI activation is independent of source code:
 
 ```text

@@ -58,6 +58,7 @@ jobs:
       - name: Validate web interface
         run: |
           node --check web/app.js
+          python tests/web_nnue_profile_tests.py
           python tests/web_api_smoke.py --engine ./build/chess-engine-uci
 
   windows-desktop:
