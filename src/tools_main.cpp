@@ -28,7 +28,7 @@ void printHelp(){
         << "  chess-engine-tools --bench [--bench-depth DEPTH] [--bench-time MS]\n"
         << "                  [--bench-tt MB] [--threads N] [--nnue NETWORK]\n"
         << "                  [--nnue-weight PERCENT]\n"
-        << "                  [--nnue-rebuild]\n";
+        << "                  [--nnue-rebuild] [--no-probcut]\n";
 }
 
 } // namespace
@@ -40,6 +40,7 @@ int main(int argc, char** argv){
     bool benchmark = false;
     bool evaluate = false;
     bool nnueRebuild = false;
+    bool enableProbCut = true;
     int maxPerftDepth = 4;
     int benchmarkDepth = 8;
     int benchmarkTimeMs = 4000;
@@ -90,6 +91,8 @@ int main(int argc, char** argv){
             }
         } else if(argument == "--nnue-rebuild"){
             nnueRebuild = true;
+        } else if(argument == "--no-probcut"){
+            enableProbCut = false;
         } else if(argument == "--max-depth"){
             const char* value = valueFor("--max-depth");
             if(!value || !parseInteger(value, maxPerftDepth) || maxPerftDepth < 1) return 1;
@@ -138,7 +141,7 @@ int main(int argc, char** argv){
     if(benchmark){
         return runSearchBenchmark(
             zobrist, benchmarkDepth, benchmarkTimeMs, benchmarkTTMB, threads,
-            nnuePath.empty() ? nullptr : &evaluator, !nnueRebuild);
+            nnuePath.empty() ? nullptr : &evaluator, !nnueRebuild, enableProbCut);
     }
 
     if(evaluate){

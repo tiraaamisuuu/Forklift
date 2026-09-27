@@ -55,7 +55,7 @@ def main():
         for threads in (1, 2):
             send(f"setoption name Threads value {threads}")
             for repetition in range(args.repetitions):
-                for clock in (0, 1, 20, 50, 100, 300, 325):
+                for clock in (0, 1, 20, 50, 100, 300, 325, 500, 625):
                     # Exact checked endgame from gate game 798; no restriction on search.
                     send("position fen 2N5/4kp2/1p4p1/4P3/p4P2/4P3/2K4p/4r3 b - - 3 58")
                     start = time.perf_counter()

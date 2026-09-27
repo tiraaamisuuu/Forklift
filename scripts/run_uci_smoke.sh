@@ -16,6 +16,7 @@ trap 'rm -f "$OUT_FILE"' EXIT
   printf 'uci\n'
   printf 'isready\n'
   printf 'setoption name Hash value 128\n'
+  printf 'setoption name ProbCut value true\n'
   printf 'ucinewgame\n'
   printf 'position startpos moves e2e4 e7e5 g1f3 b8c6\n'
   printf 'go movetime 300\n'
@@ -74,6 +75,12 @@ fi
 if ! grep -Eq '^option name EvalFile type string default <empty>$' "$OUT_FILE" ||
    ! grep -Eq '^option name Use NNUE type check default false$' "$OUT_FILE"; then
   echo "[FAIL] NNUE UCI options were not advertised" >&2
+  cat "$OUT_FILE" >&2
+  exit 1
+fi
+
+if ! grep -Eq '^option name ProbCut type check default false$' "$OUT_FILE"; then
+  echo "[FAIL] ProbCut option was not advertised" >&2
   cat "$OUT_FILE" >&2
   exit 1
 fi

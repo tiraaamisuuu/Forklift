@@ -6,6 +6,20 @@ after the v1 release.
 
 ## Repository state
 
+Low-clock update (2026-09-27): the repaired 800-game shared-NNUE confirmation
+scored +59.6 +/- 20.9 Elo with no crash recurrence, but four time forfeits split
+evenly between NNUE and classical blocked the gate. PGN clock reconstruction
+showed both evaluators leaking time once below two increments. A new recovery
+budget, expanded raw-clock tests, six-process scheduling stress, and a clean
+100-game real-search smoke now pass; the full confirmation still must be rerun.
+See [low-clock recovery evidence](results/2026-09-27-low-clock-recovery.md).
+
+ProbCut update (2026-09-27): a conservative SEE-filtered implementation reduced
+the combined depth-12 fixed-position tree by 5.1% and wall time by 4.8%, but its
+first 100-game paired fast diagnostic was statistically flat (`32-35-33`,
+-10.4 +/- 56.2 Elo). It remains explicitly disabled by default pending stronger
+evidence. See [ProbCut diagnostic](results/2026-09-27-probcut-diagnostic.md).
+
 Reliability update (2026-09-14): Windows confirmed stack overflow in the NNUE
 confirmation. Recursive move buffers now use reusable heap frames; Release,
 ASAN and failed-game replays pass. Fresh overnight confirmation is required;

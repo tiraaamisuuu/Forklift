@@ -2,6 +2,7 @@
 #include "time_management.hpp"
 
 #include <functional>
+#include <limits>
 #include <random>
 
 namespace {
@@ -601,6 +602,52 @@ void testStagedMovePicker(const Zobrist& zobrist){
            "losing captures should follow ordinary quiet moves");
 }
 
+void testProbCut(const Zobrist& zobrist){
+    Board board;
+    board.setZobrist(&zobrist);
+    expect(board.loadFEN("4k3/8/8/3q4/8/8/3R4/4K3 w - - 0 1"),
+           "ProbCut winning-capture fixture should load");
+    const Board original = board;
+
+    SearchContext context;
+    context.tt.resizeMB(1);
+    context.start = std::chrono::steady_clock::now();
+    context.softTimeLimitMs = 60'000;
+    context.hardTimeLimitMs = 60'000;
+    context.repetition = {board.hash};
+    context.enableProbCut = true;
+
+    const int score = negamax(board, context, 5, -1, 0, 0,
+                              invalidMove(), false, true);
+    expect(score >= 0, "ProbCut should preserve the beta cutoff");
+    expect(context.stats.probCutAttempts > 0,
+           "ProbCut should verify a SEE-qualified winning capture");
+    expect(context.stats.probCutCutoffs == 1,
+           "ProbCut should cut off after the verified winning capture");
+    expect(samePosition(board, original),
+           "ProbCut verification must restore the exact board state");
+
+    const auto entry = context.tt.probe(board.hash);
+    expect(entry.has_value() && entry->flag == TTFlag::Lower,
+           "ProbCut should store a lower-bound TT entry");
+    expect(entry.has_value() && moveToUCI(entry->best) == "d2d5",
+           "ProbCut TT entry should retain the proving capture");
+
+    SearchContext disabled;
+    disabled.tt.resizeMB(1);
+    disabled.start = std::chrono::steady_clock::now();
+    disabled.softTimeLimitMs = 60'000;
+    disabled.hardTimeLimitMs = 60'000;
+    disabled.repetition = {board.hash};
+    disabled.enableProbCut = false;
+    (void)negamax(board, disabled, 5, -1, 0, 0,
+                  invalidMove(), false, true);
+    expect(disabled.stats.probCutAttempts == 0 && disabled.stats.probCutCutoffs == 0,
+           "disabled ProbCut must not attempt speculative verification");
+    expect(samePosition(board, original),
+           "search without ProbCut must also preserve the exact board state");
+}
+
 void testSearchPlySafety(const Zobrist& zobrist){
     static_assert(sizeof(StagedMovePicker) < 128,
                   "recursive move picker must not embed large stack arrays");
@@ -716,6 +763,30 @@ void testClockTimeManagement(const Zobrist& zobrist){
     expect(smallerOverhead.hardMs <= 10,
            "low-clock hard limit should not consume the configured reserve");
 
+    const TimeBudget incrementRecovery = pickClockTimeBudget(board, 300, 300, -1, 25);
+    expect(incrementRecovery.softMs > 0 &&
+           incrementRecovery.softMs <= incrementRecovery.hardMs,
+           "increment recovery must produce a valid positive budget");
+    expect(incrementRecovery.hardMs <= 100,
+           "one-increment clock must search briefly enough to rebuild time");
+
+    const TimeBudget twoIncrementRecovery = pickClockTimeBudget(board, 500, 300, -1, 25);
+    expect(twoIncrementRecovery.hardMs <= 150,
+           "sub-two-increment clock must cap search below the increment");
+
+    const TimeBudget zeroIncrement = pickClockTimeBudget(board, 500, 0, -1, 25);
+    const TimeBudget negativeIncrement = pickClockTimeBudget(board, 500, -100, -1, 25);
+    expect(negativeIncrement.softMs == zeroIncrement.softMs &&
+           negativeIncrement.hardMs == zeroIncrement.hardMs,
+           "negative UCI increments must clamp to zero without overflow");
+
+    const TimeBudget extremeIncrement = pickClockTimeBudget(
+        board, 500, std::numeric_limits<int>::max(), -1, 25);
+    expect(extremeIncrement.softMs > 0 &&
+           extremeIncrement.softMs <= extremeIncrement.hardMs &&
+           extremeIncrement.hardMs <= 475,
+           "extreme UCI increments must retain an ordered safe clock budget");
+
     const TimeBudget normalClock = pickClockTimeBudget(board, 60'000, 500, 30, 25);
     expect(normalClock.softMs > 0 && normalClock.hardMs >= normalClock.softMs,
            "normal clock budget should remain positive and ordered");
@@ -801,6 +872,7 @@ int main(){
     testStaticExchange(zobrist);
     testContinuationHistoryOrdering(zobrist);
     testStagedMovePicker(zobrist);
+    testProbCut(zobrist);
     testSearchPlySafety(zobrist);
     testSearchDeadlineAndBudget(zobrist);
     testClockTimeManagement(zobrist);

@@ -8,6 +8,8 @@
 struct SearchStats {
     u64 nodes=0;
     u64 qnodes=0;
+    u64 probCutAttempts=0;
+    u64 probCutCutoffs=0;
     int depthReached=0;
     int bestScore=0;
     int timeMs=0;
@@ -44,6 +46,7 @@ struct SearchContext {
     const std::atomic<bool>* abortFlag=nullptr;
     const PositionEvaluator* evaluator=nullptr;
     bool incrementalNnue=true;
+    bool enableProbCut=false;
     std::array<NnueAccumulator, NnueStackSize> nnueStack{};
 
     Move killer[128][2]{};
@@ -544,7 +547,8 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
     return alpha;
 }
 
-inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta, int ply, const Move& prevMove, bool allowNullMove){
+inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta, int ply,
+                   const Move& prevMove, bool allowNullMove, bool allowProbCut=true){
     if(timeUp(ctx)) return 0;
     SearchScratchScope scratch(ctx);
     ctx.stats.nodes++;
@@ -667,6 +671,64 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
                 return beta;
             }
         }
+    }
+
+    // ProbCut: a clearly winning tactical move that survives both quiescence
+    // and a reduced search is strong evidence that this non-PV node exceeds
+    // beta. Restricting candidates by SEE keeps the extra verification work
+    // focused on captures whose material swing can plausibly clear the wider
+    // threshold. The recursive verification disables ProbCut to prevent a
+    // speculative cascade from proving itself.
+    if(ctx.enableProbCut && allowProbCut && !pvNode && !inCheck && depth >= 5 &&
+       std::abs(beta) < MATE / 2){
+        const int margin = 220 - (improving ? 40 : 0);
+        const int probCutBeta = beta + margin;
+        const int minimumSee = std::max(0, probCutBeta - staticEval);
+        const int probCutDepth = std::max(0, depth - 5);
+
+        auto& legal = scratch.frame().lists[0];
+        auto& candidates = scratch.frame().lists[1];
+        bd.genLegalMoves(legal);
+        for(const Move& move : legal){
+            const bool queenPromotion = move.promo == PieceType::Queen;
+            if(!(move.isCapture || move.isEnPassant || queenPromotion)) continue;
+            if(!queenPromotion && staticExchangeEvaluation(bd, move) < minimumSee) continue;
+            candidates.push_back(move);
+        }
+
+        sortMovesByScore(candidates, [&](const Move& move){
+            return scoreMove(bd, ctx, move, ttMove, ply, prevMove);
+        });
+
+        for(const Move& move : candidates){
+            ctx.stats.probCutAttempts++;
+            Undo undo{};
+            if(!bd.makeMove(move, undo)) continue;
+            advanceNnue(bd, undo, ctx, ply);
+            ctx.repetition.push_back(bd.hash);
+
+            int score = -quiescence(bd, ctx, -probCutBeta, -probCutBeta + 1, ply + 1);
+            if(!ctx.stop && score >= probCutBeta && probCutDepth > 0){
+                score = -negamax(bd, ctx, probCutDepth, -probCutBeta,
+                                 -probCutBeta + 1, ply + 1, move, true, false);
+            }
+
+            ctx.repetition.pop_back();
+            bd.undoMove(undo);
+            if(ctx.stop) return 0;
+
+            if(score >= probCutBeta){
+                ctx.stats.probCutCutoffs++;
+                tt.store(bd.hash, probCutDepth + 1, scoreToTT(score, ply),
+                         TTFlag::Lower, move);
+                // Preserve the proven cutoff while avoiding an inflated score
+                // from the deliberately wider verification window.
+                return score - (probCutBeta - beta);
+            }
+        }
+
+        legal.clear();
+        candidates.clear();
     }
 
     auto& moves = scratch.frame().lists[0];
@@ -1073,6 +1135,7 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         workerCtx[size_t(w)].sharedTT = &ctx.tt;
         workerCtx[size_t(w)].evaluator = ctx.evaluator;
         workerCtx[size_t(w)].incrementalNnue = ctx.incrementalNnue;
+        workerCtx[size_t(w)].enableProbCut = ctx.enableProbCut;
         refreshNnueRoot(bd, workerCtx[size_t(w)]);
         std::memcpy(workerCtx[size_t(w)].killer, ctx.killer, sizeof(ctx.killer));
         std::memcpy(workerCtx[size_t(w)].countermove, ctx.countermove, sizeof(ctx.countermove));
@@ -1103,6 +1166,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         std::vector<int> owners(rootMoves.size(), -1);
         std::vector<u64> depthNodes(rootMoves.size(), 0);
         std::vector<u64> depthQNodes(rootMoves.size(), 0);
+        std::vector<u64> depthProbCutAttempts(rootMoves.size(), 0);
+        std::vector<u64> depthProbCutCutoffs(rootMoves.size(), 0);
 
         for(int worker = 0; worker < workers; worker++){
             SearchContext& local = workerCtx[static_cast<size_t>(worker)];
@@ -1126,6 +1191,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             local.repetition.push_back(child.hash);
             const u64 previousNodes = local.stats.nodes;
             const u64 previousQNodes = local.stats.qnodes;
+            const u64 previousProbCutAttempts = local.stats.probCutAttempts;
+            const u64 previousProbCutCutoffs = local.stats.probCutCutoffs;
 
             int score = 0;
             if(fullWindow){
@@ -1139,6 +1206,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
 
             depthNodes[index] = local.stats.nodes - previousNodes;
             depthQNodes[index] = local.stats.qnodes - previousQNodes;
+            depthProbCutAttempts[index] = local.stats.probCutAttempts - previousProbCutAttempts;
+            depthProbCutCutoffs[index] = local.stats.probCutCutoffs - previousProbCutCutoffs;
             if(local.stop) return;
             scores[index] = score;
             owners[index] = worker;
@@ -1189,6 +1258,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             }
             ctx.stats.nodes += depthNodes[idx];
             ctx.stats.qnodes += depthQNodes[idx];
+            ctx.stats.probCutAttempts += depthProbCutAttempts[idx];
+            ctx.stats.probCutCutoffs += depthProbCutCutoffs[idx];
         }
 
         auto now = std::chrono::steady_clock::now();
@@ -1397,7 +1468,8 @@ struct BenchmarkPosition {
 inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTimeMs,
                               int ttSizeMB = 256, int threads = 1,
                               const PositionEvaluator* evaluator = nullptr,
-                              bool incrementalNnue = true){
+                              bool incrementalNnue = true,
+                              bool enableProbCut = true){
     const std::vector<BenchmarkPosition> positions = {
         {"Start", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
         {"Middlegame 1", "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10"},
@@ -1414,6 +1486,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
               << " nnueWeight=" << (evaluator ? evaluator->nnueWeight() : 0)
               << " nnueMode=" << (evaluator && evaluator->usingNnue()
                     ? (incrementalNnue ? "incremental" : "rebuild") : "n/a")
+              << " probCut=" << (enableProbCut ? "on" : "off")
               << " positions=" << positions.size() << "\n";
 
     for(const auto& p : positions){
@@ -1429,6 +1502,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
         ctx.gameHistory = {bd.hash};
         ctx.evaluator = evaluator;
         ctx.incrementalNnue = incrementalNnue;
+        ctx.enableProbCut = enableProbCut;
 
         const Move best = searchBestMove(bd, ctx, depth, perPositionTimeMs, perPositionTimeMs, threads);
         const double nps = (ctx.stats.timeMs > 0)
@@ -1441,6 +1515,8 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                   << " score=" << ctx.stats.bestScore
                   << " nodes=" << ctx.stats.nodes
                   << " qnodes=" << ctx.stats.qnodes
+                  << " probcut=" << ctx.stats.probCutCutoffs
+                  << "/" << ctx.stats.probCutAttempts
                   << " time=" << ctx.stats.timeMs << "ms"
                   << " nps=" << static_cast<long long>(nps)
                   << "\n";

@@ -89,6 +89,8 @@ inline TimeBudget pickClockTimeBudget(const Board& board,
                                       int sideIncrement,
                                       int movesToGo,
                                       int moveOverheadMs){
+    constexpr int MaximumClockComponentMs = 24 * 60 * 60 * 1000;
+    const int increment = std::clamp(sideIncrement, 0, MaximumClockComponentMs);
     Board probe = board;
     MoveList legal;
     probe.genLegalMoves(legal);
@@ -108,19 +110,33 @@ inline TimeBudget pickClockTimeBudget(const Board& board,
                                  std::min(250, std::max(1, sideTime / 50)));
     const int safeTime = std::max(1, sideTime - reserve);
     const int baseSlice = safeTime / std::max(1, movesToGo + 3);
-    int soft = baseSlice + (sideIncrement * 3) / 4;
+    int soft = baseSlice + (increment * 3) / 4;
     if(movesToGo <= 8) soft += baseSlice / 3;
-    if(sideTime < 2000) soft = std::max(5, baseSlice + sideIncrement / 2);
+    if(sideTime < 2000) soft = std::max(5, baseSlice + increment / 2);
     soft = (soft * complexityScale) / 100;
     if(legalMoves <= 1) soft = std::min(soft, std::max(5, std::min(80, safeTime / 20)));
     soft = std::clamp(soft, 1, std::max(1, safeTime / 2));
 
     int hard = std::max(soft + 40, soft + soft / 2);
-    hard = std::max(hard, baseSlice * 3 + sideIncrement);
+    hard = std::max(hard, baseSlice * 3 + increment);
     if(sideTime < 1000) hard = std::max(soft + 20, soft * 2);
     hard = (hard * std::max(100, complexityScale + 10)) / 100;
     if(legalMoves <= 1) hard = std::min(hard, std::max(soft, std::min(120, safeTime / 12)));
     hard = std::clamp(hard, soft, safeTime);
+
+    // When less than roughly two increments remain, repeatedly spending the
+    // full increment is not stable: scheduling and UCI transport overhead can
+    // make each nominally level move leak clock until a forfeit. Enter a
+    // recovery regime that searches well below the increment so the clock can
+    // rebuild. Sudden-death controls keep the normal allocation above.
+    const long long recoveryThreshold = static_cast<long long>(increment) * 2 + reserve;
+    if(increment > 0 && sideTime <= recoveryThreshold){
+        const int recoveryHard = std::max(
+            1, std::min(safeTime / 3, std::max(1, increment / 2)));
+        hard = std::min(hard, recoveryHard);
+        soft = std::min(soft, std::max(1, hard / 2));
+        hard = std::max(hard, soft);
+    }
     return TimeBudget{soft, hard};
 }
 
