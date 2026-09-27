@@ -288,7 +288,10 @@ and report an Elo interval whose lower bound is above zero. Exit code 2 means a
 clean series is still running; exit code 1 means the evidence fails closed.
 It also requires the embedded series results to match the separately preserved
 `result.json` artifacts and rechecks exact Python/C++ export verification. The
-verifier never enables NNUE or changes a release by itself.
+verifier also starts one short-lived copy of the frozen executable and requires
+an explicit UCI load-success response for the approved network, with no load or
+activation error. This probe changes only that temporary process; the verifier
+never changes a release by itself.
 
 UCI activation is independent of source code:
 

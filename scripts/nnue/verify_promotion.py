@@ -8,8 +8,9 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import subprocess
 import sys
-from typing import Any
+from typing import Any, Callable
 
 
 PROMOTION_CONTRACT = {
@@ -65,12 +66,74 @@ def is_exact_int(value: Any, expected: int | None = None) -> bool:
     return expected is None or value == expected
 
 
+def probe_uci_nnue(engine: Path, network: Path) -> dict[str, Any]:
+    commands = "\n".join(
+        (
+            "uci",
+            f"setoption name EvalFile value {network}",
+            "setoption name NNUE Weight value 100",
+            "setoption name Use NNUE value true",
+            "isready",
+            "quit",
+            "",
+        )
+    )
+    try:
+        completed = subprocess.run(
+            [str(engine)],
+            input=commands,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return {
+            "successful": False,
+            "error": str(error),
+            "engine": str(engine),
+            "network": str(network),
+        }
+
+    lines = [line.strip() for line in completed.stdout.splitlines()]
+    errors = [
+        line
+        for line in lines
+        if "NNUE load failed:" in line or "Use NNUE requires" in line
+    ]
+    loaded_message = f"info string NNUE loaded: {network}"
+    return {
+        "successful": (
+            completed.returncode == 0
+            and "uciok" in lines
+            and "readyok" in lines
+            and loaded_message in lines
+            and not errors
+        ),
+        "exitCode": completed.returncode,
+        "uciOk": "uciok" in lines,
+        "readyOk": "readyok" in lines,
+        "networkLoaded": loaded_message in lines,
+        "errors": errors,
+        "engine": str(engine),
+        "network": str(network),
+    }
+
+
 class PromotionVerifier:
-    def __init__(self, series_dir: Path, expected_network_sha256: str | None = None):
+    def __init__(
+        self,
+        series_dir: Path,
+        expected_network_sha256: str | None = None,
+        runtime_probe: Callable[[Path, Path], dict[str, Any]] = probe_uci_nnue,
+    ):
         self.series_dir = series_dir.expanduser().resolve()
         self.expected_network_sha256 = expected_network_sha256
+        self.runtime_probe = runtime_probe
         self.checks: list[dict[str, Any]] = []
         self.stage_reports: list[dict[str, Any]] = []
+        self.runtime_probe_result: dict[str, Any] | None = None
 
     def record(
         self, code: str, status: str, message: str, **details: Any
@@ -246,6 +309,14 @@ class PromotionVerifier:
             expected=recorded_engine_hash,
             actual=actual_engine_hash,
         )
+        if engine_exists and engine_path is not None and network_exists:
+            self.runtime_probe_result = self.runtime_probe(engine_path, network_path)
+            self.require(
+                self.runtime_probe_result.get("successful") is True,
+                "engine.nnue_runtime_probe",
+                "frozen executable loads and activates the approved NNUE through UCI",
+                probe=self.runtime_probe_result,
+            )
         return self.report(series, actual_network_hash, actual_engine_hash)
 
     def verify_stage(
@@ -423,6 +494,7 @@ class PromotionVerifier:
             "seriesState": series.get("state"),
             "networkSha256": network_sha256,
             "engineSha256": engine_sha256,
+            "runtimeProbe": self.runtime_probe_result,
             "stages": self.stage_reports,
             "checks": self.checks,
         }

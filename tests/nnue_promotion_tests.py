@@ -125,7 +125,14 @@ class PromotionFixture:
                 )
 
     def verify(self, expected_hash: str | None = None) -> dict[str, object]:
-        return verify_promotion.PromotionVerifier(self.series_dir, expected_hash).verify()
+        successful_probe = lambda engine, network: {
+            "successful": True,
+            "engine": str(engine),
+            "network": str(network),
+        }
+        return verify_promotion.PromotionVerifier(
+            self.series_dir, expected_hash, runtime_probe=successful_probe
+        ).verify()
 
 
 class NnuePromotionTests(unittest.TestCase):
@@ -241,6 +248,20 @@ class NnuePromotionTests(unittest.TestCase):
 
         self.assertEqual(report["decision"], "fail")
         self.assertIn("network.result_artifact", self.failed_codes(report))
+
+    def test_runtime_activation_failure_blocks_promotion(self) -> None:
+        failed_probe = lambda engine, network: {
+            "successful": False,
+            "errors": ["info string NNUE load failed: invalid network"],
+        }
+
+        report = verify_promotion.PromotionVerifier(
+            self.fixture.series_dir,
+            runtime_probe=failed_probe,
+        ).verify()
+
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("engine.nnue_runtime_probe", self.failed_codes(report))
 
 
 if __name__ == "__main__":
