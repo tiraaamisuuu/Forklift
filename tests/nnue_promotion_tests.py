@@ -21,11 +21,11 @@ SPEC.loader.exec_module(verify_promotion)
 
 class PromotionFixture:
     def __init__(self, root: Path):
-        self.root = root
-        self.training = root / "training"
-        self.series_dir = root / "series"
+        self.root = root.resolve()
+        self.training = self.root / "training"
+        self.series_dir = self.root / "series"
         self.network = self.training / "shared" / "model.nnue"
-        self.engine = root / "engine.bin"
+        self.engine = self.root / "engine.bin"
         self.network.parent.mkdir(parents=True)
         self.series_dir.mkdir()
         self.network.write_bytes(b"approved-network")
