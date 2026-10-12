@@ -8,6 +8,13 @@ from run_strength_screen import screen_plan
 
 
 class StrengthPlanTests(unittest.TestCase):
+    def test_paused_restart_uses_its_fresh_predeclared_seed(self):
+        resumed = screen_plan(False, recover_long=True, paused_restart=True)
+        previous = screen_plan(False, True) + screen_plan(False, recover_long=True)
+        self.assertEqual(resumed[0], screen_plan(False, True)[0])
+        self.assertEqual(resumed[1][2:4], (1200, "90+0.9"))
+        self.assertEqual(resumed[1][4], 202610121)
+        self.assertNotIn(resumed[1][4], [p[4] for p in previous])
     def test_long_recovery_preserves_short_stage_and_changes_long_seed(self):
         original = screen_plan(False, True)
         recovery = screen_plan(False, recover_long=True)

@@ -8,13 +8,20 @@ import sys
 from datetime import datetime, timezone
 
 from nnue_dataset import sha256_file, write_json_atomic
-from promotion_contracts import ORIGINAL_CONTRACT_ID, RECOVERY_CONTRACT_ID, RECOVERY_CONTRACT
+from promotion_contracts import (
+    ORIGINAL_CONTRACT_ID, RECOVERY_CONTRACT_ID, RECOVERY_CONTRACT,
+    RESUME_CONTRACT_ID, RESUME_CONTRACT,
+)
 from series_lifecycle import coordinator_heartbeat
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def screen_plan(confirm: bool, overnight: bool = False, recover_long: bool = False):
+def screen_plan(confirm: bool, overnight: bool = False, recover_long: bool = False, paused_restart: bool = False):
+    if paused_restart:
+        original = screen_plan(False, True)
+        return [original[0], ("classical", "fresh long-control confirmation after user pause",
+                             1200, "90+0.9", RESUME_CONTRACT["classical"]["seed"], False)]
     if recover_long:
         original = screen_plan(False, True)
         return [original[0], ("classical", "fresh long-control recovery vs classical",
@@ -69,6 +76,33 @@ def prepare_long_recovery(source_dir: Path, engine: Path, training_dir: Path) ->
     return network_stage, recovery
 
 
+def prepare_paused_exclusion(paused_dir: Path, engine: Path, training_dir: Path) -> dict:
+    from verify_promotion import PromotionVerifier, read_object
+
+    run = paused_dir.resolve()
+    series = read_object(run / "series.json")
+    control = read_object(run / "classical" / "dashboard-control.json")
+    report = PromotionVerifier(run).verify()
+    if report["observedSeriesState"] != "paused" or series.get("contractId") != RECOVERY_CONTRACT_ID:
+        raise RuntimeError("restart requires the explicitly paused recovery run")
+    required = [check for check in report["checks"]
+                if check["code"].startswith(("network.", "engine.", "training.", "recovery."))]
+    if not required or any(check["status"] != "pass" for check in required):
+        raise RuntimeError("paused run has invalid frozen-engine or reused short-stage evidence")
+    if (run / "classical" / "result.json").exists():
+        raise RuntimeError("a terminal long-stage result cannot be excluded as a pause")
+    if sha256_file(engine) != series.get("engineSha256") or str(training_dir.resolve()) != series.get("training"):
+        raise RuntimeError("restart must preserve the paused run's engine and training identity")
+    return {
+        "directory": str(run), "seriesSha256": sha256_file(run / "series.json"),
+        "pauseRecordSha256": sha256_file(run / "classical" / "dashboard-control.json"),
+        "logSha256": sha256_file(run / "classical" / "match.log"),
+        "pgnSha256": sha256_file(run / "classical" / "games.pgn"),
+        "pausedAt": control["pausedAt"], "partial": control.get("partial", {}),
+        "treatment": "user-paused partial sample preserved and excluded; no games appended or aggregated",
+    }
+
+
 def stage_command(args, stage, networks, run):
     stage_id, _, games, tc, seed, neural_baseline = stage
     command = [sys.executable, "-u", str(ROOT / "scripts/compare_engines.py"),
@@ -94,6 +128,8 @@ def main():
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument("--exclude-paused-series", type=Path,
+                        help="Record the paused recovery run and use the separately preregistered fresh-seed restart")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--confirm-classical", action="store_true",
                         help="800-game replication and 400-game longer-control classical test")
@@ -102,6 +138,8 @@ def main():
     mode.add_argument("--recover-long-from", type=Path,
                       help="Reuse a verified completed short stage and replace the interrupted long stage with fresh evidence")
     args = parser.parse_args()
+    if args.exclude_paused_series and not args.recover_long_from:
+        parser.error("--exclude-paused-series requires --recover-long-from")
     run = args.run_dir.resolve()
     if run.exists() and any(run.iterdir()):
         raise SystemExit("Use a new empty evidence directory")
@@ -117,7 +155,7 @@ def main():
         if report["cppVerification"]["exactMatch"] is not True:
             raise SystemExit("Network did not pass C++ export verification")
         networks[variant["id"]] = str(path)
-    plan = screen_plan(args.confirm_classical, args.overnight, bool(args.recover_long_from))
+    plan = screen_plan(args.confirm_classical, args.overnight, bool(args.recover_long_from), bool(args.exclude_paused_series))
     state = {"schemaVersion": 2, "state": "running", "current": "network",
              "startedAt": datetime.now(timezone.utc).isoformat(),
              "engineSha256": sha256_file(args.engine), "training": str(args.training_dir.resolve()),
@@ -132,6 +170,9 @@ def main():
         reused, recovery = prepare_long_recovery(args.recover_long_from, args.engine, args.training_dir)
         state.update(contractId=RECOVERY_CONTRACT_ID, recovery=recovery, current="classical")
         state["stages"][0] = reused
+        if args.exclude_paused_series:
+            recovery["pausedRun"] = prepare_paused_exclusion(args.exclude_paused_series, args.engine, args.training_dir)
+            state["contractId"] = RESUME_CONTRACT_ID
     run.mkdir(parents=True, exist_ok=True)
     status = run / "series.json"
     write_json_atomic(status, state)

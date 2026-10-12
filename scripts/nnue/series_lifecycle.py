@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import socket
 import threading
+import time
 
 
 HEARTBEAT_INTERVAL_SECONDS = 5
@@ -44,6 +45,14 @@ def process_alive(pid: int) -> bool:
 
 def series_liveness(run_dir: Path, series: dict, *, now: datetime | None = None) -> dict:
     recorded = series.get("state")
+    if recorded == "failed" and series.get("current") in {"network", "classical"}:
+        try:
+            control = json.loads((run_dir / series["current"] / "dashboard-control.json").read_text(encoding="utf-8-sig"))
+            if isinstance(control, dict) and control.get("status") == "paused":
+                return {"state": "paused", "recordedState": recorded,
+                        "reason": "explicit user pause", "pausedAt": control.get("pausedAt")}
+        except (OSError, ValueError):
+            pass
     if recorded != "running":
         return {"state": recorded, "recordedState": recorded, "reason": "terminal metadata"}
     heartbeat_path = run_dir / "heartbeat.json"
@@ -102,12 +111,20 @@ def coordinator_heartbeat(run_dir: Path):
         path = run_dir / "heartbeat.json"
         temporary = path.with_suffix(".json.tmp")
         temporary.write_text(json.dumps(payload, allow_nan=False) + "\n", encoding="utf-8")
-        temporary.replace(path)
+        for attempt in range(6):
+            try:
+                temporary.replace(path)
+                return
+            except PermissionError:
+                if attempt == 5:
+                    raise
+                time.sleep(0.02 * 2 ** attempt)
 
     def loop():
         while not stop.wait(HEARTBEAT_INTERVAL_SECONDS):
             try:
                 write()
+                errors.clear()
             except OSError as error:
                 errors.append(error)
 
@@ -116,8 +133,10 @@ def coordinator_heartbeat(run_dir: Path):
     thread.start()
     try:
         yield
-        if errors:
-            raise RuntimeError(f"coordinator heartbeat write failed: {errors[-1]}")
     finally:
         stop.set()
         thread.join(timeout=HEARTBEAT_INTERVAL_SECONDS + 1)
+    if errors:
+        # Recovered reader/antivirus contention is not a match failure. Require
+        # a final successful write only if periodic writes remain unresolved.
+        write()

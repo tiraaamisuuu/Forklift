@@ -15,7 +15,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "nnue"))
-from promotion_contracts import RECOVERY_CONTRACT_ID, RECOVERY_CONTRACT
+from promotion_contracts import (
+    RECOVERY_CONTRACT_ID, RECOVERY_CONTRACT, RESUME_CONTRACT_ID, RESUME_CONTRACT,
+)
 SPEC = importlib.util.spec_from_file_location(
     "verify_promotion", ROOT / "scripts" / "nnue" / "verify_promotion.py"
 )
@@ -188,6 +190,60 @@ class NnuePromotionTests(unittest.TestCase):
         return verify_promotion.PromotionVerifier(
             path, runtime_probe=lambda engine, network: {"successful": True}
         ).verify()
+
+    def make_paused_restart(self):
+        paused_dir, paused = self.make_recovery()
+        paused["state"] = "failed"
+        paused["stages"][1]["state"] = "failed"
+        paused["stages"][1].pop("result")
+        (paused_dir / "classical" / "result.json").unlink()
+        control = {"status": "paused", "pausedAt": "2026-10-12T19:26:00+00:00"}
+        self.fixture.write_json(paused_dir / "series.json", paused)
+        self.fixture.write_json(paused_dir / "classical" / "dashboard-control.json", control)
+        (paused_dir / "classical" / "match.log").write_text("preserved partial match\n")
+        (paused_dir / "classical" / "games.pgn").write_text("preserved partial games\n")
+        restarted = copy.deepcopy(paused)
+        restarted["state"] = "complete"
+        restarted["contractId"] = RESUME_CONTRACT_ID
+        restarted["stages"][1] = self.fixture.stage("classical", RESUME_CONTRACT["classical"])
+        restarted["recovery"]["pausedRun"] = {
+            "directory": str(paused_dir),
+            "seriesSha256": verify_promotion.file_sha256(paused_dir / "series.json"),
+            "pauseRecordSha256": verify_promotion.file_sha256(paused_dir / "classical" / "dashboard-control.json"),
+            "logSha256": verify_promotion.file_sha256(paused_dir / "classical" / "match.log"),
+            "pgnSha256": verify_promotion.file_sha256(paused_dir / "classical" / "games.pgn"),
+        }
+        new_dir = self.fixture.root / "restart"
+        self.fixture.write_json(new_dir / "series.json", restarted)
+        self.fixture.write_json(new_dir / "classical" / "result.json", restarted["stages"][1]["result"])
+        return new_dir, restarted, paused_dir
+
+    def test_fresh_restart_records_user_pause_and_passes_complete_contract(self):
+        path, _, _ = self.make_paused_restart()
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "pass")
+        self.assertEqual(report["contractId"], RESUME_CONTRACT_ID)
+
+    def test_restart_rejects_changed_excluded_pgn(self):
+        path, _, paused_dir = self.make_paused_restart()
+        (paused_dir / "classical" / "games.pgn").write_text("changed archive\n")
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("pause_exclusion.pgnSha256", self.failed_codes(report))
+
+    def test_restart_requires_explicit_pause_record(self):
+        path, _, paused_dir = self.make_paused_restart()
+        self.fixture.write_json(paused_dir / "classical" / "dashboard-control.json", {"status": "failed"})
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("pause_exclusion.user_pause", self.failed_codes(report))
+
+    def test_restart_cannot_replace_terminal_long_result(self):
+        path, _, paused_dir = self.make_paused_restart()
+        self.fixture.write_json(paused_dir / "classical" / "result.json", {"completed": True})
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("pause_exclusion.user_pause", self.failed_codes(report))
 
     def test_complete_clean_positive_series_passes(self) -> None:
         report = self.fixture.verify(self.fixture.network_hash)

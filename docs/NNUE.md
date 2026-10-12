@@ -305,6 +305,12 @@ references and checksums the reused result, excludes the partial long sample,
 and refuses to replace any existing terminal long-stage result. See the
 [recovery record](results/2026-10-12-nnue-interruption-recovery.md).
 
+After an explicit user pause of that recovery, add `--exclude-paused-series
+<paused-recovery-directory>` to the command and use a new empty run directory.
+This selects the separately committed restart contract (1,200 games at
+`90+0.9`, seed `202610121`) and preserves checksum references to the excluded
+paused sample. It never appends partial games or discards a terminal result.
+
 The local web UI applies the same explicit activation check whenever an NNUE
 profile is first selected. A missing, corrupt, or silently rejected network is
 shown as a disconnected profile instead of playing games under the classical

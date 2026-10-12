@@ -36,6 +36,32 @@ class SeriesLifecycleTests(unittest.TestCase):
         with coordinator_heartbeat(self.root):
             self.assertEqual(series_liveness(self.root, self.series)["state"], "running")
 
+    def test_failed_runner_with_user_pause_is_reported_as_paused(self):
+        (self.root / "classical").mkdir()
+        control = {"status": "paused", "pausedAt": "2026-10-12T19:26:00+00:00"}
+        (self.root / "classical" / "dashboard-control.json").write_text(json.dumps(control))
+        series = {**self.series, "state": "failed"}
+        observed = series_liveness(self.root, series)
+        self.assertEqual(observed["state"], "paused")
+        self.assertEqual(observed["recordedState"], "failed")
+        self.assertEqual(series["state"], "failed")
+
+    def test_heartbeat_retries_transient_windows_reader_contention(self):
+        original_replace = Path.replace
+        calls = 0
+
+        def transient_denial(path, target):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise PermissionError("temporary file sharing violation")
+            return original_replace(path, target)
+
+        with patch.object(Path, "replace", new=transient_denial):
+            with coordinator_heartbeat(self.root):
+                self.assertEqual(series_liveness(self.root, self.series)["state"], "running")
+        self.assertEqual(calls, 2)
+
     def test_expired_heartbeat_rejects_reused_live_pid(self):
         self.heartbeat(age=61)
         observed = series_liveness(self.root, self.series, now=self.now)

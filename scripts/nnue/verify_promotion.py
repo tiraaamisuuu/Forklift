@@ -15,6 +15,7 @@ from typing import Any, Callable
 from series_lifecycle import series_liveness
 from promotion_contracts import (
     CONTRACTS, ORIGINAL_CONTRACT_ID, PROMOTION_CONTRACT, RECOVERY_CONTRACT_ID,
+    RESUME_CONTRACT_ID,
 )
 
 
@@ -273,10 +274,12 @@ class PromotionVerifier:
         )
 
         evidence_dirs = {stage_id: self.series_dir / stage_id for stage_id in contract}
-        if self.contract_id == RECOVERY_CONTRACT_ID:
+        if self.contract_id in {RECOVERY_CONTRACT_ID, RESUME_CONTRACT_ID}:
             recovered_dir = self.verify_recovery(series, by_id)
             if recovered_dir is not None:
                 evidence_dirs["network"] = recovered_dir
+        if self.contract_id == RESUME_CONTRACT_ID:
+            self.verify_paused_exclusion(series)
 
         engine_path: Path | None = None
         for stage_id, stage_contract in contract.items():
@@ -370,6 +373,44 @@ class PromotionVerifier:
             "recovery.result_checksum", "reused short-stage result has its original checksum",
         )
         return source_path.parent / "network"
+
+    def verify_paused_exclusion(self, series: dict) -> None:
+        recovery = series.get("recovery", {})
+        exclusion = recovery.get("pausedRun", {}) if isinstance(recovery, dict) else {}
+        directory = exclusion.get("directory") if isinstance(exclusion, dict) else None
+        if not self.require(
+            isinstance(directory, str) and bool(directory), "pause_exclusion.source",
+            "restart records the excluded user-paused run",
+        ):
+            return
+        run = Path(directory).resolve()
+        paused = read_object(run / "series.json")
+        control = read_object(run / "classical" / "dashboard-control.json")
+        self.require(
+            paused.get("contractId") == RECOVERY_CONTRACT_ID
+            and series_liveness(run, paused)["state"] == "paused"
+            and control.get("status") == "paused"
+            and not (run / "classical" / "result.json").exists(),
+            "pause_exclusion.user_pause", "excluded run was explicitly paused without a terminal result",
+        )
+        artifacts = {
+            "seriesSha256": run / "series.json",
+            "pauseRecordSha256": run / "classical" / "dashboard-control.json",
+            "logSha256": run / "classical" / "match.log",
+            "pgnSha256": run / "classical" / "games.pgn",
+        }
+        for key, path in artifacts.items():
+            self.require(
+                path.is_file() and file_sha256(path) == exclusion.get(key),
+                f"pause_exclusion.{key}", "excluded pause evidence has its recorded checksum",
+                path=str(path),
+            )
+        self.require(
+            paused.get("engineSha256") == series.get("engineSha256")
+            and paused.get("training") == series.get("training")
+            and paused.get("recovery", {}).get("sourceSeriesSha256") == recovery.get("sourceSeriesSha256"),
+            "pause_exclusion.provenance", "paused run used the same frozen engine, network experiment, and short-stage source",
+        )
 
     def verify_stage(
         self,

@@ -99,7 +99,7 @@ Smoke evidence:
 
 The full recovery started on October 12 at approximately 11:58 UTC from clean
 runner commit `a71e93feee700e0b03f7a58f355f8947fae90d6f`, retaining the original
-engine binary from `8cfb637`. It is running six concurrent games in
+engine binary from `8cfb637`. It ran six concurrent games in
 `E:\Dev\Forklift-Research\matches\nnue-long-recovery-20261012`.
 The live verifier reported zero failed checks, two pending completion checks,
 valid source lineage, and successful NNUE activation. The actual match manifest
@@ -121,3 +121,43 @@ path and `--no-probcut` remains compatible. Dedicated CTest checks protect the
 tools default, opt-in flag, and desktop benchmark default. This repairs
 measurement configuration; it does not alter the frozen confirmation binary
 or claim a playing-strength improvement.
+
+### Explicit user pause and restart
+
+The user requested a pause on October 12 at 19:26 UTC. The verified match
+process tree was stopped, preserving the original files. The pause record
+contains 676 games: 321 wins, 153 losses, 202 draws (62.4260%). The log and PGN
+agree on 676 completed games, and no technical termination appears in the log.
+The six in-flight games did not become completed result records. This is a
+user-requested interruption; the coordinator's exit-1 `failed` metadata reflects
+the stopped subprocess, not an inferred engine failure.
+
+On the user's request to continue, the separately committed contract
+`shared-nnue-long-resume-20261012` declares a new 1,200-game sample, seed
+`202610121`. The exact definition and all four paused-artifact checksums are in
+`research/experiments/2026-10-12-shared-nnue-long-resume.json`. Neither prior
+partial long sample is aggregated into this gate. The previously completed
+800-game short result remains referenced as reused evidence.
+
+The prior partial score was visible before this restart. This history must
+remain disclosed in any paper; the restart is not presented as the sole
+attempt or as confirmation on an unseen opening distribution.
+
+The runner's `--exclude-paused-series` flag records the explicit pause, checks
+provenance, and selects the versioned new seed. The verifier refuses changed
+pause artifacts, a missing pause record, or any existing terminal long result.
+Status readers derive `paused` from the control record while retaining the
+original failed metadata unchanged. Heartbeat writes also now retry temporary
+Windows sharing violations; recovered telemetry contention does not turn a
+completed clean match into a failure.
+
+Launch from a clean committed checkout into a new directory:
+
+```powershell
+.\.venv-nnue\Scripts\python.exe -u scripts\nnue\run_strength_screen.py `
+  --training-dir E:\Dev\Forklift-Research\models\nnue-v2-factorization-20260912 `
+  --engine E:\Dev\Chess-Engine\build-nnue-recovery-confirmation\Release\chess-engine-uci.exe `
+  --run-dir E:\Dev\Forklift-Research\matches\nnue-long-resume-20261012 `
+  --recover-long-from E:\Dev\Forklift-Research\matches\nnue-low-clock-confirmation-20260927 `
+  --exclude-paused-series E:\Dev\Forklift-Research\matches\nnue-long-recovery-20261012
+```
