@@ -21,6 +21,8 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "web" / "calibration-dashboard.html"
+sys.path.insert(0, str(ROOT / "scripts" / "nnue"))
+from series_lifecycle import series_liveness
 
 
 class FILETIME(ctypes.Structure):
@@ -1049,6 +1051,21 @@ def build_training_snapshot(run_dir: Path) -> dict[str, object]:
             "comparison": experiment.get("comparison")}
 
 
+def build_series_snapshot(run_dir: Path) -> dict:
+    series = read_json(run_dir / "series.json")
+    if not series:
+        return {}
+    lifecycle = series_liveness(run_dir, series)
+    result = {**series, "recordedState": series.get("state"),
+              "state": lifecycle["state"], "lifecycle": lifecycle}
+    if lifecycle["state"] in {"interrupted", "unverified"}:
+        result["stages"] = [
+            {**stage, "state": lifecycle["state"]} if stage.get("state") == "running" else stage
+            for stage in series.get("stages", [])
+        ]
+    return result
+
+
 def make_handler(
     run_dir: Path,
     history_run_dirs: list[Path] | None = None,
@@ -1061,7 +1078,7 @@ def make_handler(
         current_match_dir = (
             match_controller.run_dir if match_controller else match_run_dir
         )
-        series = read_json(match_series_dir / "series.json") if match_series_dir else {}
+        series = build_series_snapshot(match_series_dir) if match_series_dir else {}
         if series.get("current") in {"network", "classical"}:
             current_match_dir = match_series_dir / series["current"]
         value = build_snapshot(run_dir, history_run_dirs, current_match_dir)

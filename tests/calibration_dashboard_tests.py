@@ -21,6 +21,19 @@ SPEC.loader.exec_module(dashboard)
 
 
 class CalibrationDashboardTests(unittest.TestCase):
+    def test_dead_series_is_interrupted_without_mutating_the_archive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            value = {"state": "running", "current": "classical",
+                     "stages": [{"id": "network", "state": "complete"},
+                                {"id": "classical", "state": "running"}]}
+            (root / "series.json").write_text(json.dumps(value))
+            snapshot = dashboard.build_series_snapshot(root)
+            self.assertEqual(snapshot["state"], "interrupted")
+            self.assertEqual(snapshot["stages"][0]["state"], "complete")
+            self.assertEqual(snapshot["stages"][1]["state"], "interrupted")
+            self.assertEqual(json.loads((root / "series.json").read_text()), value)
+
     def test_live_failure_counts_ignore_summary_duplicates(self):
         log = 'Finished game 97 (NNUE vs Classical): 0-1 {White disconnects}\n  "Loss: White disconnects": 1\nFinished game 98 (A vs B): 1-0 {Black loses on time}\n'
         failures = dashboard.live_failures(log)

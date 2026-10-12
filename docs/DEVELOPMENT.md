@@ -6,6 +6,13 @@ after the v1 release.
 
 ## Repository state
 
+Interruption audit (2026-10-12): the September 27 long-control coordinator is
+absent; it stopped with 387 logged games and 389 completed PGN records. The
+complete 800-game stage remains valid, but the partial long stage is excluded
+from promotion. Coordinator heartbeats now distinguish live runs from stale
+`running` metadata in the verifier and dashboard without altering raw evidence.
+See [interruption audit and recovery](results/2026-10-12-nnue-interruption-recovery.md).
+
 Promotion-gate update (2026-09-27): the fresh shared-NNUE confirmation's first
 stage completed all 800 games at `30+0.3`, scoring `415-181-204` (+93.9 +/-
 21.7 Elo) with no technical terminations. The separate 1,200-game `90+0.9`

@@ -12,6 +12,8 @@ import subprocess
 import sys
 from typing import Any, Callable
 
+from series_lifecycle import series_liveness
+
 
 PROMOTION_CONTRACT = {
     "network": {
@@ -134,6 +136,7 @@ class PromotionVerifier:
         self.checks: list[dict[str, Any]] = []
         self.stage_reports: list[dict[str, Any]] = []
         self.runtime_probe_result: dict[str, Any] | None = None
+        self.lifecycle: dict[str, Any] | None = None
 
     def record(
         self, code: str, status: str, message: str, **details: Any
@@ -153,7 +156,8 @@ class PromotionVerifier:
     def verify(self) -> dict[str, Any]:
         series_path = self.series_dir / "series.json"
         series = read_object(series_path)
-        series_state = series.get("state")
+        self.lifecycle = series_liveness(self.series_dir, series)
+        series_state = self.lifecycle["state"]
         if series_state == "complete":
             self.record("series.complete", "pass", "promotion series is complete")
         elif series_state == "running":
@@ -162,6 +166,7 @@ class PromotionVerifier:
             self.record(
                 "series.complete", "fail", "promotion series did not complete",
                 state=series_state,
+                reason=self.lifecycle["reason"],
             )
 
         training_value = series.get("training")
@@ -492,6 +497,8 @@ class PromotionVerifier:
             "summary": {"failed": failed, "pending": pending, "total": len(self.checks)},
             "series": str(self.series_dir / "series.json"),
             "seriesState": series.get("state"),
+            "observedSeriesState": self.lifecycle["state"] if self.lifecycle else None,
+            "lifecycle": self.lifecycle,
             "networkSha256": network_sha256,
             "engineSha256": engine_sha256,
             "runtimeProbe": self.runtime_probe_result,

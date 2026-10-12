@@ -285,7 +285,10 @@ The verifier returns exit code 0 only when both stages contain every
 predeclared game, use the same checksummed executable and checksummed network,
 match the frozen time controls/options/seeds, have zero technical terminations,
 and report an Elo interval whose lower bound is above zero. Exit code 2 means a
-clean series is still running; exit code 1 means the evidence fails closed.
+clean series has a live coordinator; exit code 1 means the evidence fails closed.
+New runs preserve a five-second coordinator heartbeat; a dead process or a
+heartbeat older than 60 seconds is reported as interrupted, even if archived
+`series.json` still says `running`. Historical runs use their match-runner PID.
 It also requires the embedded series results to match the separately preserved
 `result.json` artifacts and rechecks exact Python/C++ export verification. The
 verifier also starts one short-lived copy of the frozen executable and requires

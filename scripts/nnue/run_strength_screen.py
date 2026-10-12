@@ -8,6 +8,7 @@ import sys
 from datetime import datetime, timezone
 
 from nnue_dataset import sha256_file, write_json_atomic
+from series_lifecycle import coordinator_heartbeat
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -76,8 +77,9 @@ def main():
                 command.append("--quick")
             stage["command"] = command
             write_json_atomic(status, state)
-            with (run / f"{stage['id']}.runner.log").open("w", encoding="utf-8") as log:
-                result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
+            with coordinator_heartbeat(run):
+                with (run / f"{stage['id']}.runner.log").open("w", encoding="utf-8") as log:
+                    result = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
             if result.returncode:
                 raise RuntimeError(f"{stage['name']} runner failed: exit {result.returncode}")
             report = json.loads((run / stage["id"] / "result.json").read_text())

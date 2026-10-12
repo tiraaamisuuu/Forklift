@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts" / "nnue"))
 SPEC = importlib.util.spec_from_file_location(
     "verify_promotion", ROOT / "scripts" / "nnue" / "verify_promotion.py"
 )
@@ -57,6 +60,7 @@ class PromotionFixture:
         )
         self.series = {
             "state": "complete",
+            "current": "classical",
             "training": str(self.training),
             "engineSha256": self.engine_hash,
             "stages": [
@@ -164,12 +168,26 @@ class NnuePromotionTests(unittest.TestCase):
         stage = self.fixture.series["stages"][1]
         stage["state"] = "running"
         stage.pop("result")
+        (self.fixture.series_dir / "classical").mkdir(exist_ok=True)
+        (self.fixture.series_dir / "classical" / "match.pid").write_text(str(os.getpid()))
         self.fixture.save()
 
         report = self.fixture.verify()
 
         self.assertEqual(report["decision"], "pending")
         self.assertGreaterEqual(report["summary"]["pending"], 2)
+
+    def test_dead_runner_is_interrupted_not_pending(self) -> None:
+        self.fixture.series["state"] = "running"
+        stage = self.fixture.series["stages"][1]
+        stage["state"] = "running"
+        stage.pop("result")
+        self.fixture.save()
+
+        report = self.fixture.verify()
+
+        self.assertEqual(report["decision"], "fail")
+        self.assertEqual(report["observedSeriesState"], "interrupted")
 
     def test_any_technical_termination_fails_closed(self) -> None:
         result = self.fixture.series["stages"][0]["result"]
