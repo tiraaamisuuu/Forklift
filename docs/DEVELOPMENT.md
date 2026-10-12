@@ -15,6 +15,8 @@ See [interruption audit and recovery](results/2026-10-12-nnue-interruption-recov
 The user paused the recovery at 676 games, then requested continuation. A new
 full 1,200-game restart is preregistered with seed `202610121`, preserving and
 excluding the paused sample and reusing only the verified complete short stage.
+That restart is now running from clean runner commit `a88fe68`; its workflow
+smoke completed without technical failures, and initial provenance checks pass.
 Benchmark tools also now match the production ProbCut-off default; explicit
 `--probcut` is required for that experiment.
 

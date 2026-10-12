@@ -161,3 +161,22 @@ Launch from a clean committed checkout into a new directory:
   --recover-long-from E:\Dev\Forklift-Research\matches\nnue-low-clock-confirmation-20260927 `
   --exclude-paused-series E:\Dev\Forklift-Research\matches\nnue-long-recovery-20261012
 ```
+
+The restart workflow smoke completed four games at `2+0.02`: two wins,
+two losses, no draws, and no technical terminations. It is preserved in
+`E:\Dev\Forklift-Research\matches\nnue-long-resume-smoke-20261012` and is excluded
+from strength evidence. Promotion verification correctly rejected this small
+sample under the full restart contract.
+
+The full restart launched at approximately 21:32 UTC on October 12 from clean
+runner commit `a88fe68e2ce3a64bfba33e03a818d49899fe709f`. Six concurrent games
+started in `E:\Dev\Forklift-Research\matches\nnue-long-resume-20261012`. Its live
+verifier reported zero failed checks and two pending completion checks, a live
+heartbeat, exact pause-artifact checksums, and successful NNUE activation. The
+paused series and PGN hashes were rechecked unchanged after launch. The full
+result remains pending.
+
+The restart checkpoint passed 53 targeted Python checks, the workflow smoke,
+and all six GitHub CI jobs (Ubuntu, macOS, Windows, sanitizers, web, and Windows
+desktop packaging). These checks establish workflow and implementation
+correctness; the pending 1,200-game result is the playing-strength gate.
