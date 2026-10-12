@@ -359,8 +359,10 @@
           const stages = data.matchSeries.stages || [];
           const index = stages.findIndex(s => s.id === data.matchSeries.current);
           el("match-title").textContent = "NNUE vs classical";
-          el("match-series").textContent = data.matchSeries.error || `stage ${index + 1} of ${stages.length}${index + 1 < stages.length ? " · longer time control next" : " · longer time control"}`;
-          el("match-series").classList.toggle("error", Boolean(data.matchSeries.error));
+          const runName = (data.matchSeries.runDirectory || "").split(/[\\/]/).filter(Boolean).pop();
+          const seriesNote = data.matchSeries.pauseMessage || data.matchSeries.error || `stage ${index + 1} of ${stages.length}${index + 1 < stages.length ? " · longer time control next" : " · longer time control"}`;
+          el("match-series").textContent = runName ? `${seriesNote} · ${runName}` : seriesNote;
+          el("match-series").classList.toggle("error", data.matchSeries.state !== "paused" && Boolean(data.matchSeries.error));
         }
         renderTraining(match ? null : data.training);
         const activeMatch = match && match.state === "running";
@@ -371,6 +373,10 @@
         el("status").textContent = activeMatch ? "search test running" : (match?.state || data.state);
         if (data.matchSeries?.state === "failed") {
           el("status").textContent = "experiment failed";
+          el("status-dot").classList.add("stopped");
+        }
+        if (data.matchSeries?.state === "paused") {
+          el("status").textContent = "experiment paused";
           el("status-dot").classList.add("stopped");
         }
         if (data.training && !data.matchSeries) {

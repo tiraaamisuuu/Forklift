@@ -21,6 +21,24 @@ SPEC.loader.exec_module(dashboard)
 
 
 class CalibrationDashboardTests(unittest.TestCase):
+    def test_explicit_pause_does_not_display_subprocess_exit_as_engine_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "classical").mkdir()
+            error = "fresh long-control recovery vs classical runner failed: exit 1"
+            value = {"state": "failed", "current": "classical", "error": error,
+                     "stages": [{"id": "network", "state": "complete"},
+                                {"id": "classical", "state": "failed"}]}
+            (root / "series.json").write_text(json.dumps(value))
+            (root / "classical" / "dashboard-control.json").write_text('{"status":"paused"}')
+            snapshot = dashboard.build_series_snapshot(root)
+            self.assertEqual(snapshot["state"], "paused")
+            self.assertIsNone(snapshot["error"])
+            self.assertEqual(snapshot["recordedError"], error)
+            self.assertEqual(snapshot["stages"][1]["state"], "paused")
+            self.assertEqual(snapshot["stages"][0]["state"], "complete")
+            self.assertEqual(json.loads((root / "series.json").read_text()), value)
+
     def test_dead_series_is_interrupted_without_mutating_the_archive(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

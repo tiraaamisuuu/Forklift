@@ -1057,7 +1057,16 @@ def build_series_snapshot(run_dir: Path) -> dict:
         return {}
     lifecycle = series_liveness(run_dir, series)
     result = {**series, "recordedState": series.get("state"),
-              "state": lifecycle["state"], "lifecycle": lifecycle}
+              "state": lifecycle["state"], "lifecycle": lifecycle,
+              "runDirectory": str(run_dir.resolve())}
+    if lifecycle["state"] == "paused":
+        result["recordedError"] = series.get("error")
+        result["error"] = None
+        result["pauseMessage"] = "Paused by user; partial evidence preserved"
+        result["stages"] = [
+            {**stage, "state": "paused"} if stage.get("id") == series.get("current") else stage
+            for stage in series.get("stages", [])
+        ]
     if lifecycle["state"] in {"interrupted", "unverified"}:
         result["stages"] = [
             {**stage, "state": lifecycle["state"]} if stage.get("state") == "running" else stage

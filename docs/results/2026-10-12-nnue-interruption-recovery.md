@@ -180,3 +180,18 @@ The restart checkpoint passed 53 targeted Python checks, the workflow smoke,
 and all six GitHub CI jobs (Ubuntu, macOS, Windows, sanitizers, web, and Windows
 desktop packaging). These checks establish workflow and implementation
 correctness; the pending 1,200-game result is the playing-strength gate.
+
+### Dashboard monitoring correction
+
+The viewer launched with the earlier recovery directory continued displaying
+its exit-1 message after the restart, although the new coordinator was healthy.
+Dashboard launch arguments must point to `nnue-long-resume-20261012` to follow
+the new sample. The series subtitle now includes the monitored directory name
+so this distinction is visible.
+
+For an explicit user pause, the read-only dashboard snapshot preserves the
+original subprocess message as `recordedError`, clears the displayed failure,
+and labels the experiment and active stage as paused. The raw archived JSON is
+unchanged. A regression test protects this distinction; all 18 dashboard tests
+and the inline JavaScript syntax check pass. Only the viewer is restarted to
+change its selection; the match runner and engines are left running.
