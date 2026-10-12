@@ -129,6 +129,20 @@ if(BUILD_TESTING)
     target_compile_options(chess-core-tests PRIVATE ${CHESS_WARNING_FLAGS})
   endif()
   add_test(NAME chess-core-tests COMMAND chess-core-tests)
+  add_test(NAME benchmark-production-default
+    COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1)
+  set_tests_properties(benchmark-production-default PROPERTIES
+    PASS_REGULAR_EXPRESSION "probCut=off")
+  add_test(NAME benchmark-probcut-opt-in
+    COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1 --probcut)
+  set_tests_properties(benchmark-probcut-opt-in PROPERTIES
+    PASS_REGULAR_EXPRESSION "probCut=on")
+  if(TARGET gui)
+    add_test(NAME desktop-benchmark-production-default
+      COMMAND gui --bench --bench-depth 1 --bench-tt 1)
+    set_tests_properties(desktop-benchmark-production-default PROPERTIES
+      PASS_REGULAR_EXPRESSION "probCut=off")
+  endif()
   if(WIN32)
     find_program(CHESS_POWERSHELL_EXECUTABLE NAMES pwsh powershell REQUIRED)
     add_test(NAME uci-smoke

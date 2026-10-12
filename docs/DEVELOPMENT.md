@@ -12,6 +12,10 @@ complete 800-game stage remains valid, but the partial long stage is excluded
 from promotion. Coordinator heartbeats now distinguish live runs from stale
 `running` metadata in the verifier and dashboard without altering raw evidence.
 See [interruption audit and recovery](results/2026-10-12-nnue-interruption-recovery.md).
+The full fresh-seed 1,200-game recovery is now running, reusing only the verified
+completed short stage. Its experiment contract was committed before launch.
+Benchmark tools also now match the production ProbCut-off default; explicit
+`--probcut` is required for that experiment.
 
 Promotion-gate update (2026-09-27): the fresh shared-NNUE confirmation's first
 stage completed all 800 games at `30+0.3`, scoring `415-181-204` (+93.9 +/-

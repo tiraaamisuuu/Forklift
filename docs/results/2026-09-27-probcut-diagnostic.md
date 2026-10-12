@@ -26,6 +26,12 @@ established search unless an experiment explicitly enables it.
 
 ## Fixed-depth benchmark
 
+Replication note (2026-10-12): the original benchmark executable defaulted to
+ProbCut on. Current mainline benchmarks default to off, matching ordinary play.
+Use the original frozen binary for exact historical replication, or explicitly
+pass `--probcut` for the candidate and `--no-probcut` for the control with newer
+tools. The historical reported measurements below remain unchanged.
+
 The same optimized binary searched the four committed benchmark positions with
 one thread and a 256 MiB TT. Disabling ProbCut provides the within-binary
 control.

@@ -6,6 +6,14 @@ current branch throughout the process.
 
 ## First-time setup
 
+Fixed-position benchmarks now use the production search defaults, including
+ProbCut disabled. Enable that experiment explicitly with
+`chess-engine-tools --bench --probcut`; `--no-probcut` remains accepted for
+existing scripts. Preserve the `probCut=on/off` benchmark header alongside
+nodes, timing, evaluator, and executable checksum. Before the October 12 repair,
+the benchmark entry points defaulted to ProbCut on even though UCI play used
+off, so historical timing comparisons must retain their recorded configuration.
+
 On macOS or Linux, build the pinned Cute Chess CLI dependency:
 
 ```sh

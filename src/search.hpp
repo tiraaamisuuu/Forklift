@@ -1469,7 +1469,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                               int ttSizeMB = 256, int threads = 1,
                               const PositionEvaluator* evaluator = nullptr,
                               bool incrementalNnue = true,
-                              bool enableProbCut = true){
+                              bool enableProbCut = false){
     const std::vector<BenchmarkPosition> positions = {
         {"Start", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
         {"Middlegame 1", "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10"},

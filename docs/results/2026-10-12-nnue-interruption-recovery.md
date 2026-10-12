@@ -85,3 +85,39 @@ The new series records runner revision/dirty status, training-manifest hash,
 source-series hash, reused-result hash, excluded log/PGN hashes, UTC start time,
 and the exact match command. The existing match manifest adds host, opening,
 Cute Chess, executable, UCI-option, and disposable activation-probe provenance.
+
+### Validation and launch
+
+The separate recovery workflow smoke completed four games at `2+0.02`, scoring
+zero wins, two losses, and two draws, with zero technical terminations. Its
+promotion verification correctly failed the fixed 1,200-game requirement and
+positive lower-bound requirement. This result is recorded for completeness;
+it is a workflow check and is excluded from strength evidence.
+
+Smoke evidence:
+`E:\Dev\Forklift-Research\matches\nnue-long-recovery-smoke-20261012`.
+
+The full recovery started on October 12 at approximately 11:58 UTC from clean
+runner commit `a71e93feee700e0b03f7a58f355f8947fae90d6f`, retaining the original
+engine binary from `8cfb637`. It is running six concurrent games in
+`E:\Dev\Forklift-Research\matches\nnue-long-recovery-20261012`.
+The live verifier reported zero failed checks, two pending completion checks,
+valid source lineage, and successful NNUE activation. The actual match manifest
+confirms 1,200 games, `90+0.9`, seed `202610120`, equal 1-thread/128-MiB
+resources, and successful configuration probes on both sides. No full result is
+available at launch.
+
+The frozen binary's core/UCI CTest gates passed before launch. All Windows,
+macOS, Ubuntu, sanitizer, web, and desktop-package CI jobs passed for the
+recovery runner commit. No strength or timing measurements from later builds
+should be attributed to this frozen executable.
+
+### Benchmark configuration audit
+
+The audit also found that `runSearchBenchmark` and `chess-engine-tools` defaulted
+to ProbCut on, while `SearchContext` and UCI play defaulted to off. Both benchmark
+defaults now match production; `--probcut` explicitly selects the experimental
+path and `--no-probcut` remains compatible. Dedicated CTest checks protect the
+tools default, opt-in flag, and desktop benchmark default. This repairs
+measurement configuration; it does not alter the frozen confirmation binary
+or claim a playing-strength improvement.

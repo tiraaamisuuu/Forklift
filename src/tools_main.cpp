@@ -28,7 +28,7 @@ void printHelp(){
         << "  chess-engine-tools --bench [--bench-depth DEPTH] [--bench-time MS]\n"
         << "                  [--bench-tt MB] [--threads N] [--nnue NETWORK]\n"
         << "                  [--nnue-weight PERCENT]\n"
-        << "                  [--nnue-rebuild] [--no-probcut]\n";
+        << "                  [--nnue-rebuild] [--probcut | --no-probcut]\n";
 }
 
 } // namespace
@@ -40,7 +40,7 @@ int main(int argc, char** argv){
     bool benchmark = false;
     bool evaluate = false;
     bool nnueRebuild = false;
-    bool enableProbCut = true;
+    bool enableProbCut = false;
     int maxPerftDepth = 4;
     int benchmarkDepth = 8;
     int benchmarkTimeMs = 4000;
@@ -91,6 +91,8 @@ int main(int argc, char** argv){
             }
         } else if(argument == "--nnue-rebuild"){
             nnueRebuild = true;
+        } else if(argument == "--probcut"){
+            enableProbCut = true;
         } else if(argument == "--no-probcut"){
             enableProbCut = false;
         } else if(argument == "--max-depth"){
