@@ -8,6 +8,13 @@ from run_strength_screen import screen_plan
 
 
 class StrengthPlanTests(unittest.TestCase):
+    def test_long_recovery_preserves_short_stage_and_changes_long_seed(self):
+        original = screen_plan(False, True)
+        recovery = screen_plan(False, recover_long=True)
+        self.assertEqual(recovery[0], original[0])
+        self.assertEqual(recovery[1][2:4], (1200, "90+0.9"))
+        self.assertEqual(recovery[1][4], 202610120)
+        self.assertNotIn(recovery[1][4], [p[4] for p in original])
     def test_overnight_is_new_evidence_with_longer_control(self):
         plan = screen_plan(False, True)
         self.assertEqual([p[2] for p in plan], [800, 1200])

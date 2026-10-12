@@ -4,9 +4,10 @@ This directory preserves compact, reviewable research metadata. Large raw
 datasets, models, PGNs and generated experiment directories belong in the
 external archive at `E:\Dev\Forklift-Research`, not in Git.
 
-The research programme is intentionally on the backburner. Normal engine work
-should collect useful evidence without allowing a future paper to distort the
-current engineering priorities.
+Engine development now keeps a paper-oriented experiment notebook alongside
+the strength work. Each substantial experiment records its hypothesis, fixed
+contract, artifact hashes, outcome, and limitations, including failed and
+interrupted runs. Preparing this evidence does not establish novelty.
 
 ## Current research signal
 
@@ -36,6 +37,8 @@ collapsed into a universal Elo claim.
 
 ## Repository contents
 
+- [`experiments/`](experiments/) stores compact experiment definitions committed
+  before new runs, including the October 12 long-control recovery contract.
 - [`RESEARCH_QUESTIONS.md`](RESEARCH_QUESTIONS.md) records hypotheses and
   possible new methods without treating them as established inventions.
 - [`DATA_POLICY.md`](DATA_POLICY.md) defines what is collected and where it

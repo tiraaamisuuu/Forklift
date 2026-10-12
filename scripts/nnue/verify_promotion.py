@@ -13,26 +13,11 @@ import sys
 from typing import Any, Callable
 
 from series_lifecycle import series_liveness
+from promotion_contracts import (
+    CONTRACTS, ORIGINAL_CONTRACT_ID, PROMOTION_CONTRACT, RECOVERY_CONTRACT_ID,
+)
 
 
-PROMOTION_CONTRACT = {
-    "network": {
-        "games": 800,
-        "timeControl": "30+0.3",
-        "seed": 202609140,
-        "threads": 1,
-        "hashMb": 128,
-        "concurrency": 6,
-    },
-    "classical": {
-        "games": 1200,
-        "timeControl": "90+0.9",
-        "seed": 202609141,
-        "threads": 1,
-        "hashMb": 128,
-        "concurrency": 6,
-    },
-}
 FAILURE_KEYS = ("crashes", "disconnects", "illegalMoves", "timeForfeits")
 
 
@@ -137,6 +122,7 @@ class PromotionVerifier:
         self.stage_reports: list[dict[str, Any]] = []
         self.runtime_probe_result: dict[str, Any] | None = None
         self.lifecycle: dict[str, Any] | None = None
+        self.contract_id = ORIGINAL_CONTRACT_ID
 
     def record(
         self, code: str, status: str, message: str, **details: Any
@@ -156,6 +142,13 @@ class PromotionVerifier:
     def verify(self) -> dict[str, Any]:
         series_path = self.series_dir / "series.json"
         series = read_object(series_path)
+        self.contract_id = series.get("contractId", ORIGINAL_CONTRACT_ID)
+        contract = CONTRACTS.get(self.contract_id)
+        if not self.require(
+            contract is not None, "series.contract_id",
+            "series uses a known predeclared contract", contractId=self.contract_id,
+        ):
+            return self.report(series, None, None)
         self.lifecycle = series_liveness(self.series_dir, series)
         series_state = self.lifecycle["state"]
         if series_state == "complete":
@@ -271,20 +264,28 @@ class PromotionVerifier:
             if isinstance(stage, dict) and isinstance(stage.get("id"), str)
         }
         self.require(
-            len(stages) == len(PROMOTION_CONTRACT)
-            and set(by_id) == set(PROMOTION_CONTRACT),
+            len(stages) == len(contract)
+            and set(by_id) == set(contract),
             "series.stages",
             "series contains exactly the frozen promotion stages",
-            expected=list(PROMOTION_CONTRACT),
+            expected=list(contract),
             actual=list(by_id),
         )
 
+        evidence_dirs = {stage_id: self.series_dir / stage_id for stage_id in contract}
+        if self.contract_id == RECOVERY_CONTRACT_ID:
+            recovered_dir = self.verify_recovery(series, by_id)
+            if recovered_dir is not None:
+                evidence_dirs["network"] = recovered_dir
+
         engine_path: Path | None = None
-        for stage_id, contract in PROMOTION_CONTRACT.items():
+        for stage_id, stage_contract in contract.items():
             stage = by_id.get(stage_id)
             if not isinstance(stage, dict):
                 continue
-            stage_engine = self.verify_stage(stage_id, stage, contract, network_path)
+            stage_engine = self.verify_stage(
+                stage_id, stage, stage_contract, network_path, evidence_dirs[stage_id]
+            )
             if stage_engine is not None:
                 if engine_path is None:
                     engine_path = stage_engine
@@ -324,12 +325,59 @@ class PromotionVerifier:
             )
         return self.report(series, actual_network_hash, actual_engine_hash)
 
+    def verify_recovery(self, series: dict, stages: dict) -> Path | None:
+        recovery = series.get("recovery")
+        recovery = recovery if isinstance(recovery, dict) else {}
+        source_value = recovery.get("sourceSeries")
+        if not self.require(
+            isinstance(source_value, str) and bool(source_value),
+            "recovery.source", "recovery records the original series",
+        ):
+            return None
+        source_path = Path(source_value).resolve()
+        source = read_object(source_path)
+        source_hash = file_sha256(source_path)
+        self.require(
+            recovery.get("sourceSeriesSha256") == source_hash,
+            "recovery.source_checksum", "original series checksum is unchanged",
+            actual=source_hash, expected=recovery.get("sourceSeriesSha256"),
+        )
+        source_stages = source.get("stages", [])
+        source_network = next((stage for stage in source_stages if stage.get("id") == "network"), {})
+        source_long = next((stage for stage in source_stages if stage.get("id") == "classical"), {})
+        observed = series_liveness(source_path.parent, source)
+        self.require(
+            source.get("contractId", ORIGINAL_CONTRACT_ID) == ORIGINAL_CONTRACT_ID
+            and observed["state"] == "interrupted"
+            and source_long.get("state") != "complete"
+            and not (source_path.parent / "classical" / "result.json").exists(),
+            "recovery.interrupted_source",
+            "recovery replaces an interrupted long stage with no terminal result",
+            sourceState=observed["state"],
+        )
+        self.require(
+            stages.get("network") == source_network,
+            "recovery.reused_stage", "reused short stage is identical to its original evidence",
+        )
+        self.require(
+            source.get("engineSha256") == series.get("engineSha256")
+            and source.get("training") == series.get("training"),
+            "recovery.provenance", "recovery preserves the frozen engine and training identity",
+        )
+        result_path = source_path.parent / "network" / "result.json"
+        self.require(
+            result_path.is_file() and file_sha256(result_path) == recovery.get("reusedResultSha256"),
+            "recovery.result_checksum", "reused short-stage result has its original checksum",
+        )
+        return source_path.parent / "network"
+
     def verify_stage(
         self,
         stage_id: str,
         stage: dict[str, Any],
         contract: dict[str, Any],
         network_path: Path,
+        evidence_dir: Path | None = None,
     ) -> Path | None:
         command_value = stage.get("command")
         command = command_value if isinstance(command_value, list) else []
@@ -370,9 +418,9 @@ class PromotionVerifier:
         )
 
         state = stage.get("state")
-        if state == "running":
-            self.pending(f"{stage_id}.complete", f"{stage_id} stage is still running")
-            self.stage_reports.append({"id": stage_id, "state": "running"})
+        if state in {"running", "queued"}:
+            self.pending(f"{stage_id}.complete", f"{stage_id} stage is {state}")
+            self.stage_reports.append({"id": stage_id, "state": state})
             return engine_path
         self.require(
             state == "complete",
@@ -461,7 +509,7 @@ class PromotionVerifier:
             lowerBound=lower_bound,
         )
 
-        result_path = self.series_dir / stage_id / "result.json"
+        result_path = (evidence_dir or self.series_dir / stage_id) / "result.json"
         artifact_matches = result_path.is_file() and read_object(result_path) == result
         self.require(
             artifact_matches,
@@ -493,6 +541,7 @@ class PromotionVerifier:
         decision = "fail" if failed else ("pending" if pending else "pass")
         return {
             "schemaVersion": 1,
+            "contractId": self.contract_id,
             "decision": decision,
             "summary": {"failed": failed, "pending": pending, "total": len(self.checks)},
             "series": str(self.series_dir / "series.json"),

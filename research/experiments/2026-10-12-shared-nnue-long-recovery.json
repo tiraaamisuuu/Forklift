@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "shared-nnue-long-recovery-20261012",
+  "recordedDate": "2026-10-12",
+  "evidenceLevel": "confirmatory engineering gate for a selected network",
+  "hypothesis": "The frozen shared-feature NNUE improves strength over classical evaluation at 90+0.9 while retaining technical reliability.",
+  "primaryOutcome": "Reported relative-Elo lower bound above zero after exactly 1200 paired games, with zero technical terminations.",
+  "engineSourceCommit": "8cfb6371c6bc7b6a4b49076b7ae352fd005a0a8a",
+  "engineSha256": "b97bfa1199e5c3ff13b3d53cb713a3d21ff2f47cfae42c9035e3581ec050c2ff",
+  "networkSha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c",
+  "networkTraining": "nnue-v2-factorization-20260912/shared",
+  "contract": {
+    "games": 1200,
+    "timeControl": "90+0.9",
+    "seed": 202610120,
+    "threadsPerEngine": 1,
+    "hashMbPerEngine": 128,
+    "concurrency": 6,
+    "pairedOpenings": true,
+    "openingPool": "UHO_4060_v4.epd",
+    "openingSha256": "3f499996ff0b674a04f85f2634811d102dd53b5115841e8f11d18e1f550ba2ca",
+    "candidateOptions": {"Use NNUE": "true", "NNUE Weight": "100"},
+    "baselineOptions": {"Use NNUE": "false"}
+  },
+  "reuse": {
+    "source": "E:/Dev/Forklift-Research/matches/nnue-low-clock-confirmation-20260927/network/result.json",
+    "games": 800,
+    "wins": 415,
+    "losses": 204,
+    "draws": 181,
+    "relativeElo": 93.9,
+    "eloUncertainty": 21.7,
+    "technicalFailures": 0,
+    "classification": "Existing complete short-control evidence; no new replication claimed.",
+    "resultSha256": "a24a8f61530850f07c5a31d14b64ad51d4a604164627990d7860dc64ecc72cfa"
+  },
+  "exclusion": {
+    "source": "E:/Dev/Forklift-Research/matches/nnue-low-clock-confirmation-20260927/classical",
+    "reason": "Interrupted with 387 logged finishes and 389 completed PGN headers; no terminal result.",
+    "treatment": "Preserved, disclosed, and excluded from the promotion decision; no aggregation with the recovery run."
+  },
+  "rawEvidenceDirectory": "E:/Dev/Forklift-Research/matches/nnue-long-recovery-20261012",
+  "stopPolicy": "Exactly 1200 games. A crash, illegal move, disconnect, time forfeit, interruption, or non-positive reported Elo lower bound blocks promotion. No extension to reach a preferred result.",
+  "limitations": [
+    "One selected network and one training seed.",
+    "Same opening pool as earlier screens; a new seed is not a new distribution.",
+    "Same-search evaluator comparison does not isolate feature-factorization causality.",
+    "Relative match evidence is not an absolute rating or a claim of Stockfish parity.",
+    "Multiple independent training seeds, ablations, and opponent/opening generalization remain required for a research paper."
+  ]
+}

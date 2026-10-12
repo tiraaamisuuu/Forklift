@@ -26,7 +26,7 @@ The partial score is descriptive only; it is excluded from promotion evidence.
 
 | Artifact | SHA-256 |
 | --- | --- |
-| Original `series.json` | `92657068bbbcf9feea5200193eb80c635627e0e2c93d5efaa05d23b74b68f141d` |
+| Original `series.json` | `92657068bbcf9feea5200193eb80c635627e0e2c93d5efaa05d23b74b68f141d` |
 | Long-stage `match.log` | `e88282fdca81ed015fde8b2c76b7776198cb34a090903374e6a68104f8cb8686` |
 | Long-stage `games.pgn` | `c56227f132e81d710e4b70a01e2acb361d210b25b11c2b6c363effb0726d6ab1` |
 | Frozen UCI executable | `b97bfa1199e5c3ff13b3d53cb713a3d21ff2f47cfae42c9035e3581ec050c2ff` |
@@ -60,3 +60,28 @@ This is an engineering confirmation of one selected network. It does not isolate
 the causal contribution of feature factorization, estimate absolute Elo, or
 establish a novel learning method. A paper will need independent training seeds,
 controlled ablations, and opening/opponent generalization beyond this gate.
+
+### Committed recovery contract
+
+The new contract is `shared-nnue-long-recovery-20261012`, seed `202610120`.
+Its compact definition is in
+`research/experiments/2026-10-12-shared-nnue-long-recovery.json`. The completed
+short stage is referenced unchanged and revalidated against its source checksum;
+it is not copied into a new PGN or counted as a fresh replication. The coordinator
+refuses a live source, an invalid short result, a changed engine, or an existing
+terminal long-stage result. The verifier recognizes only versioned contracts.
+
+Launch after committing from a clean checkout:
+
+```powershell
+.\.venv-nnue\Scripts\python.exe -u scripts\nnue\run_strength_screen.py `
+  --training-dir E:\Dev\Forklift-Research\models\nnue-v2-factorization-20260912 `
+  --engine E:\Dev\Chess-Engine\build-nnue-recovery-confirmation\Release\chess-engine-uci.exe `
+  --run-dir E:\Dev\Forklift-Research\matches\nnue-long-recovery-20261012 `
+  --recover-long-from E:\Dev\Forklift-Research\matches\nnue-low-clock-confirmation-20260927
+```
+
+The new series records runner revision/dirty status, training-manifest hash,
+source-series hash, reused-result hash, excluded log/PGN hashes, UTC start time,
+and the exact match command. The existing match manifest adds host, opening,
+Cute Chess, executable, UCI-option, and disposable activation-probe provenance.

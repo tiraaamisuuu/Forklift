@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import os
@@ -14,6 +15,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "nnue"))
+from promotion_contracts import RECOVERY_CONTRACT_ID, RECOVERY_CONTRACT
 SPEC = importlib.util.spec_from_file_location(
     "verify_promotion", ROOT / "scripts" / "nnue" / "verify_promotion.py"
 )
@@ -154,6 +156,39 @@ class NnuePromotionTests(unittest.TestCase):
             if check["status"] == "fail"
         }
 
+    def make_recovery(self):
+        original = self.fixture
+        original.series["state"] = "running"
+        interrupted = original.series["stages"][1]
+        interrupted["state"] = "running"
+        interrupted.pop("result")
+        # The fixture originally created a terminal artifact; an interrupted
+        # source has none. Remove only this test-owned temporary artifact.
+        (original.series_dir / "classical" / "result.json").unlink()
+        original.save()
+        source_path = original.series_dir / "series.json"
+        recovery_dir = original.root / "recovery"
+        recovery_dir.mkdir()
+        state = copy.deepcopy(original.series)
+        state.update(
+            state="complete", contractId=RECOVERY_CONTRACT_ID,
+            recovery={
+                "sourceSeries": str(source_path),
+                "sourceSeriesSha256": verify_promotion.file_sha256(source_path),
+                "reusedResultSha256": verify_promotion.file_sha256(original.series_dir / "network" / "result.json"),
+            },
+        )
+        long_stage = original.stage("classical", RECOVERY_CONTRACT["classical"])
+        state["stages"][1] = long_stage
+        original.write_json(recovery_dir / "series.json", state)
+        original.write_json(recovery_dir / "classical" / "result.json", long_stage["result"])
+        return recovery_dir, state
+
+    def verify_recovery(self, path):
+        return verify_promotion.PromotionVerifier(
+            path, runtime_probe=lambda engine, network: {"successful": True}
+        ).verify()
+
     def test_complete_clean_positive_series_passes(self) -> None:
         report = self.fixture.verify(self.fixture.network_hash)
 
@@ -162,6 +197,45 @@ class NnuePromotionTests(unittest.TestCase):
         self.assertEqual(len(report["stages"]), 2)
         self.assertEqual(report["networkSha256"], self.fixture.network_hash)
         self.assertEqual(report["engineSha256"], self.fixture.engine_hash)
+
+    def test_recovery_reuses_only_complete_short_stage_and_fresh_full_long_stage(self):
+        path, _ = self.make_recovery()
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "pass")
+        self.assertEqual(report["contractId"], RECOVERY_CONTRACT_ID)
+        self.assertFalse((path / "network").exists())
+
+    def test_changed_source_checksum_blocks_recovery(self):
+        path, state = self.make_recovery()
+        state["recovery"]["sourceSeriesSha256"] = "0" * 64
+        self.fixture.write_json(path / "series.json", state)
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("recovery.source_checksum", self.failed_codes(report))
+
+    def test_changed_reused_short_result_blocks_recovery(self):
+        path, state = self.make_recovery()
+        state["stages"][0]["result"]["elo"]["difference"] += 1
+        self.fixture.write_json(path / "series.json", state)
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("recovery.reused_stage", self.failed_codes(report))
+
+    def test_terminal_long_result_cannot_be_replaced(self):
+        path, _ = self.make_recovery()
+        self.fixture.write_json(self.fixture.series_dir / "classical" / "result.json", {"completed": True})
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("recovery.interrupted_source", self.failed_codes(report))
+
+    def test_original_seed_cannot_be_reused_for_recovery_long_stage(self):
+        path, state = self.make_recovery()
+        command = state["stages"][1]["command"]
+        command[command.index("--seed") + 1] = "202609141"
+        self.fixture.write_json(path / "series.json", state)
+        report = self.verify_recovery(path)
+        self.assertEqual(report["decision"], "fail")
+        self.assertIn("classical.contract.seed", self.failed_codes(report))
 
     def test_running_stage_is_pending_and_cannot_pass(self) -> None:
         self.fixture.series["state"] = "running"

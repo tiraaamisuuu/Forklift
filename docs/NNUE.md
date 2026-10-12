@@ -296,6 +296,15 @@ an explicit UCI load-success response for the approved network, with no load or
 activation error. This probe changes only that temporary process; the verifier
 never changes a release by itself.
 
+To replace an abruptly interrupted long stage while retaining its already
+completed 800-game short stage, use `run_strength_screen.py --recover-long-from
+<original-series-directory>` with the same frozen executable and training
+experiment, and a new empty `--run-dir`. This selects the separately versioned
+October 12 recovery contract (1,200 games at `90+0.9`, seed `202610120`). It
+references and checksums the reused result, excludes the partial long sample,
+and refuses to replace any existing terminal long-stage result. See the
+[recovery record](results/2026-10-12-nnue-interruption-recovery.md).
+
 The local web UI applies the same explicit activation check whenever an NNUE
 profile is first selected. A missing, corrupt, or silently rejected network is
 shown as a disconnected profile instead of playing games under the classical
