@@ -1,0 +1,557 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "singular-extensions-prototype-20261013",
+  "recordedDate": "2026-10-13",
+  "sourceCommit": "7a148b8ecdb6182348644dafbed4e0008b2f61f4",
+  "baselineCommit": "de3830bc47a7c400895b26e5070b81d1ae6fded4",
+  "hypothesis": "A bounded extra ply for a TT move whose alternatives fail below a lower score threshold improves tactical search enough to justify its equal-time cost.",
+  "status": "implemented, opt-in; correctness and activation diagnostics passed; no strength match launched",
+  "implementation": {
+    "minimumDepth": 8,
+    "minimumTtDepth": "depth - 3",
+    "ttFlags": [
+      "Lower",
+      "Exact"
+    ],
+    "ttScoreRange": "(-MATE/2,MATE/2)",
+    "verificationDepth": "(depth - 1)/2",
+    "verificationWindow": "[ttScore - 2*depth - 1,ttScore - 2*depth]",
+    "extensionPlies": 1,
+    "maxSingularPliesPerLine": 4,
+    "stackWithCheckExtension": false,
+    "nestedVerification": false,
+    "defaultEnabled": false,
+    "uciOption": "Singular Extensions",
+    "toolsOption": "--singular"
+  },
+  "build": {
+    "configuration": "Release",
+    "compiler": "MSVC 19.50.35725.0",
+    "hostCpu": "AMD Ryzen 9 5900X",
+    "nativeArch": false,
+    "ipo": false
+  },
+  "artifacts": {
+    "uci": {
+      "path": "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-uci.exe",
+      "sha256": "40f11e2316635120e4080681ec0fae76bd9c7d2f3963cabe751d8e02e9738023"
+    },
+    "tools": {
+      "path": "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+      "sha256": "a44f82d87965bf550d1171a4be1d89fd83e2f8c7f4407fbd19e09123eec1f74c"
+    },
+    "network": {
+      "path": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+      "sha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+    }
+  },
+  "correctness": {
+    "ctestPassed": 6,
+    "ctestFailed": 0,
+    "threadBenchmarkUnitTestsPassed": 4,
+    "fixtureIncrementalRebuildParityDepth": 9,
+    "realNetworkIncrementalRebuildParityDepth": 10,
+    "realNetworkParity": true,
+    "offModePreviousBinaryParityDepth": 12,
+    "offModeMainNodes": 969129,
+    "maximumObservedSingularPlies": 4,
+    "ci": {
+      "url": "https://github.com/tiraaamisuuu/Forklift/actions/runs/38373963982",
+      "jobs": [
+        {
+          "name": "sanitizers",
+          "conclusion": "success"
+        },
+        {
+          "name": "web-gui",
+          "conclusion": "success"
+        },
+        {
+          "name": "headless (macos-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "headless (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "headless (windows-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "windows-desktop",
+          "conclusion": "success"
+        }
+      ]
+    }
+  },
+  "diagnostics": [
+    {
+      "label": "nnue-off",
+      "arguments": "--bench --bench-depth 12 --bench-time 60000 --bench-tt 128 --threads 1 --nnue E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental probCut=off singular=off positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 time=747ms nps=468133",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 time=796ms nps=431755",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 time=411ms nps=492279",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 time=144ms nps=509923",
+        "Benchmark summary: nodes=969129 time=2098ms nps=461929"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 0,
+          "maxOnPath": 0,
+          "timeMs": 747,
+          "nps": 468133
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 0,
+          "maxOnPath": 0,
+          "timeMs": 796,
+          "nps": 431755
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 0,
+          "maxOnPath": 0,
+          "timeMs": 411,
+          "nps": 492279
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 0,
+          "maxOnPath": 0,
+          "timeMs": 144,
+          "nps": 509923
+        }
+      ]
+    },
+    {
+      "label": "nnue-on",
+      "arguments": "--bench --bench-depth 12 --bench-time 60000 --bench-tt 128 --threads 1 --singular --nnue E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental probCut=off singular=on positions=4",
+        "Start        best=e2e4 depth=12 score=34 nodes=396533 qnodes=72722 probcut=0/0 singular=6/196 singularPathMax=1 time=855ms nps=463781",
+        "Middlegame 1 best=f1b1 depth=12 score=50 nodes=432922 qnodes=108150 probcut=0/0 singular=20/158 singularPathMax=2 time=1020ms nps=424433",
+        "Middlegame 2 best=d3d4 depth=12 score=6 nodes=374328 qnodes=100067 probcut=0/0 singular=34/212 singularPathMax=3 time=819ms nps=457054",
+        "Endgame      best=b4f4 depth=12 score=62 nodes=98383 qnodes=19049 probcut=0/0 singular=8/78 singularPathMax=1 time=187ms nps=526112",
+        "Benchmark summary: nodes=1302166 time=2881ms nps=451984"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "e2e4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 396533,
+          "qnodes": 72722,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 6,
+          "singularAttempts": 196,
+          "maxOnPath": 1,
+          "timeMs": 855,
+          "nps": 463781
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 50,
+          "nodes": 432922,
+          "qnodes": 108150,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 20,
+          "singularAttempts": 158,
+          "maxOnPath": 2,
+          "timeMs": 1020,
+          "nps": 424433
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "d3d4",
+          "depth": 12,
+          "score": 6,
+          "nodes": 374328,
+          "qnodes": 100067,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 34,
+          "singularAttempts": 212,
+          "maxOnPath": 3,
+          "timeMs": 819,
+          "nps": 457054
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 62,
+          "nodes": 98383,
+          "qnodes": 19049,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 8,
+          "singularAttempts": 78,
+          "maxOnPath": 1,
+          "timeMs": 187,
+          "nps": 526112
+        }
+      ]
+    },
+    {
+      "label": "classical-on",
+      "arguments": "--bench --bench-depth 12 --bench-time 60000 --bench-tt 128 --threads 1 --singular",
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=classical nnueWeight=0 nnueMode=n/a probCut=off singular=on positions=4",
+        "Start        best=e2e4 depth=12 score=20 nodes=338081 qnodes=171869 probcut=0/0 singular=11/179 singularPathMax=2 time=1074ms nps=314786",
+        "Middlegame 1 best=g5f6 depth=12 score=19 nodes=276651 qnodes=179820 probcut=0/0 singular=32/246 singularPathMax=4 time=846ms nps=327010",
+        "Middlegame 2 best=c4d5 depth=12 score=-50 nodes=205752 qnodes=131305 probcut=0/0 singular=18/251 singularPathMax=3 time=666ms nps=308936",
+        "Endgame      best=b4f4 depth=12 score=10 nodes=217619 qnodes=66266 probcut=0/0 singular=16/73 singularPathMax=2 time=372ms nps=584997",
+        "Benchmark summary: nodes=1038103 time=2958ms nps=350947"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "e2e4",
+          "depth": 12,
+          "score": 20,
+          "nodes": 338081,
+          "qnodes": 171869,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 11,
+          "singularAttempts": 179,
+          "maxOnPath": 2,
+          "timeMs": 1074,
+          "nps": 314786
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "g5f6",
+          "depth": 12,
+          "score": 19,
+          "nodes": 276651,
+          "qnodes": 179820,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 32,
+          "singularAttempts": 246,
+          "maxOnPath": 4,
+          "timeMs": 846,
+          "nps": 327010
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -50,
+          "nodes": 205752,
+          "qnodes": 131305,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 18,
+          "singularAttempts": 251,
+          "maxOnPath": 3,
+          "timeMs": 666,
+          "nps": 308936
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 10,
+          "nodes": 217619,
+          "qnodes": 66266,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 16,
+          "singularAttempts": 73,
+          "maxOnPath": 2,
+          "timeMs": 372,
+          "nps": 584997
+        }
+      ]
+    },
+    {
+      "label": "nnue-on-incremental-depth10",
+      "arguments": "--bench --bench-depth 10 --bench-time 60000 --bench-tt 128 --threads 1 --singular --nnue E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+      "stdout": [
+        "Benchmark: depth=10 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental probCut=off singular=on positions=4",
+        "Start        best=d2d4 depth=10 score=35 nodes=101454 qnodes=19922 probcut=0/0 singular=0/32 singularPathMax=0 time=209ms nps=485425",
+        "Middlegame 1 best=f1b1 depth=10 score=42 nodes=122999 qnodes=31095 probcut=0/0 singular=2/32 singularPathMax=1 time=280ms nps=439282",
+        "Middlegame 2 best=c4d5 depth=10 score=5 nodes=97349 qnodes=27281 probcut=0/0 singular=11/65 singularPathMax=2 time=207ms nps=470285",
+        "Endgame      best=b4f4 depth=10 score=11 nodes=29925 qnodes=6001 probcut=0/0 singular=2/28 singularPathMax=1 time=57ms nps=525000",
+        "Benchmark summary: nodes=351727 time=753ms nps=467100"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 10,
+          "score": 35,
+          "nodes": 101454,
+          "qnodes": 19922,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 32,
+          "maxOnPath": 0,
+          "timeMs": 209,
+          "nps": 485425
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 10,
+          "score": 42,
+          "nodes": 122999,
+          "qnodes": 31095,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 2,
+          "singularAttempts": 32,
+          "maxOnPath": 1,
+          "timeMs": 280,
+          "nps": 439282
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 10,
+          "score": 5,
+          "nodes": 97349,
+          "qnodes": 27281,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 11,
+          "singularAttempts": 65,
+          "maxOnPath": 2,
+          "timeMs": 207,
+          "nps": 470285
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 10,
+          "score": 11,
+          "nodes": 29925,
+          "qnodes": 6001,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 2,
+          "singularAttempts": 28,
+          "maxOnPath": 1,
+          "timeMs": 57,
+          "nps": 525000
+        }
+      ]
+    },
+    {
+      "label": "nnue-on-rebuild-depth10",
+      "arguments": "--bench --bench-depth 10 --bench-time 60000 --bench-tt 128 --threads 1 --singular --nnue E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue --nnue-rebuild",
+      "stdout": [
+        "Benchmark: depth=10 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=rebuild probCut=off singular=on positions=4",
+        "Start        best=d2d4 depth=10 score=35 nodes=101454 qnodes=19922 probcut=0/0 singular=0/32 singularPathMax=0 time=1152ms nps=88067",
+        "Middlegame 1 best=f1b1 depth=10 score=42 nodes=122999 qnodes=31095 probcut=0/0 singular=2/32 singularPathMax=1 time=1344ms nps=91517",
+        "Middlegame 2 best=c4d5 depth=10 score=5 nodes=97349 qnodes=27281 probcut=0/0 singular=11/65 singularPathMax=2 time=1674ms nps=58153",
+        "Endgame      best=b4f4 depth=10 score=11 nodes=29925 qnodes=6001 probcut=0/0 singular=2/28 singularPathMax=1 time=171ms nps=175000",
+        "Benchmark summary: nodes=351727 time=4341ms nps=81024"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 10,
+          "score": 35,
+          "nodes": 101454,
+          "qnodes": 19922,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 32,
+          "maxOnPath": 0,
+          "timeMs": 1152,
+          "nps": 88067
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 10,
+          "score": 42,
+          "nodes": 122999,
+          "qnodes": 31095,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 2,
+          "singularAttempts": 32,
+          "maxOnPath": 1,
+          "timeMs": 1344,
+          "nps": 91517
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 10,
+          "score": 5,
+          "nodes": 97349,
+          "qnodes": 27281,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 11,
+          "singularAttempts": 65,
+          "maxOnPath": 2,
+          "timeMs": 1674,
+          "nps": 58153
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 10,
+          "score": 11,
+          "nodes": 29925,
+          "qnodes": 6001,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 2,
+          "singularAttempts": 28,
+          "maxOnPath": 1,
+          "timeMs": 171,
+          "nps": 175000
+        }
+      ]
+    },
+    {
+      "label": "nnue-on-parallel-depth10",
+      "arguments": "--bench --bench-depth 10 --bench-time 60000 --bench-tt 128 --threads 4 --singular --nnue E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+      "stdout": [
+        "Benchmark: depth=10 timeLimit=60000ms threads=4 evaluator=nnue nnueWeight=100 nnueMode=incremental probCut=off singular=on positions=4",
+        "Start        best=d2d4 depth=10 score=32 nodes=91272 qnodes=18575 probcut=0/0 singular=0/29 singularPathMax=0 time=129ms nps=707534",
+        "Middlegame 1 best=f1b1 depth=10 score=50 nodes=92610 qnodes=23244 probcut=0/0 singular=2/27 singularPathMax=1 time=166ms nps=557891",
+        "Middlegame 2 best=c1f4 depth=10 score=2 nodes=109414 qnodes=31410 probcut=0/0 singular=9/61 singularPathMax=3 time=184ms nps=594641",
+        "Endgame      best=b4f4 depth=10 score=46 nodes=15098 qnodes=3023 probcut=0/0 singular=0/12 singularPathMax=0 time=24ms nps=629083",
+        "Benchmark summary: nodes=308394 time=503ms nps=613109"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 10,
+          "score": 32,
+          "nodes": 91272,
+          "qnodes": 18575,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 29,
+          "maxOnPath": 0,
+          "timeMs": 129,
+          "nps": 707534
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 10,
+          "score": 50,
+          "nodes": 92610,
+          "qnodes": 23244,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 2,
+          "singularAttempts": 27,
+          "maxOnPath": 1,
+          "timeMs": 166,
+          "nps": 557891
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c1f4",
+          "depth": 10,
+          "score": 2,
+          "nodes": 109414,
+          "qnodes": 31410,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 9,
+          "singularAttempts": 61,
+          "maxOnPath": 3,
+          "timeMs": 184,
+          "nps": 594641
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 10,
+          "score": 46,
+          "nodes": 15098,
+          "qnodes": 3023,
+          "probcutCutoffs": 0,
+          "probcutAttempts": 0,
+          "singularExtensions": 0,
+          "singularAttempts": 12,
+          "maxOnPath": 0,
+          "timeMs": 24,
+          "nps": 629083
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "These are activation/correctness diagnostics, not a playing-strength result.",
+    "Fixed-depth trees differ when the feature is on; increased nodes and changed moves do not establish improvement.",
+    "Timing comes from one shared-host sample per configuration while the independent NNUE confirmation runs.",
+    "Parallel search uses shared TT and may change tree/move/score with scheduling; it is not expected to match the single-thread tree.",
+    "The independent confirmation uses an older frozen binary and does not test singular extensions."
+  ],
+  "nextEvidence": {
+    "kind": "targeted equal-time on/off strength comparison",
+    "launched": false,
+    "requirements": [
+      "Identical candidate/baseline executable checksum with only Singular Extensions true/false differing",
+      "Same frozen NNUE, NNUE weight, threads, hash, clocks and paired openings",
+      "Freeze game count or SPRT settings before launch; no score-dependent parameter changes or extension",
+      "Zero technical terminations; default promotion requires supported strength evidence"
+    ],
+    "unchangedEngineCampaignRequired": false
+  },
+  "reference": {
+    "url": "https://github.com/official-stockfish/Stockfish/blob/master/src/search.cpp",
+    "consultedOn": "2026-10-13",
+    "role": "Established method reference; no novelty claim or imported tuned source"
+  }
+}

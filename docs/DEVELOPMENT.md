@@ -10,6 +10,9 @@ Search implementation (2026-10-13): a conservative singular-extension prototype
 now verifies alternatives to a trusted legal TT move and grants one extra ply
 when they fail below its threshold. Excluded-root TT/history isolation,
 per-line limits, abort restoration, and NNUE incremental/rebuild parity pass.
+Real-network depth-10 parity and parallel activation also pass, along with
+all six cross-platform CI jobs. The depth-12 pilot adds 34.36% main nodes
+with NNUE; that extra work is not yet a strength gain.
 It is opt-in (`Singular Extensions=true`, benchmark `--singular`) pending
 equal-time strength evidence. See
 [singular-extension design and diagnostics](results/2026-10-13-singular-extensions.md).

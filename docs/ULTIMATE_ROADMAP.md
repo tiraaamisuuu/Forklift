@@ -65,6 +65,10 @@ independent evaluator.
 
 - Replace full move sorting with a genuinely staged and profiled move picker.
 - Confirm and tune continuation history and quiescence SEE pruning.
+- Singular extensions now have a bounded, opt-in implementation (2026-10-13),
+  with excluded-root TT isolation and cross-platform correctness checks.
+  Equal-time strength evidence remains outstanding; see the
+  [implementation report](results/2026-10-13-singular-extensions.md).
 - Add dedicated invariants before testing ProbCut, singular extensions,
   multi-cut ideas or more aggressive pruning.
 - Explore context-aware LMR, history pruning, capture history, correction

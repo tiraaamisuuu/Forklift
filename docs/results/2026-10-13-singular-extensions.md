@@ -73,6 +73,37 @@ matched the previous executable's moves/scores/main/quiescence nodes at every
 fixed position, retaining 969,129 main nodes overall. Timing is exploratory
 while the independent model confirmation occupies the same host.
 
+## Final implementation evidence
+
+The implementation is committed as
+`7a148b8ecdb6182348644dafbed4e0008b2f61f4`. A fresh diagnostic on that source
+again exercised 68 extensions / 644 attempts at depth 12 with the shared
+network. It visited 1,302,166 main nodes versus 969,129 with the option off
+(34.36% more main nodes). Single exploratory reported times were 2,881 ms on
+and 2,098 ms off. This overhead is why equal-time strength must be assessed;
+the result is not comparable to the earlier identical-tree inference speedup.
+
+Real-network incremental and full-rebuild depth-10 runs matched every move,
+score, main-node/quiescence count, attempt/extension count and path maximum,
+with 351,727 main nodes overall and 15 extensions / 157 attempts. A four-thread
+depth-10 diagnostic also activated verification/extensions. Its tree and
+some scores differed from the single-thread search, as expected from the
+existing shared-TT scheduling; no parallel-strength claim follows. The
+classical depth-12 run reached the four-extension path cap without exceeding it.
+
+[CI run 38373963982](https://github.com/tiraaamisuuu/Forklift/actions/runs/38373963982)
+passed all six jobs on the implementation commit: Ubuntu/macOS/Windows
+headless, ASAN/UBSAN, web GUI, and Windows desktop build/test/package checks.
+Local CTest passed all six tests, and the thread-benchmark parser passed all
+four unit tests.
+
+[Machine-readable evidence](../../research/experiments/2026-10-13-singular-extensions.json)
+contains the policy, exact commit, binary/network hashes, raw and parsed
+outputs for all six final diagnostics, CI evidence, limitations, and the
+requirements for a future strength comparison. No new match was launched.
+The existing confirmation executable retains its frozen SHA-256
+`b97bfa1199e5c3ff13b3d53cb713a3d21ff2f47cfae42c9035e3581ec050c2ff`.
+
 ## Reproduce
 
 ```powershell
