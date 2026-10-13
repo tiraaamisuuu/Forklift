@@ -85,5 +85,46 @@ Reproduce one trial (use the same command on the baseline executable):
   --nnue E:\Dev\Forklift-Research\models\nnue-v2-factorization-20260912\shared\model.nnue
 ```
 
-Repeated measurements and CI validation will be recorded below after they
-finish. No Elo gain is currently claimed for this optimization.
+## Repeated measurement result
+
+Candidate commit `a0a35e2217dacb12496acd4fea3a3ced8bffa5f9` completed the
+predeclared ten pairs from 08:40:46 to 08:41:40 UTC. All twenty runs reached
+depth 12 at every position and had identical moves, scores, main nodes and
+quiescence nodes. Each run visited 969,129 main nodes and 218,408 quiescence
+nodes across the four positions.
+
+Median total reported search time was **2,467 ms baseline versus 2,048.5 ms
+candidate**, a **16.96% reduction**. The median paired throughput ratio was
+**1.2047** (approximately **20.5% higher throughput**); all ten pairs favored
+the candidate, with ratios from 1.1782 to 1.2211. Reduction in time and increase
+in throughput are different percentages and must not be conflated.
+
+The change is retained: exact parity passed and the observed reduction
+exceeded the documented 3% threshold. The timing remains preliminary under
+concurrent match load; an idle-host replication and equal-time matches are
+still needed to quantify broader performance and any playing-strength gain.
+No Elo gain is claimed for this optimization.
+
+[Machine-readable measurements](../../research/experiments/2026-10-13-nnue-fused-update.json)
+preserve the protocol, hashes, every trial's full benchmark stdout, paired
+ratios, and correctness/CI evidence. The tools executable hashes are:
+
+- Baseline: `6417568aeb89bbf486e7f09114615f3d83d529b170a730d8609b5f60607e957a`
+- Candidate: `49dd7070405ebb0287eafae51836aedb9905b23404ff4944c9fbcd0b3f15c79e`
+
+## Cross-platform validation and isolation
+
+[CI run 38370773757](https://github.com/tiraaamisuuu/Forklift/actions/runs/38370773757)
+passed all six jobs for the engine commit: Ubuntu/macOS/Windows headless,
+address/undefined-behavior sanitizers, web GUI, and the Windows desktop
+build/test/package checks. No extra CPU-specific build flag was needed.
+
+After the repeated benchmark, the independent confirmation executable still
+had SHA-256
+`b97bfa1199e5c3ff13b3d53cb713a3d21ff2f47cfae42c9035e3581ec050c2ff`,
+matching its frozen contract. It was not rebuilt, replaced or restarted.
+
+Next engineering steps are to profile the remaining inference costs before
+choosing explicit SIMD work, and separately prototype singular extensions
+with their own controlled search/strength experiment. This result alone is
+not evidence that either follow-on change will help.

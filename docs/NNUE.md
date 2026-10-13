@@ -11,6 +11,12 @@ licensed games -> sampled positions -> Stockfish labels -> CUDA training
 
 No source change is required to train or test another 256-wide network.
 
+The October 13 inference optimization fuses ordinary-move accumulator copies
+and feature deltas without changing the model format or scores. Full-rebuild
+parity, cross-platform validation, and preliminary repeated timing are in
+[the fused-update report](results/2026-10-13-nnue-fused-updates.md). These
+throughput measurements are separate from model-strength promotion evidence.
+
 ## Hardware and environment
 
 A Ryzen 9 5900X, RTX 3070 8 GB, and 32 GB RAM are sufficient for this model.

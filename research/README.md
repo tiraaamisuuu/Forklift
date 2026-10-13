@@ -39,6 +39,9 @@ collapsed into a universal Elo claim.
 
 - [`experiments/`](experiments/) stores compact experiment definitions committed
   before new runs, including the October 12 long-control recovery contract.
+  The [fused NNUE update record](experiments/2026-10-13-nnue-fused-update.json)
+  also retains all twenty fixed-depth timing outputs, executable hashes,
+  exact-tree parity, and shared-host limitations for the October 13 optimization.
 - [`RESEARCH_QUESTIONS.md`](RESEARCH_QUESTIONS.md) records hypotheses and
   possible new methods without treating them as established inventions.
 - [`DATA_POLICY.md`](DATA_POLICY.md) defines what is collected and where it
