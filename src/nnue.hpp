@@ -2,6 +2,18 @@
 
 #include "board.hpp"
 
+#include <limits>
+
+// SSE2 is part of the x64 baseline, not an AVX/native-architecture requirement.
+// Other targets retain the portable kernels. The override allows the scalar
+// implementation to be checked by the same tests in a separate build.
+#if !defined(FORKLIFT_NNUE_FORCE_SCALAR) && !defined(_M_ARM64EC) && !defined(__arm64ec__) && \
+    (defined(__SSE2__) || defined(_M_X64) || \
+    (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
+#include <emmintrin.h>
+#define FORKLIFT_NNUE_HAS_SSE2 1
+#endif
+
 struct NnueAccumulator {
     std::array<std::vector<int32_t>, 2> values;
     bool valid = false;
@@ -59,6 +71,15 @@ public:
         hiddenBias_ = std::move(newHiddenBias);
         inputWeights_ = std::move(newInputWeights);
         outputWeights_ = std::move(newOutputWeights);
+        // Every clipped activation lies in [0, hiddenScale]. Certify a bound
+        // for every product and every partial reduction, not just the final
+        // score. The certificate is independent of the board/accumulator.
+        int64_t absoluteBound = std::abs(static_cast<int64_t>(outputBias_));
+        for(const int16_t weight : outputWeights_){
+            absoluteBound += static_cast<int64_t>(hiddenScale_) *
+                std::abs(static_cast<int32_t>(weight));
+        }
+        boundedOutput32_ = absoluteBound <= std::numeric_limits<int32_t>::max();
         source_ = path.string();
         return true;
     }
@@ -68,6 +89,7 @@ public:
         hiddenScale_ = 0;
         outputScale_ = 0;
         outputBias_ = 0;
+        boundedOutput32_ = false;
         hiddenBias_.clear();
         inputWeights_.clear();
         outputWeights_.clear();
@@ -77,6 +99,19 @@ public:
     bool loaded() const { return hiddenSize_ != 0; }
     u32 hiddenSize() const { return hiddenSize_; }
     const std::string& source() const { return source_; }
+    const char* outputKernelName() const {
+        if(!loaded()) return "none";
+#if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
+        return "scalar64-reference";
+#else
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+        if(boundedOutput32_ && hiddenScale_ <= std::numeric_limits<int16_t>::max() && hiddenSize_ >= 8){
+            return "sse2";
+        }
+#endif
+        return boundedOutput32_ ? "scalar32" : "scalar64";
+#endif
+    }
 
     int evaluate(const Board& board) const {
         if(!loaded()) return 0;
@@ -94,13 +129,23 @@ public:
             return evaluate(board);
         }
 
-        int64_t output = outputBias_;
-        for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
-            const int32_t first = std::clamp(firstAccumulator[hidden], 0, hiddenScale_);
-            const int32_t second = std::clamp(secondAccumulator[hidden], 0, hiddenScale_);
-            output += static_cast<int64_t>(first) * outputWeights_[hidden];
-            output += static_cast<int64_t>(second) * outputWeights_[hiddenSize_ + hidden];
+        int64_t output;
+#if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
+        output = outputScalar<int64_t>(firstAccumulator.data(), secondAccumulator.data());
+#else
+        if(boundedOutput32_){
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+            if(hiddenScale_ <= std::numeric_limits<int16_t>::max() && hiddenSize_ >= 8){
+                output = outputSse2(firstAccumulator.data(), secondAccumulator.data());
+            } else
+#endif
+            {
+                output = outputScalar<int32_t>(firstAccumulator.data(), secondAccumulator.data());
+            }
+        } else {
+            output = outputScalar<int64_t>(firstAccumulator.data(), secondAccumulator.data());
         }
+#endif
         const int64_t divisor = static_cast<int64_t>(hiddenScale_) * outputScale_;
         return static_cast<int>(std::clamp<int64_t>(output / divisor, -32000, 32000));
     }
@@ -185,6 +230,58 @@ public:
     }
 
 private:
+    template<typename Sum>
+    int64_t outputScalar(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
+        Sum output = outputBias_;
+        for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
+            const int32_t first = std::clamp(firstAccumulator[hidden], 0, hiddenScale_);
+            const int32_t second = std::clamp(secondAccumulator[hidden], 0, hiddenScale_);
+            output += static_cast<Sum>(first) * outputWeights_[hidden];
+            output += static_cast<Sum>(second) * outputWeights_[hiddenSize_ + hidden];
+        }
+        return output;
+    }
+
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+    int64_t outputSse2(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
+        const __m128i zero = _mm_setzero_si128();
+        const __m128i ceiling = _mm_set1_epi16(static_cast<int16_t>(hiddenScale_));
+        __m128i sum = zero;
+        size_t hidden = 0;
+        for(; hidden + 8 <= hiddenSize_; hidden += 8){
+            const auto clipped = [&](const int32_t* values){
+                const __m128i low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values));
+                const __m128i high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values + 4));
+                // Saturating to signed int16 before clipping is exact because
+                // 0 <= hiddenScale <= INT16_MAX. Even INT32_MIN/MAX inputs
+                // therefore produce the same activation as the scalar path.
+                return _mm_min_epi16(_mm_max_epi16(_mm_packs_epi32(low, high), zero), ceiling);
+            };
+            const __m128i first = clipped(firstAccumulator + hidden);
+            const __m128i second = clipped(secondAccumulator + hidden);
+            const __m128i firstWeights = _mm_loadu_si128(
+                reinterpret_cast<const __m128i*>(outputWeights_.data() + hidden));
+            const __m128i secondWeights = _mm_loadu_si128(
+                reinterpret_cast<const __m128i*>(outputWeights_.data() + hiddenSize_ + hidden));
+            sum = _mm_add_epi32(sum, _mm_madd_epi16(first, firstWeights));
+            sum = _mm_add_epi32(sum, _mm_madd_epi16(second, secondWeights));
+        }
+        // Each lane and each horizontal partial sum is covered by the same
+        // absolute-bound certificate. Unaligned loads and the scalar tail
+        // support arbitrary format-valid hidden sizes without padding.
+        sum = _mm_add_epi32(sum, _mm_srli_si128(sum, 8));
+        sum = _mm_add_epi32(sum, _mm_srli_si128(sum, 4));
+        int32_t output = _mm_cvtsi128_si32(sum) + outputBias_;
+        for(; hidden < hiddenSize_; hidden++){
+            const int32_t first = std::clamp(firstAccumulator[hidden], 0, hiddenScale_);
+            const int32_t second = std::clamp(secondAccumulator[hidden], 0, hiddenScale_);
+            output += first * outputWeights_[hidden];
+            output += second * outputWeights_[hiddenSize_ + hidden];
+        }
+        return output;
+    }
+#endif
+
     template<typename T>
     static bool readValue(std::ifstream& input, T& value){
         input.read(reinterpret_cast<char*>(&value), static_cast<std::streamsize>(sizeof(T)));
@@ -262,8 +359,13 @@ private:
     int32_t hiddenScale_ = 0;
     int32_t outputScale_ = 0;
     int32_t outputBias_ = 0;
+    bool boundedOutput32_ = false;
     std::vector<int32_t> hiddenBias_;
     std::vector<int16_t> inputWeights_;
     std::vector<int16_t> outputWeights_;
     std::string source_;
 };
+
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+#undef FORKLIFT_NNUE_HAS_SSE2
+#endif

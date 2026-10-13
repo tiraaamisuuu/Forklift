@@ -12,7 +12,6 @@ cmake -S . -B "$BUILD_DIR" \
   -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
 cmake --build "$BUILD_DIR" --parallel
 
-CHESS_TEST_QUICK=1 "$BUILD_DIR/chess-core-tests"
-"$(dirname "$0")/run_uci_smoke.sh" "$BUILD_DIR/chess-engine-uci"
+CHESS_TEST_QUICK=1 ctest --test-dir "$BUILD_DIR" --output-on-failure
 
 echo "Address/undefined sanitizer gate: PASS"

@@ -1637,6 +1637,8 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
               << " nnueWeight=" << (evaluator ? evaluator->nnueWeight() : 0)
               << " nnueMode=" << (evaluator && evaluator->usingNnue()
                     ? (incrementalNnue ? "incremental" : "rebuild") : "n/a")
+              << " nnueOutput=" << (evaluator && evaluator->usingNnue()
+                    ? evaluator->nnue().outputKernelName() : "n/a")
               << " probCut=" << (enableProbCut ? "on" : "off")
               << " singular=" << (enableSingularExtensions ? "on" : "off")
               << " singularBudget=" << singularProofBudgetPercent
