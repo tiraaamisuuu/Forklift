@@ -12,6 +12,8 @@ struct SearchStats {
     u64 probCutCutoffs=0;
     u64 singularAttempts=0;
     u64 singularExtensions=0;
+    u64 singularProofNodes=0;
+    u64 singularBudgetSkips=0;
     int maxSingularExtensionsOnPath=0;
     int depthReached=0;
     int bestScore=0;
@@ -39,6 +41,7 @@ struct SearchContext {
     static constexpr int MaxSearchPly = 127;
     static constexpr size_t NnueStackSize = 129;
     static constexpr int MaxSingularExtensionsOnPath = 4;
+    static constexpr u64 SingularProofBootstrapNodes = 256;
     TranspositionTable tt;
     TranspositionTable* sharedTT=nullptr;
     SearchStats stats;
@@ -52,6 +55,7 @@ struct SearchContext {
     bool incrementalNnue=true;
     bool enableProbCut=false;
     bool enableSingularExtensions=false;
+    int singularProofBudgetPercent=0; // 0 = existing unrestricted policy; >0 = soft admission quota.
     bool singularVerification=false;
     int activeSingularExtensions=0;
     std::array<NnueAccumulator, NnueStackSize> nnueStack{};
@@ -456,6 +460,26 @@ inline bool singularExtensionEligible(const SearchContext& ctx, const TTEntry& e
            entry.score > -MATE / 2 && entry.score < MATE / 2;
 }
 
+// Proof-Budgeted Singular Search (PBSS), experimental admission policy.
+// Charge both main and quiescence work to the proof that caused it. Ordinary
+// work earns more proof capacity; do not count proof work as its own funding.
+// A proof already admitted is allowed to finish, so this is NOT a hard cap.
+inline u64 singularProofQuota(const SearchContext& ctx){
+    const u64 maximum = ~u64{0};
+    const u64 total = ctx.stats.nodes > maximum - ctx.stats.qnodes
+        ? maximum : ctx.stats.nodes + ctx.stats.qnodes;
+    const u64 ordinary = total > ctx.stats.singularProofNodes
+        ? total - ctx.stats.singularProofNodes : 0;
+    const u64 percent = static_cast<u64>(std::clamp(ctx.singularProofBudgetPercent, 0, 100));
+    const u64 earned = (ordinary / 100) * percent + (ordinary % 100) * percent / 100;
+    return earned > maximum - SearchContext::SingularProofBootstrapNodes
+        ? maximum : earned + SearchContext::SingularProofBootstrapNodes;
+}
+
+inline bool singularProofBudgetAvailable(const SearchContext& ctx){
+    return ctx.singularProofBudgetPercent <= 0 || ctx.stats.singularProofNodes < singularProofQuota(ctx);
+}
+
 inline bool hasNonPawnMaterial(const Board& bd, Color side){
     for(const auto& p : bd.b){
         if(isNone(p) || p.c != side) continue;
@@ -811,19 +835,27 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
        singularExtensionEligible(ctx, *singularEntry, depth, ply, inCheck)){
         const Move candidate = legalTranspositionMove(singularEntry->best, moves);
         if(candidate.from < 64){
-            const int singularBeta = scoreFromTT(singularEntry->score, ply) - 2 * depth;
-            const int verificationDepth = (depth - 1) / 2;
-            const Move savedPlyMove = ctx.plyMove[ply];
-            const int savedStaticEval = ctx.staticEvalByPly[ply];
-            ctx.stats.singularAttempts++;
-            const int alternativeScore = negamax(bd, ctx, verificationDepth, singularBeta - 1,
-                                                 singularBeta, ply, prevMove, false, false, candidate);
-            ctx.plyMove[ply] = savedPlyMove;
-            ctx.staticEvalByPly[ply] = savedStaticEval;
-            if(ctx.stop) return 0;
-            if(alternativeScore < singularBeta){
-                singularMove = candidate;
-                ttMove = candidate;
+            if(!singularProofBudgetAvailable(ctx)){
+                ctx.stats.singularBudgetSkips++;
+            } else {
+                const int singularBeta = scoreFromTT(singularEntry->score, ply) - 2 * depth;
+                const int verificationDepth = (depth - 1) / 2;
+                const Move savedPlyMove = ctx.plyMove[ply];
+                const int savedStaticEval = ctx.staticEvalByPly[ply];
+                const u64 nodesBeforeProof = ctx.stats.nodes;
+                const u64 qnodesBeforeProof = ctx.stats.qnodes;
+                ctx.stats.singularAttempts++;
+                const int alternativeScore = negamax(bd, ctx, verificationDepth, singularBeta - 1,
+                                                     singularBeta, ply, prevMove, false, false, candidate);
+                ctx.stats.singularProofNodes += (ctx.stats.nodes - nodesBeforeProof)
+                                              + (ctx.stats.qnodes - qnodesBeforeProof);
+                ctx.plyMove[ply] = savedPlyMove;
+                ctx.staticEvalByPly[ply] = savedStaticEval;
+                if(ctx.stop) return 0;
+                if(alternativeScore < singularBeta){
+                    singularMove = candidate;
+                    ttMove = candidate;
+                }
             }
         }
     }
@@ -1232,6 +1264,7 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         workerCtx[size_t(w)].incrementalNnue = ctx.incrementalNnue;
         workerCtx[size_t(w)].enableProbCut = ctx.enableProbCut;
         workerCtx[size_t(w)].enableSingularExtensions = ctx.enableSingularExtensions;
+        workerCtx[size_t(w)].singularProofBudgetPercent = ctx.singularProofBudgetPercent;
         refreshNnueRoot(bd, workerCtx[size_t(w)]);
         std::memcpy(workerCtx[size_t(w)].killer, ctx.killer, sizeof(ctx.killer));
         std::memcpy(workerCtx[size_t(w)].countermove, ctx.countermove, sizeof(ctx.countermove));
@@ -1266,6 +1299,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         std::vector<u64> depthProbCutCutoffs(rootMoves.size(), 0);
         std::vector<u64> depthSingularAttempts(rootMoves.size(), 0);
         std::vector<u64> depthSingularExtensions(rootMoves.size(), 0);
+        std::vector<u64> depthSingularProofNodes(rootMoves.size(), 0);
+        std::vector<u64> depthSingularBudgetSkips(rootMoves.size(), 0);
         std::vector<int> depthSingularMaxOnPath(rootMoves.size(), 0);
 
         for(int worker = 0; worker < workers; worker++){
@@ -1294,6 +1329,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             const u64 previousProbCutCutoffs = local.stats.probCutCutoffs;
             const u64 previousSingularAttempts = local.stats.singularAttempts;
             const u64 previousSingularExtensions = local.stats.singularExtensions;
+            const u64 previousSingularProofNodes = local.stats.singularProofNodes;
+            const u64 previousSingularBudgetSkips = local.stats.singularBudgetSkips;
 
             int score = 0;
             if(fullWindow){
@@ -1311,6 +1348,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             depthProbCutCutoffs[index] = local.stats.probCutCutoffs - previousProbCutCutoffs;
             depthSingularAttempts[index] = local.stats.singularAttempts - previousSingularAttempts;
             depthSingularExtensions[index] = local.stats.singularExtensions - previousSingularExtensions;
+            depthSingularProofNodes[index] = local.stats.singularProofNodes - previousSingularProofNodes;
+            depthSingularBudgetSkips[index] = local.stats.singularBudgetSkips - previousSingularBudgetSkips;
             depthSingularMaxOnPath[index] = local.stats.maxSingularExtensionsOnPath;
             if(local.stop) return;
             scores[index] = score;
@@ -1366,6 +1405,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             ctx.stats.probCutCutoffs += depthProbCutCutoffs[idx];
             ctx.stats.singularAttempts += depthSingularAttempts[idx];
             ctx.stats.singularExtensions += depthSingularExtensions[idx];
+            ctx.stats.singularProofNodes += depthSingularProofNodes[idx];
+            ctx.stats.singularBudgetSkips += depthSingularBudgetSkips[idx];
             ctx.stats.maxSingularExtensionsOnPath = std::max(
                 ctx.stats.maxSingularExtensionsOnPath, depthSingularMaxOnPath[idx]);
         }
@@ -1578,7 +1619,8 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                               const PositionEvaluator* evaluator = nullptr,
                               bool incrementalNnue = true,
                               bool enableProbCut = false,
-                              bool enableSingularExtensions = false){
+                              bool enableSingularExtensions = false,
+                              int singularProofBudgetPercent = 0){
     const std::vector<BenchmarkPosition> positions = {
         {"Start", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
         {"Middlegame 1", "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10"},
@@ -1597,6 +1639,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                     ? (incrementalNnue ? "incremental" : "rebuild") : "n/a")
               << " probCut=" << (enableProbCut ? "on" : "off")
               << " singular=" << (enableSingularExtensions ? "on" : "off")
+              << " singularBudget=" << singularProofBudgetPercent
               << " positions=" << positions.size() << "\n";
 
     for(const auto& p : positions){
@@ -1614,6 +1657,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
         ctx.incrementalNnue = incrementalNnue;
         ctx.enableProbCut = enableProbCut;
         ctx.enableSingularExtensions = enableSingularExtensions;
+        ctx.singularProofBudgetPercent = singularProofBudgetPercent;
 
         const Move best = searchBestMove(bd, ctx, depth, perPositionTimeMs, perPositionTimeMs, threads);
         const double nps = (ctx.stats.timeMs > 0)
@@ -1631,6 +1675,8 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                   << " singular=" << ctx.stats.singularExtensions
                   << "/" << ctx.stats.singularAttempts
                   << " singularPathMax=" << ctx.stats.maxSingularExtensionsOnPath
+                  << " singularProofNodes=" << ctx.stats.singularProofNodes
+                  << " singularSkipped=" << ctx.stats.singularBudgetSkips
                   << " time=" << ctx.stats.timeMs << "ms"
                   << " nps=" << static_cast<long long>(nps)
                   << "\n";

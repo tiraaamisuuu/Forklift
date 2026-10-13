@@ -169,6 +169,7 @@ int runUCILoop(int defaultThreads){
     int moveOverheadMs = 25;
     bool enableProbCut = false;
     bool enableSingularExtensions = false;
+    int singularProofBudgetPercent = 0;
 
     PositionEvaluator evaluator;
     SearchContext search;
@@ -176,6 +177,7 @@ int runUCILoop(int defaultThreads){
     search.evaluator = &evaluator;
     search.enableProbCut = enableProbCut;
     search.enableSingularExtensions = enableSingularExtensions;
+    search.singularProofBudgetPercent = singularProofBudgetPercent;
 
     std::atomic<bool> abortSearch(false);
     std::mutex outputMutex;
@@ -194,6 +196,7 @@ int runUCILoop(int defaultThreads){
         search.evaluator = &evaluator;
         search.enableProbCut = enableProbCut;
         search.enableSingularExtensions = enableSingularExtensions;
+        search.singularProofBudgetPercent = singularProofBudgetPercent;
     };
 
     auto launchSearch = [&](int depth, TimeBudget budget, std::vector<Move> rootRestriction, bool restrictRootMoves,
@@ -264,6 +267,7 @@ int runUCILoop(int defaultThreads){
                       << "option name NNUE Weight type spin default 100 min 0 max 100\n"
                       << "option name ProbCut type check default false\n"
                       << "option name Singular Extensions type check default false\n"
+                      << "option name Singular Proof Budget type spin default 0 min 0 max 100\n"
                       << "uciok\n" << std::flush;
         } else if(lower == "isready"){
             std::lock_guard<std::mutex> lock(outputMutex);
@@ -312,6 +316,13 @@ int runUCILoop(int defaultThreads){
                 const std::string value = toLowerASCII(trim(line.substr(valuePosition + 7)));
                 enableSingularExtensions = value == "true" || value == "1" || value == "on";
                 resetSearch();
+            } else if(lower.find("name singular proof budget") != std::string::npos && valuePosition != std::string::npos){
+                int value = 0;
+                if(parseIntStrict(trim(line.substr(valuePosition + 7)), value)){
+                    stopSearch();
+                    singularProofBudgetPercent = std::clamp(value, 0, 100);
+                    resetSearch();
+                }
             } else if(lower.find("name hash") != std::string::npos && valuePosition != std::string::npos){
                 int value = 0;
                 if(parseIntStrict(trim(line.substr(valuePosition + 7)), value)){

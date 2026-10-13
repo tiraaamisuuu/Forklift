@@ -29,6 +29,7 @@ POSITION_PATTERN = re.compile(
     r"^(?P<name>.+?)\s+best=(?P<best>\S+) depth=(?P<depth>\d+) score=(?P<score>-?\d+) "
     r"nodes=(?P<nodes>\d+) qnodes=(?P<qnodes>\d+)"
     r"(?: probcut=\d+/\d+)?(?: singular=\d+/\d+ singularPathMax=\d+)?"
+    r"(?: singularProofNodes=\d+ singularSkipped=\d+)?"
     r" time=(?P<time_ms>\d+)ms nps=(?P<nps>\d+)$",
     re.MULTILINE,
 )

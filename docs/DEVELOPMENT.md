@@ -6,6 +6,13 @@ after the v1 release.
 
 ## Repository state
 
+Research implementation (2026-10-13): Proof-Budgeted Singular Search (PBSS)
+adds an optional per-worker admission quota based on measured verification
+work, with unrestricted behavior retained at budget 0. This is an original
+Forklift design hypothesis, not established scholarly novelty or strength.
+In-flight cancellation and multiworker activation now have persistent tests.
+See [PBSS design and preregistered diagnostic grid](../research/designs/2026-10-13-proof-budgeted-singular-search.md).
+
 Search implementation (2026-10-13): a conservative singular-extension prototype
 now verifies alternatives to a trusted legal TT move and grants one extra ply
 when they fail below its threshold. Excluded-root TT/history isolation,

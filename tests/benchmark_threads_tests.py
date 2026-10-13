@@ -44,7 +44,8 @@ class BenchmarkThreadsTests(unittest.TestCase):
         self.assertEqual(summary["results"][1]["efficiency"], 1.0)
 
     def test_parse_search_feature_counters(self):
-        for counters in (" probcut=0/0", " probcut=0/0 singular=6/196 singularPathMax=1"):
+        for counters in (" probcut=0/0", " probcut=0/0 singular=6/196 singularPathMax=1",
+                         " probcut=0/0 singular=6/196 singularPathMax=1 singularProofNodes=27 singularSkipped=3"):
             with self.subTest(counters=counters):
                 parsed = benchmark_threads.parse_benchmark_output(
                     "Start best=e2e4 depth=12 score=34 nodes=396533 qnodes=72722"

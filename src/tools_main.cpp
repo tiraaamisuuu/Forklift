@@ -29,7 +29,7 @@ void printHelp(){
         << "                  [--bench-tt MB] [--threads N] [--nnue NETWORK]\n"
         << "                  [--nnue-weight PERCENT]\n"
         << "                  [--nnue-rebuild] [--probcut | --no-probcut]\n"
-        << "                  [--singular | --no-singular]\n";
+        << "                  [--singular | --no-singular] [--singular-budget PERCENT]\n";
 }
 
 } // namespace
@@ -43,6 +43,7 @@ int main(int argc, char** argv){
     bool nnueRebuild = false;
     bool enableProbCut = false;
     bool enableSingularExtensions = false;
+    int singularProofBudgetPercent = 0;
     int maxPerftDepth = 4;
     int benchmarkDepth = 8;
     int benchmarkTimeMs = 4000;
@@ -101,6 +102,13 @@ int main(int argc, char** argv){
             enableSingularExtensions = true;
         } else if(argument == "--no-singular"){
             enableSingularExtensions = false;
+        } else if(argument == "--singular-budget"){
+            const char* value = valueFor("--singular-budget");
+            if(!value || !parseInteger(value, singularProofBudgetPercent) ||
+               singularProofBudgetPercent < 0 || singularProofBudgetPercent > 100){
+                std::cerr << "--singular-budget must be between 0 and 100 (0 = unrestricted)\n";
+                return 1;
+            }
         } else if(argument == "--max-depth"){
             const char* value = valueFor("--max-depth");
             if(!value || !parseInteger(value, maxPerftDepth) || maxPerftDepth < 1) return 1;
@@ -129,6 +137,10 @@ int main(int argc, char** argv){
     if(perftTests) return runPerftSuite(zobrist, maxPerftDepth);
 
     PositionEvaluator evaluator;
+    if(singularProofBudgetPercent > 0 && (!benchmark || !enableSingularExtensions)){
+        std::cerr << "--singular-budget requires --bench and --singular\n";
+        return 1;
+    }
     if(nnueRebuild && (!benchmark || nnuePath.empty())){
         std::cerr << "--nnue-rebuild requires --bench and --nnue\n";
         return 1;
@@ -149,7 +161,8 @@ int main(int argc, char** argv){
     if(benchmark){
         return runSearchBenchmark(
             zobrist, benchmarkDepth, benchmarkTimeMs, benchmarkTTMB, threads,
-            nnuePath.empty() ? nullptr : &evaluator, !nnueRebuild, enableProbCut, enableSingularExtensions);
+            nnuePath.empty() ? nullptr : &evaluator, !nnueRebuild, enableProbCut,
+            enableSingularExtensions, singularProofBudgetPercent);
     }
 
     if(evaluate){

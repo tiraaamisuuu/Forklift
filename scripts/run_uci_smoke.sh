@@ -18,6 +18,7 @@ trap 'rm -f "$OUT_FILE"' EXIT
   printf 'setoption name Hash value 128\n'
   printf 'setoption name ProbCut value true\n'
   printf 'setoption name Singular Extensions value true\n'
+  printf 'setoption name Singular Proof Budget value 5\n'
   printf 'ucinewgame\n'
   printf 'position startpos moves e2e4 e7e5 g1f3 b8c6\n'
   printf 'go movetime 300\n'
@@ -88,6 +89,12 @@ fi
 
 if ! grep -Eq '^option name Singular Extensions type check default false$' "$OUT_FILE"; then
   echo "[FAIL] Singular Extensions option was not advertised" >&2
+  cat "$OUT_FILE" >&2
+  exit 1
+fi
+
+if ! grep -Eq '^option name Singular Proof Budget type spin default 0 min 0 max 100$' "$OUT_FILE"; then
+  echo "[FAIL] Singular Proof Budget option was not advertised" >&2
   cat "$OUT_FILE" >&2
   exit 1
 fi

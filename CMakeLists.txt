@@ -129,6 +129,20 @@ if(BUILD_TESTING)
     target_compile_options(chess-core-tests PRIVATE ${CHESS_WARNING_FLAGS})
   endif()
   add_test(NAME chess-core-tests COMMAND chess-core-tests)
+  add_executable(chess-proof-budget-tests tests/search_proof_budget_tests.cpp)
+  target_link_libraries(chess-proof-budget-tests PRIVATE chess_core Threads::Threads)
+  chess_apply_performance_options(chess-proof-budget-tests)
+  if(CHESS_ENABLE_WARNINGS)
+    target_compile_options(chess-proof-budget-tests PRIVATE ${CHESS_WARNING_FLAGS})
+  endif()
+  add_test(NAME chess-proof-budget-tests COMMAND chess-proof-budget-tests)
+  add_executable(chess-singular-tests tests/search_singular_tests.cpp)
+  target_link_libraries(chess-singular-tests PRIVATE chess_core Threads::Threads)
+  chess_apply_performance_options(chess-singular-tests)
+  if(CHESS_ENABLE_WARNINGS)
+    target_compile_options(chess-singular-tests PRIVATE ${CHESS_WARNING_FLAGS})
+  endif()
+  add_test(NAME chess-singular-tests COMMAND chess-singular-tests)
   add_test(NAME benchmark-production-default
     COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1)
   set_tests_properties(benchmark-production-default PROPERTIES
@@ -145,6 +159,10 @@ if(BUILD_TESTING)
     COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1 --singular)
   set_tests_properties(benchmark-singular-opt-in PROPERTIES
     PASS_REGULAR_EXPRESSION "singular=on")
+  add_test(NAME benchmark-proof-budget-opt-in
+    COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1 --singular --singular-budget 5)
+  set_tests_properties(benchmark-proof-budget-opt-in PROPERTIES
+    PASS_REGULAR_EXPRESSION "singularBudget=5")
   if(TARGET gui)
     add_test(NAME desktop-benchmark-production-default
       COMMAND gui --bench --bench-depth 1 --bench-tt 1)
