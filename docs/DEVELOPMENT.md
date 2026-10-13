@@ -6,6 +6,16 @@ after the v1 release.
 
 ## Repository state
 
+Inference/research milestone (2026-10-13): load-time-certified narrow output
+arithmetic and exact baseline SSE2 reduction deliver +23.25% median paired
+NNUE search throughput against the current int64 reference, with identical
+depth-12 trees across 20 runs. This is preliminary shared-host timing, not Elo.
+All six CI jobs pass for the measured source. The RIFT teacher-allocation
+hypothesis now has a runnable, leakage-aware standard-library planner and 44
+tests; no deep-label/training job or strength gain is claimed. See the
+[certified output result](results/2026-10-13-nnue-certified-output.md) and
+[research contribution ledger](../research/CONTRIBUTIONS.md).
+
 Research implementation (2026-10-13): Proof-Budgeted Singular Search (PBSS)
 adds an optional per-worker admission quota based on measured verification
 work, with unrestricted behavior retained at budget 0. This is an original

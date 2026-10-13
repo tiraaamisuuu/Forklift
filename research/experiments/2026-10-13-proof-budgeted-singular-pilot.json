@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "proof-budgeted-singular-pilot-20261013",
+  "sourceCommit": "abaffa97aa8c5cc11c9fd16484864246d0609754",
+  "evidenceLevel": "descriptive fixed-depth pilot, not strength evidence",
+  "method": "PBSS: per-worker soft admission quota, bootstrap256, percent of ordinary main+quiescence work",
+  "protocol": {
+    "budgetPercentGrid": [
+      0,
+      2,
+      5,
+      10
+    ],
+    "depth": 12,
+    "threads": 1,
+    "hashMiB": 128,
+    "timeCeilingMs": 60000,
+    "nnueWeight": 100,
+    "probCut": false,
+    "order": "ascending quota, one run per mode",
+    "predeclaredDesign": "research/designs/2026-10-13-proof-budgeted-singular-search.md"
+  },
+  "artifacts": {
+    "toolsSha256": "5c6a3ca7e5a3f9c57238d4dcb55c2bf0d83e195793f80e8370161dedf1b7f0cc",
+    "networkSha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+  },
+  "grid": [
+    {
+      "budgetPercent": 0,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=on singularBudget=0 positions=4",
+        "Start        best=e2e4 depth=12 score=34 nodes=396533 qnodes=72722 probcut=0/0 singular=6/196 singularPathMax=1 singularProofNodes=11972 singularSkipped=0 time=710ms nps=558497",
+        "Middlegame 1 best=f1b1 depth=12 score=50 nodes=432922 qnodes=108150 probcut=0/0 singular=20/158 singularPathMax=2 singularProofNodes=6850 singularSkipped=0 time=851ms nps=508721",
+        "Middlegame 2 best=d3d4 depth=12 score=6 nodes=374328 qnodes=100067 probcut=0/0 singular=34/212 singularPathMax=3 singularProofNodes=24091 singularSkipped=0 time=663ms nps=564597",
+        "Endgame      best=b4f4 depth=12 score=62 nodes=98383 qnodes=19049 probcut=0/0 singular=8/78 singularPathMax=1 singularProofNodes=4254 singularSkipped=0 time=150ms nps=655886",
+        "Benchmark summary: nodes=1302166 time=2374ms nps=548511"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "e2e4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 396533,
+          "qnodes": 72722,
+          "extensions": 6,
+          "attempts": 196,
+          "pathMax": 1,
+          "proofNodes": 11972,
+          "skips": 0,
+          "timeMs": 710
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 50,
+          "nodes": 432922,
+          "qnodes": 108150,
+          "extensions": 20,
+          "attempts": 158,
+          "pathMax": 2,
+          "proofNodes": 6850,
+          "skips": 0,
+          "timeMs": 851
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "d3d4",
+          "depth": 12,
+          "score": 6,
+          "nodes": 374328,
+          "qnodes": 100067,
+          "extensions": 34,
+          "attempts": 212,
+          "pathMax": 3,
+          "proofNodes": 24091,
+          "skips": 0,
+          "timeMs": 663
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 62,
+          "nodes": 98383,
+          "qnodes": 19049,
+          "extensions": 8,
+          "attempts": 78,
+          "pathMax": 1,
+          "proofNodes": 4254,
+          "skips": 0,
+          "timeMs": 150
+        }
+      ],
+      "summary": {
+        "mainNodes": 1302166,
+        "qnodes": 299988,
+        "proofNodes": 47167,
+        "attempts": 644,
+        "extensions": 68,
+        "skips": 0,
+        "timeMs": 2374,
+        "proofShareOfAllNodesPercent": 2.9439741747672197,
+        "mainNodeChangePercent": 0
+      }
+    },
+    {
+      "budgetPercent": 2,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=on singularBudget=2 positions=4",
+        "Start        best=e2e4 depth=12 score=34 nodes=393939 qnodes=72416 probcut=0/0 singular=5/166 singularPathMax=1 singularProofNodes=9366 singularSkipped=31 time=690ms nps=570926",
+        "Middlegame 1 best=f1b1 depth=12 score=50 nodes=432922 qnodes=108150 probcut=0/0 singular=20/158 singularPathMax=2 singularProofNodes=6850 singularSkipped=0 time=840ms nps=515383",
+        "Middlegame 2 best=c4d5 depth=12 score=1 nodes=159537 qnodes=38952 probcut=0/0 singular=9/41 singularPathMax=1 singularProofNodes=4195 singularSkipped=141 time=266ms nps=599763",
+        "Endgame      best=e2e3 depth=12 score=-6 nodes=109853 qnodes=21415 probcut=0/0 singular=4/45 singularPathMax=1 singularProofNodes=2822 singularSkipped=43 time=166ms nps=661765",
+        "Benchmark summary: nodes=1096251 time=1962ms nps=558741"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "e2e4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 393939,
+          "qnodes": 72416,
+          "extensions": 5,
+          "attempts": 166,
+          "pathMax": 1,
+          "proofNodes": 9366,
+          "skips": 31,
+          "timeMs": 690
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 50,
+          "nodes": 432922,
+          "qnodes": 108150,
+          "extensions": 20,
+          "attempts": 158,
+          "pathMax": 2,
+          "proofNodes": 6850,
+          "skips": 0,
+          "timeMs": 840
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": 1,
+          "nodes": 159537,
+          "qnodes": 38952,
+          "extensions": 9,
+          "attempts": 41,
+          "pathMax": 1,
+          "proofNodes": 4195,
+          "skips": 141,
+          "timeMs": 266
+        },
+        {
+          "name": "Endgame",
+          "best": "e2e3",
+          "depth": 12,
+          "score": -6,
+          "nodes": 109853,
+          "qnodes": 21415,
+          "extensions": 4,
+          "attempts": 45,
+          "pathMax": 1,
+          "proofNodes": 2822,
+          "skips": 43,
+          "timeMs": 166
+        }
+      ],
+      "summary": {
+        "mainNodes": 1096251,
+        "qnodes": 240933,
+        "proofNodes": 23233,
+        "attempts": 410,
+        "extensions": 38,
+        "skips": 215,
+        "timeMs": 1962,
+        "proofShareOfAllNodesPercent": 1.7374572235384211,
+        "mainNodeChangePercent": -15.813268047238216
+      }
+    },
+    {
+      "budgetPercent": 5,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=on singularBudget=5 positions=4",
+        "Start        best=e2e4 depth=12 score=34 nodes=396533 qnodes=72722 probcut=0/0 singular=6/196 singularPathMax=1 singularProofNodes=11972 singularSkipped=0 time=692ms nps=573024",
+        "Middlegame 1 best=f1b1 depth=12 score=50 nodes=432922 qnodes=108150 probcut=0/0 singular=20/158 singularPathMax=2 singularProofNodes=6850 singularSkipped=0 time=860ms nps=503397",
+        "Middlegame 2 best=d3d4 depth=12 score=-1 nodes=393134 qnodes=110449 probcut=0/0 singular=28/212 singularPathMax=4 singularProofNodes=22192 singularSkipped=4 time=744ms nps=528405",
+        "Endgame      best=b4f4 depth=12 score=62 nodes=98383 qnodes=19049 probcut=0/0 singular=8/78 singularPathMax=1 singularProofNodes=4254 singularSkipped=0 time=155ms nps=634729",
+        "Benchmark summary: nodes=1320972 time=2451ms nps=538952"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "e2e4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 396533,
+          "qnodes": 72722,
+          "extensions": 6,
+          "attempts": 196,
+          "pathMax": 1,
+          "proofNodes": 11972,
+          "skips": 0,
+          "timeMs": 692
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 50,
+          "nodes": 432922,
+          "qnodes": 108150,
+          "extensions": 20,
+          "attempts": 158,
+          "pathMax": 2,
+          "proofNodes": 6850,
+          "skips": 0,
+          "timeMs": 860
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "d3d4",
+          "depth": 12,
+          "score": -1,
+          "nodes": 393134,
+          "qnodes": 110449,
+          "extensions": 28,
+          "attempts": 212,
+          "pathMax": 4,
+          "proofNodes": 22192,
+          "skips": 4,
+          "timeMs": 744
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 62,
+          "nodes": 98383,
+          "qnodes": 19049,
+          "extensions": 8,
+          "attempts": 78,
+          "pathMax": 1,
+          "proofNodes": 4254,
+          "skips": 0,
+          "timeMs": 155
+        }
+      ],
+      "summary": {
+        "mainNodes": 1320972,
+        "qnodes": 310370,
+        "proofNodes": 45268,
+        "attempts": 644,
+        "extensions": 62,
+        "skips": 4,
+        "timeMs": 2451,
+        "proofShareOfAllNodesPercent": 2.7748933086992182,
+        "mainNodeChangePercent": 1.4442091100520305
+      }
+    },
+    {
+      "budgetPercent": 10,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=on singularBudget=10 positions=4",
+        "Start        best=e2e4 depth=12 score=34 nodes=396533 qnodes=72722 probcut=0/0 singular=6/196 singularPathMax=1 singularProofNodes=11972 singularSkipped=0 time=711ms nps=557711",
+        "Middlegame 1 best=f1b1 depth=12 score=50 nodes=432922 qnodes=108150 probcut=0/0 singular=20/158 singularPathMax=2 singularProofNodes=6850 singularSkipped=0 time=895ms nps=483711",
+        "Middlegame 2 best=d3d4 depth=12 score=6 nodes=374328 qnodes=100067 probcut=0/0 singular=34/212 singularPathMax=3 singularProofNodes=24091 singularSkipped=0 time=704ms nps=531715",
+        "Endgame      best=b4f4 depth=12 score=62 nodes=98383 qnodes=19049 probcut=0/0 singular=8/78 singularPathMax=1 singularProofNodes=4254 singularSkipped=0 time=168ms nps=585613",
+        "Benchmark summary: nodes=1302166 time=2478ms nps=525490"
+      ],
+      "positions": [
+        {
+          "name": "Start",
+          "best": "e2e4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 396533,
+          "qnodes": 72722,
+          "extensions": 6,
+          "attempts": 196,
+          "pathMax": 1,
+          "proofNodes": 11972,
+          "skips": 0,
+          "timeMs": 711
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 50,
+          "nodes": 432922,
+          "qnodes": 108150,
+          "extensions": 20,
+          "attempts": 158,
+          "pathMax": 2,
+          "proofNodes": 6850,
+          "skips": 0,
+          "timeMs": 895
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "d3d4",
+          "depth": 12,
+          "score": 6,
+          "nodes": 374328,
+          "qnodes": 100067,
+          "extensions": 34,
+          "attempts": 212,
+          "pathMax": 3,
+          "proofNodes": 24091,
+          "skips": 0,
+          "timeMs": 704
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 62,
+          "nodes": 98383,
+          "qnodes": 19049,
+          "extensions": 8,
+          "attempts": 78,
+          "pathMax": 1,
+          "proofNodes": 4254,
+          "skips": 0,
+          "timeMs": 168
+        }
+      ],
+      "summary": {
+        "mainNodes": 1302166,
+        "qnodes": 299988,
+        "proofNodes": 47167,
+        "attempts": 644,
+        "extensions": 68,
+        "skips": 0,
+        "timeMs": 2478,
+        "proofShareOfAllNodesPercent": 2.9439741747672197,
+        "mainNodeChangePercent": 0
+      }
+    }
+  ],
+  "findings": [
+    "Unrestricted verification costs only about 2.94% of all visited nodes in this sample; extension/ordering effects account for much of the larger search-tree difference.",
+    "2% quota admits fewer proofs and reduces aggregate main nodes by about15.81%, but changes two root moves including the endgame; tactical quality is unknown.",
+    "5% quota slightly increases the main tree despite four skipped proofs, demonstrating nonlinear feedback rather than monotonic efficiency.",
+    "10% quota is nonbinding in this pilot and reproduces unrestricted moves, scores and node counts.",
+    "No quota is selected or promoted from this four-position pilot."
+  ],
+  "limitations": [
+    "Concurrent frozen confirmation load; one timing sample per mode, no timing significance claim",
+    "Different search trees/moves invalidate identical-work speed attribution",
+    "Node share is not wall-time share; admitted proof can overshoot target",
+    "Four positions cannot establish tactical robustness or Elo"
+  ],
+  "decision": {
+    "defaultQuotaPercent": 0,
+    "defaultSingularEnabled": false,
+    "strengthGainClaimed": false,
+    "next": "Tactical/endgame holdouts and paired equal-time study; RIFT real signal collection separately"
+  }
+}

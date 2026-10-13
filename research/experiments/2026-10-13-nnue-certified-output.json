@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "nnue-certified-output-20261013",
+  "sourceCommit": "abaffa97aa8c5cc11c9fd16484864246d0609754",
+  "startedAt": "2026-10-13T09:43:43.3829353+00:00",
+  "completedAt": "2026-10-13T09:44:30.3452292+00:00",
+  "comparison": "Same current search, general int64 reference versus automatically certified output",
+  "protocol": {
+    "depth": 12,
+    "pairs": 10,
+    "order": "alternate by pair",
+    "threads": 1,
+    "hashMiB": 128,
+    "timeLimitMs": 60000,
+    "singular": false,
+    "probCut": false,
+    "nnueWeight": 100,
+    "warmupsPerExecutable": 1
+  },
+  "artifacts": {
+    "referenceSha256": "426e54578bd49ad07c3a09562e45f64c2b9beb894275ddb69148a86b43ed64ba",
+    "networkSha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c",
+    "candidateSha256": "5c6a3ca7e5a3f9c57238d4dcb55c2bf0d83e195793f80e8370161dedf1b7f0cc"
+  },
+  "parity": {
+    "positions": [
+      {
+        "name": "Start",
+        "best": "d2d4",
+        "depth": 12,
+        "score": 34,
+        "nodes": 349696,
+        "qnodes": 68209
+      },
+      {
+        "name": "Middlegame 1",
+        "best": "f1b1",
+        "depth": 12,
+        "score": 46,
+        "nodes": 343677,
+        "qnodes": 87263
+      },
+      {
+        "name": "Middlegame 2",
+        "best": "c4d5",
+        "depth": 12,
+        "score": -16,
+        "nodes": 202327,
+        "qnodes": 47128
+      },
+      {
+        "name": "Endgame",
+        "best": "b4f4",
+        "depth": 12,
+        "score": 26,
+        "nodes": 73429,
+        "qnodes": 15808
+      }
+    ],
+    "allTwentyRunsIdentical": true
+  },
+  "summary": {
+    "timeReductionPercent": 18.603550295857985,
+    "candidateMedianMs": 1719.5,
+    "pairedThroughputRatios": [
+      1.2184971098265895,
+      1.1971671388101983,
+      1.2188044109112013,
+      1.2293364377182772,
+      1.2159353348729791,
+      1.252046783625731,
+      1.2400946185688941,
+      1.2409568261376895,
+      1.2382335851249273,
+      1.235672514619883
+    ],
+    "medianPairedThroughputRatio": 1.2325044761690802,
+    "referenceMedianMs": 2112.5
+  },
+  "limitation": "Shared host with six-game frozen NNUE confirmation; repeat on idle hardware before publication. No Elo claim.",
+  "trials": [
+    {
+      "pair": 1,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2108,
+      "nps": 459738,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=741ms nps=471924",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=810ms nps=424292",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=417ms nps=485196",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=140ms nps=524492",
+        "Benchmark summary: nodes=969129 time=2108ms nps=459738"
+      ]
+    },
+    {
+      "pair": 1,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1730,
+      "nps": 560190,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=607ms nps=576105",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=663ms nps=518366",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=347ms nps=583074",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=113ms nps=649814",
+        "Benchmark summary: nodes=969129 time=1730ms nps=560190"
+      ]
+    },
+    {
+      "pair": 2,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1765,
+      "nps": 549081,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=648ms nps=539654",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=673ms nps=510664",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=332ms nps=609418",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=112ms nps=655616",
+        "Benchmark summary: nodes=969129 time=1765ms nps=549081"
+      ]
+    },
+    {
+      "pair": 2,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2113,
+      "nps": 458650,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=756ms nps=462560",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=797ms nps=431213",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=418ms nps=484035",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=142ms nps=517105",
+        "Benchmark summary: nodes=969129 time=2113ms nps=458650"
+      ]
+    },
+    {
+      "pair": 3,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2100,
+      "nps": 461490,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=747ms nps=468133",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=798ms nps=430672",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=413ms nps=489895",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=142ms nps=517105",
+        "Benchmark summary: nodes=969129 time=2100ms nps=461490"
+      ]
+    },
+    {
+      "pair": 3,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1723,
+      "nps": 562466,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=622ms nps=562212",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=662ms nps=519149",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=328ms nps=616850",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=111ms nps=661522",
+        "Benchmark summary: nodes=969129 time=1723ms nps=562466"
+      ]
+    },
+    {
+      "pair": 4,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1718,
+      "nps": 564103,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=619ms nps=564936",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=659ms nps=521512",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=329ms nps=614975",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=111ms nps=661522",
+        "Benchmark summary: nodes=969129 time=1718ms nps=564103"
+      ]
+    },
+    {
+      "pair": 4,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2112,
+      "nps": 458867,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=748ms nps=467508",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=806ms nps=426398",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=417ms nps=485196",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=141ms nps=520773",
+        "Benchmark summary: nodes=969129 time=2112ms nps=458867"
+      ]
+    },
+    {
+      "pair": 5,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2106,
+      "nps": 460175,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=750ms nps=466261",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=800ms nps=429596",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=412ms nps=491084",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=144ms nps=509923",
+        "Benchmark summary: nodes=969129 time=2106ms nps=460175"
+      ]
+    },
+    {
+      "pair": 5,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1732,
+      "nps": 559543,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=607ms nps=576105",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=662ms nps=519149",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=342ms nps=591599",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=121ms nps=606851",
+        "Benchmark summary: nodes=969129 time=1732ms nps=559543"
+      ]
+    },
+    {
+      "pair": 6,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1710,
+      "nps": 566742,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=606ms nps=577056",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=664ms nps=517585",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=328ms nps=616850",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=112ms nps=655616",
+        "Benchmark summary: nodes=969129 time=1710ms nps=566742"
+      ]
+    },
+    {
+      "pair": 6,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2141,
+      "nps": 452652,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=760ms nps=460126",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=818ms nps=420143",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=420ms nps=481730",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=143ms nps=513489",
+        "Benchmark summary: nodes=969129 time=2141ms nps=452652"
+      ]
+    },
+    {
+      "pair": 7,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2097,
+      "nps": 462150,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=748ms nps=467508",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=797ms nps=431213",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=411ms nps=492279",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=141ms nps=520773",
+        "Benchmark summary: nodes=969129 time=2097ms nps=462150"
+      ]
+    },
+    {
+      "pair": 7,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1691,
+      "nps": 573109,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=604ms nps=578966",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=649ms nps=529548",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=327ms nps=618737",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=111ms nps=661522",
+        "Benchmark summary: nodes=969129 time=1691ms nps=573109"
+      ]
+    },
+    {
+      "pair": 8,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1714,
+      "nps": 565419,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=609ms nps=574213",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=662ms nps=519149",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=329ms nps=614975",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=114ms nps=644114",
+        "Benchmark summary: nodes=969129 time=1714ms nps=565419"
+      ]
+    },
+    {
+      "pair": 8,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2127,
+      "nps": 455631,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=739ms nps=473201",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=830ms nps=414068",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=417ms nps=485196",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=141ms nps=520773",
+        "Benchmark summary: nodes=969129 time=2127ms nps=455631"
+      ]
+    },
+    {
+      "pair": 9,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2131,
+      "nps": 454776,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=764ms nps=457717",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=812ms nps=423247",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=415ms nps=487534",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=140ms nps=524492",
+        "Benchmark summary: nodes=969129 time=2131ms nps=454776"
+      ]
+    },
+    {
+      "pair": 9,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1721,
+      "nps": 563119,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=621ms nps=563117",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=660ms nps=520722",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=330ms nps=613112",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=110ms nps=667536",
+        "Benchmark summary: nodes=969129 time=1721ms nps=563119"
+      ]
+    },
+    {
+      "pair": 10,
+      "mode": "candidate",
+      "nodes": 969129,
+      "timeMs": 1710,
+      "nps": 566742,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=608ms nps=575157",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=662ms nps=519149",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=329ms nps=614975",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=111ms nps=661522",
+        "Benchmark summary: nodes=969129 time=1710ms nps=566742"
+      ]
+    },
+    {
+      "pair": 10,
+      "mode": "reference",
+      "nodes": 969129,
+      "timeMs": 2113,
+      "nps": 458650,
+      "stdout": [
+        "Benchmark: depth=12 timeLimit=60000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=scalar64-reference probCut=off singular=off singularBudget=0 positions=4",
+        "Start        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=752ms nps=465021",
+        "Middlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=811ms nps=423769",
+        "Middlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=410ms nps=493480",
+        "Endgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=140ms nps=524492",
+        "Benchmark summary: nodes=969129 time=2113ms nps=458650"
+      ]
+    }
+  ],
+  "correctness": {
+    "normalFixtures": 31,
+    "scalarFixtures": 31,
+    "comparisonsPerBuild": 63488,
+    "independentArithmeticReview": true,
+    "ci": {
+      "url": "https://github.com/tiraaamisuuu/Forklift/actions/runs/38378258649",
+      "jobs": [
+        {
+          "name": "windows-desktop",
+          "conclusion": "success"
+        },
+        {
+          "name": "web-gui",
+          "conclusion": "success"
+        },
+        {
+          "name": "sanitizers",
+          "conclusion": "success"
+        },
+        {
+          "name": "headless (macos-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "headless (windows-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "headless (ubuntu-latest)",
+          "conclusion": "success"
+        }
+      ]
+    }
+  }
+}

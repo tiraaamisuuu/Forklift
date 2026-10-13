@@ -93,3 +93,33 @@ results and ablations. A named scheduler or a lower node count alone is not a
 publication-level contribution. For a CV, accurately describe designing and
 implementing an experimental compute-budget scheduler and reproducible audit
 pipeline; do not claim a new state-of-the-art chess algorithm.
+
+## First descriptive pilot: mixed/negative evidence preserved
+
+The predeclared grid completed at depth 12 on the same certified-output
+executable and model. The full
+[raw/parsed record](../experiments/2026-10-13-proof-budgeted-singular-pilot.json)
+is the source of these figures:
+
+| Quota | Main nodes | Proof nodes | Extensions | Denied proofs | Main-tree change |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| unrestricted | 1,302,166 | 47,167 | 68 | 0 | control |
+| 2% | 1,096,251 | 23,233 | 38 | 215 | -15.81% |
+| 5% | 1,320,972 | 45,268 | 62 | 4 | +1.44% |
+| 10% | 1,302,166 | 47,167 | 68 | 0 | identical |
+
+The 2% setting changes two root moves, including the endgame. We do not know
+whether that is improved efficiency or lost tactical information. The 5%
+setting makes the tree slightly larger despite skipping four proofs; selective
+search is not monotonic in this quota. The 10% setting does not bind here and
+reproduces unrestricted moves/scores/node counts.
+
+An important limitation of the original hypothesis is now measured: raw
+verification accounts for only **2.94% of all nodes** in the unrestricted
+pilot. Extension depth and changes to ordering/TT history can therefore
+dominate its extra tree cost. Reducing proof work alone need not recover most
+of that cost. These observations motivate tactical holdouts and a separate
+extension-cost study, not selecting a quota from four positions.
+
+No setting is promoted, no Elo gain is claimed, and all outcomes are retained.
+Timing samples remain exploratory under concurrent match load.

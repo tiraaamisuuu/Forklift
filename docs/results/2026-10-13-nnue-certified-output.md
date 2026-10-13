@@ -74,4 +74,25 @@ The end-to-end protocol is fixed before its paired sample:
 - Record concurrent confirmation load as a limitation and repeat on an idle
   host before publication. No frozen confirmation binary is replaced.
 
-Outcomes and CI links will be appended after the sample completes.
+## End-to-end result
+
+The ten pairs ran from 09:43:43 to 09:44:30 UTC on source
+`abaffa97aa8c5cc11c9fd16484864246d0609754`. All twenty runs reached depth 12
+and matched moves, scores, main nodes and quiescence nodes at all four
+positions (969,129 main nodes / 218,408 quiescence nodes per run).
+
+Median total reported time fell from **2,112.5 ms to 1,719.5 ms** (**18.60%
+lower**). The median paired throughput ratio was **1.2325** (**23.25% higher
+throughput**), with all ten pairs favoring the candidate. Different median
+aggregations and reciprocal time/throughput metrics must not be conflated.
+
+This is an additional identical-tree NNUE search gain over the previously
+integrated fused accumulator updates, not an Elo result or a universal CPU
+speed claim. All trials, hashes, paired ratios and limitations are preserved
+in [the experiment record](../../research/experiments/2026-10-13-nnue-certified-output.json).
+
+[CI run 38378258649](https://github.com/tiraaamisuuu/Forklift/actions/runs/38378258649)
+passed all six jobs for the measured source. The sanitizer script now runs
+the entire CTest suite, including the new output/scalar, proof-budget and
+in-flight/parallel tests, rather than only the original core executable.
+The timing remains preliminary under six-game concurrent confirmation load.

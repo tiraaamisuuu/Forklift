@@ -9,6 +9,11 @@ the strength work. Each substantial experiment records its hypothesis, fixed
 contract, artifact hashes, outcome, and limitations, including failed and
 interrupted runs. Preparing this evidence does not establish novelty.
 
+The [contribution ledger](CONTRIBUTIONS.md) distinguishes newly implemented
+Forklift designs (PBSS and the RIFT selector) from established techniques,
+records qualified evidence, and provides accurate paper/CV wording. It links
+the full design notes, scoped prior-art reviews and negative pilot outcomes.
+
 ## Current research signal
 
 The five-million-position corpus reached 92.50% input coverage, but its original
