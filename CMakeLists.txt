@@ -137,6 +137,14 @@ if(BUILD_TESTING)
     COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1 --probcut)
   set_tests_properties(benchmark-probcut-opt-in PROPERTIES
     PASS_REGULAR_EXPRESSION "probCut=on")
+  add_test(NAME benchmark-singular-default
+    COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1)
+  set_tests_properties(benchmark-singular-default PROPERTIES
+    PASS_REGULAR_EXPRESSION "singular=off")
+  add_test(NAME benchmark-singular-opt-in
+    COMMAND chess-engine-tools --bench --bench-depth 1 --bench-tt 1 --singular)
+  set_tests_properties(benchmark-singular-opt-in PROPERTIES
+    PASS_REGULAR_EXPRESSION "singular=on")
   if(TARGET gui)
     add_test(NAME desktop-benchmark-production-default
       COMMAND gui --bench --bench-depth 1 --bench-tt 1)

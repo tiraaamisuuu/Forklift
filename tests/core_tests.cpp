@@ -557,15 +557,17 @@ void testIncrementalNnue(const Zobrist& zobrist, u32 hidden){
     SearchContext incrementalSearch;
     incrementalSearch.evaluator = &evaluator;
     incrementalSearch.incrementalNnue = true;
+    incrementalSearch.enableSingularExtensions = true;
     incrementalSearch.tt.resizeMB(16);
     incrementalSearch.gameHistory = {incrementalBoard.hash};
     SearchContext rebuildSearch;
     rebuildSearch.evaluator = &evaluator;
     rebuildSearch.incrementalNnue = false;
+    rebuildSearch.enableSingularExtensions = true;
     rebuildSearch.tt.resizeMB(16);
     rebuildSearch.gameHistory = {rebuildBoard.hash};
-    const Move incrementalMove = searchBestMove(incrementalBoard, incrementalSearch, 6, 60'000, 60'000);
-    const Move rebuildMove = searchBestMove(rebuildBoard, rebuildSearch, 6, 60'000, 60'000);
+    const Move incrementalMove = searchBestMove(incrementalBoard, incrementalSearch, 9, 60'000, 60'000);
+    const Move rebuildMove = searchBestMove(rebuildBoard, rebuildSearch, 9, 60'000, 60'000);
     expect(sameMove(incrementalMove, rebuildMove),
            "incremental and rebuild NNUE searches should choose the same move");
     expect(incrementalSearch.stats.bestScore == rebuildSearch.stats.bestScore,
@@ -573,6 +575,10 @@ void testIncrementalNnue(const Zobrist& zobrist, u32 hidden){
     expect(incrementalSearch.stats.nodes == rebuildSearch.stats.nodes &&
            incrementalSearch.stats.qnodes == rebuildSearch.stats.qnodes,
            "incremental and rebuild NNUE searches should visit the same tree");
+    expect(incrementalSearch.stats.singularAttempts > 0 &&
+           incrementalSearch.stats.singularAttempts == rebuildSearch.stats.singularAttempts &&
+           incrementalSearch.stats.singularExtensions == rebuildSearch.stats.singularExtensions,
+           "incremental/rebuild NNUE parity must cover active singular verification");
 
     std::error_code removeError;
     std::filesystem::remove(path, removeError);
@@ -713,6 +719,172 @@ void testProbCut(const Zobrist& zobrist){
            "search without ProbCut must also preserve the exact board state");
 }
 
+void testSingularExtensions(const Zobrist& zobrist){
+    auto prepare = [&](SearchContext& context, const Board& board){
+        context.tt.resizeMB(1);
+        context.start = std::chrono::steady_clock::now();
+        context.softTimeLimitMs = 60'000;
+        context.hardTimeLimitMs = 60'000;
+        context.repetition = {board.hash};
+        context.enableSingularExtensions = true;
+    };
+
+    auto eligibilityOwner = std::make_unique<SearchContext>();
+    SearchContext& eligibility = *eligibilityOwner;
+    TTEntry bound;
+    bound.depth = 5;
+    bound.flag = TTFlag::Lower;
+    bound.score = 100;
+    expect(!singularExtensionEligible(eligibility, bound, 8, 1, false),
+           "singular extensions must be disabled by default");
+    eligibility.enableSingularExtensions = true;
+    expect(singularExtensionEligible(eligibility, bound, 8, 1, false),
+           "deep enough lower-bound TT evidence should qualify");
+    bound.flag = TTFlag::Exact;
+    expect(singularExtensionEligible(eligibility, bound, 8, 1, false),
+           "exact TT evidence should also qualify");
+    bound.flag = TTFlag::Upper;
+    expect(!singularExtensionEligible(eligibility, bound, 8, 1, false),
+           "an upper bound cannot prove a uniquely strong move");
+    bound.flag = TTFlag::Lower;
+    bound.depth = 4;
+    expect(!singularExtensionEligible(eligibility, bound, 8, 1, false),
+           "shallow TT evidence must not trigger verification");
+    bound.depth = 5;
+    expect(!singularExtensionEligible(eligibility, bound, 7, 1, false) &&
+           !singularExtensionEligible(eligibility, bound, 8, 0, false) &&
+           !singularExtensionEligible(eligibility, bound, 8, 1, true) &&
+           !singularExtensionEligible(eligibility, bound, 8, SearchContext::MaxSearchPly - 2, false),
+           "shallow, root, checked, and near-ply-limit nodes must not qualify");
+    for(const int score : {MATE - 10, -MATE + 10, std::numeric_limits<int>::min(),
+                           std::numeric_limits<int>::max()}){
+        bound.score = score;
+        expect(!singularExtensionEligible(eligibility, bound, 8, 1, false),
+               "mate-range and malformed scores must not trigger singular verification");
+    }
+    bound.score = 100;
+    eligibility.activeSingularExtensions = SearchContext::MaxSingularExtensionsOnPath;
+    expect(!singularExtensionEligible(eligibility, bound, 8, 1, false),
+           "the per-line singular extension budget must be enforced");
+    eligibility.activeSingularExtensions = 0;
+    {
+        SingularVerificationScope verification(eligibility);
+        expect(!singularExtensionEligible(eligibility, bound, 8, 1, false),
+               "verification must not recursively prove another singular extension");
+    }
+    expect(!eligibility.singularVerification, "verification scope must restore its prior state");
+    {
+        SingularExtensionScope first(eligibility, 1);
+        { SingularExtensionScope second(eligibility, 1);
+          expect(eligibility.activeSingularExtensions == 2, "path extensions must accumulate"); }
+        expect(eligibility.activeSingularExtensions == 1, "child path budget must unwind");
+    }
+    expect(eligibility.activeSingularExtensions == 0, "path budget must fully unwind");
+
+    Board board;
+    board.setZobrist(&zobrist);
+    board.reset();
+    const Board original = board;
+    const Move excluded = findMove(board, "e2e4");
+    auto restrictedOwner = std::make_unique<SearchContext>();
+    SearchContext& restricted = *restrictedOwner;
+    prepare(restricted, board);
+    restricted.killer[1][0] = invalidMove();
+    restricted.tt.store(board.hash, 12, 2000, TTFlag::Lower, excluded);
+    const auto beforeEntry = restricted.tt.probe(board.hash);
+    const auto beforeRepetition = restricted.repetition;
+    const int score = negamax(board, restricted, 2, -1, 0, 1,
+                              invalidMove(), true, true, excluded);
+    const auto afterEntry = restricted.tt.probe(board.hash);
+    expect(score > -1000 && score < 1000,
+           "excluded verification must not reuse the ordinary root TT cutoff");
+    expect(beforeEntry && afterEntry && beforeEntry->depth == afterEntry->depth &&
+           beforeEntry->score == afterEntry->score && beforeEntry->flag == afterEntry->flag &&
+           sameMove(beforeEntry->best, afterEntry->best),
+           "excluded verification must not publish a restricted root TT entry");
+    expect(restricted.stats.singularAttempts == 0 && !restricted.singularVerification &&
+           restricted.activeSingularExtensions == 0,
+           "excluded searches must unwind without nested singular verification");
+    expect(restricted.killer[1][0].from >= 64,
+           "excluded-root cutoffs must not train that ply's killer move");
+    expect(samePosition(board, original) && restricted.repetition == beforeRepetition &&
+           restricted.activeScratch == 0, "excluded search must restore board, repetition and scratch");
+
+    expect(board.loadFEN("7k/8/6K1/8/8/8/8/R7 b - - 0 1"), "only-move fixture should load");
+    MoveList onlyMoves;
+    board.genLegalMoves(onlyMoves);
+    expect(onlyMoves.size() == 1, "only-move fixture must have exactly one legal move");
+    if(onlyMoves.size() == 1){
+        auto onlyOwner = std::make_unique<SearchContext>();
+        SearchContext& only = *onlyOwner;
+        prepare(only, board);
+        const Board onlyOriginal = board;
+        const int noAlternative = negamax(board, only, 3, 179, 180, 1,
+                                          invalidMove(), true, true, onlyMoves[0]);
+        expect(noAlternative == 179, "excluding the only move must fail low, not invent a mate or draw");
+        expect(!only.tt.probe(board.hash), "empty alternatives must not be stored in the ordinary TT");
+        expect(samePosition(board, onlyOriginal), "empty-alternative search must restore the board");
+    }
+
+    for(const auto& fixture : std::array<std::pair<const char*, const char*>, 3>{{
+        {"r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "e1g1"},
+        {"4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1", "e5d6"},
+        {"1r2k3/P7/8/8/8/8/8/4K3 w - - 0 1", "a7b8n"}
+    }}){
+        expect(board.loadFEN(fixture.first), "canonical TT fixture should load");
+        const Move legalMove = findMove(board, fixture.second);
+        MoveList legal;
+        board.genLegalMoves(legal);
+        auto canonicalOwner = std::make_unique<SearchContext>();
+        SearchContext& canonical = *canonicalOwner;
+        prepare(canonical, board);
+        canonical.tt.store(board.hash, 5, 100, TTFlag::Lower, legalMove);
+        const auto stored = canonical.tt.probe(board.hash);
+        expect(stored && sameMove(legalTranspositionMove(stored->best, legal), legalMove),
+               "compact TT moves must regain castling, EP and promotion identity");
+        expect(legalTranspositionMove(invalidMove(), legal).from >= 64,
+               "illegal TT coordinates must not become an exclusion candidate");
+    }
+
+    expect(board.loadFEN("4k3/8/8/3q4/8/8/3R4/4K3 w - - 0 1"), "singular capture fixture should load");
+    const Board captureOriginal = board;
+    auto winningOwner = std::make_unique<SearchContext>();
+    SearchContext& winning = *winningOwner;
+    prepare(winning, board);
+    const Move capture = findMove(board, "d2d5");
+    winning.tt.store(board.hash, 5, 450, TTFlag::Lower, capture);
+    (void)negamax(board, winning, 8, 399, 400, 1, invalidMove(), false, false);
+    expect(winning.stats.singularAttempts > 0 && winning.stats.singularExtensions > 0,
+           "a uniquely winning capture should be verified and extended");
+    expect(winning.stats.maxSingularExtensionsOnPath <= SearchContext::MaxSingularExtensionsOnPath &&
+           winning.activeSingularExtensions == 0 && !winning.singularVerification,
+           "successful singular searches must respect and restore the path budget");
+    expect(samePosition(board, captureOriginal) && winning.repetition == std::vector<u64>{board.hash},
+           "singular verification and extended search must restore full position state");
+
+    board.reset();
+    auto ordinaryOwner = std::make_unique<SearchContext>();
+    SearchContext& ordinary = *ordinaryOwner;
+    prepare(ordinary, board);
+    ordinary.tt.store(board.hash, 5, 0, TTFlag::Lower, findMove(board, "e2e4"));
+    (void)negamax(board, ordinary, 8, -INF, INF, 1, invalidMove(), false, false);
+    expect(ordinary.stats.singularAttempts > 0 && ordinary.stats.singularExtensions == 0,
+           "a competitive alternative must prevent a singular extension");
+    expect(samePosition(board, original), "non-singular search must restore the board");
+
+    expect(board.loadFEN("4k3/8/8/3q4/8/8/3R4/4K3 w - - 0 1"), "abort capture fixture should load");
+
+    std::atomic<bool> abort(true);
+    auto stoppedOwner = std::make_unique<SearchContext>();
+    SearchContext& stopped = *stoppedOwner;
+    prepare(stopped, board);
+    stopped.abortFlag = &abort;
+    (void)negamax(board, stopped, 8, -INF, INF, 1, invalidMove(), false, false, capture);
+    expect(stopped.stop && stopped.activeScratch == 0 && !stopped.singularVerification &&
+           stopped.activeSingularExtensions == 0 && samePosition(board, captureOriginal),
+           "aborted exclusion searches must unwind all temporary state");
+}
+
 void testSearchPlySafety(const Zobrist& zobrist){
     static_assert(sizeof(StagedMovePicker) < 128,
                   "recursive move picker must not embed large stack arrays");
@@ -792,6 +964,7 @@ void testSearchDeadlineAndBudget(const Zobrist& zobrist){
     const Board original = board;
     auto ctx = std::make_unique<SearchContext>();
     ctx->tt.resizeMB(1);
+    ctx->enableSingularExtensions = true;
     const auto expiredStart = std::chrono::steady_clock::now() - std::chrono::seconds(2);
     const Move fallback = searchBestMove(board, *ctx, 64, 100, 100, 1, nullptr, expiredStart);
     MoveList legal;
@@ -938,6 +1111,7 @@ int main(){
     testContinuationHistoryOrdering(zobrist);
     testStagedMovePicker(zobrist);
     testProbCut(zobrist);
+    testSingularExtensions(zobrist);
     testSearchPlySafety(zobrist);
     testSearchDeadlineAndBudget(zobrist);
     testClockTimeManagement(zobrist);

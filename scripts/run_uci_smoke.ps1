@@ -16,6 +16,7 @@ $output = & {
     "isready"
     "setoption name Hash value 128"
     "setoption name ProbCut value true"
+    "setoption name Singular Extensions value true"
     "ucinewgame"
     "position startpos moves e2e4 e7e5 g1f3 b8c6"
     "go movetime 300"
@@ -60,5 +61,7 @@ Assert-UciOutput '^option name Use NNUE type check default false$' `
     "Use NNUE option was not advertised"
 Assert-UciOutput '^option name ProbCut type check default false$' `
     "ProbCut option was not advertised"
+Assert-UciOutput '^option name Singular Extensions type check default false$' `
+    "Singular Extensions option was not advertised"
 
 Write-Output "UCI smoke: PASS"

@@ -10,6 +10,9 @@ struct SearchStats {
     u64 qnodes=0;
     u64 probCutAttempts=0;
     u64 probCutCutoffs=0;
+    u64 singularAttempts=0;
+    u64 singularExtensions=0;
+    int maxSingularExtensionsOnPath=0;
     int depthReached=0;
     int bestScore=0;
     int timeMs=0;
@@ -35,6 +38,7 @@ struct SearchScratch {
 struct SearchContext {
     static constexpr int MaxSearchPly = 127;
     static constexpr size_t NnueStackSize = 129;
+    static constexpr int MaxSingularExtensionsOnPath = 4;
     TranspositionTable tt;
     TranspositionTable* sharedTT=nullptr;
     SearchStats stats;
@@ -47,6 +51,9 @@ struct SearchContext {
     const PositionEvaluator* evaluator=nullptr;
     bool incrementalNnue=true;
     bool enableProbCut=false;
+    bool enableSingularExtensions=false;
+    bool singularVerification=false;
+    int activeSingularExtensions=0;
     std::array<NnueAccumulator, NnueStackSize> nnueStack{};
 
     Move killer[128][2]{};
@@ -202,6 +209,44 @@ inline Move invalidMove(){
     m.to = 64;
     return m;
 }
+
+// The packed TT retains coordinates and promotion, not capture/castle/EP flags.
+// Recover the canonical legal move before using it in an exclusion search.
+inline Move legalTranspositionMove(const Move& stored, const MoveList& legal){
+    for(const Move& move : legal){
+        if(move.from == stored.from && move.to == stored.to && move.promo == stored.promo)
+            return move;
+    }
+    return invalidMove();
+}
+
+class SingularVerificationScope {
+public:
+    explicit SingularVerificationScope(SearchContext& context) : context_(context),
+        previous_(context.singularVerification){ context_.singularVerification = true; }
+    ~SingularVerificationScope(){ context_.singularVerification = previous_; }
+    SingularVerificationScope(const SingularVerificationScope&) = delete;
+    SingularVerificationScope& operator=(const SingularVerificationScope&) = delete;
+private:
+    SearchContext& context_;
+    bool previous_;
+};
+
+class SingularExtensionScope {
+public:
+    SingularExtensionScope(SearchContext& context, int extension) : context_(context),
+        previous_(context.activeSingularExtensions){
+        context_.activeSingularExtensions += extension;
+        context_.stats.maxSingularExtensionsOnPath = std::max(
+            context_.stats.maxSingularExtensionsOnPath, context_.activeSingularExtensions);
+    }
+    ~SingularExtensionScope(){ context_.activeSingularExtensions = previous_; }
+    SingularExtensionScope(const SingularExtensionScope&) = delete;
+    SingularExtensionScope& operator=(const SingularExtensionScope&) = delete;
+private:
+    SearchContext& context_;
+    int previous_;
+};
 
 inline int mvvLvaScore(const Board& bd, const Move& m){
     Piece a = bd.at(m.from);
@@ -401,6 +446,16 @@ inline int scoreFromTT(int score, int ply){
     return score;
 }
 
+inline bool singularExtensionEligible(const SearchContext& ctx, const TTEntry& entry,
+                                      int depth, int ply, bool inCheck){
+    return ctx.enableSingularExtensions && !ctx.singularVerification && !inCheck &&
+           depth >= 8 && ply > 0 && ply + 2 < SearchContext::MaxSearchPly &&
+           ctx.activeSingularExtensions < SearchContext::MaxSingularExtensionsOnPath &&
+           entry.depth >= depth - 3 &&
+           (entry.flag == TTFlag::Lower || entry.flag == TTFlag::Exact) &&
+           entry.score > -MATE / 2 && entry.score < MATE / 2;
+}
+
 inline bool hasNonPawnMaterial(const Board& bd, Color side){
     for(const auto& p : bd.b){
         if(isNone(p) || p.c != side) continue;
@@ -548,10 +603,14 @@ inline int quiescence(Board& bd, SearchContext& ctx, int alpha, int beta, int pl
 }
 
 inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta, int ply,
-                   const Move& prevMove, bool allowNullMove, bool allowProbCut=true){
+                   const Move& prevMove, bool allowNullMove, bool allowProbCut=true,
+                   const Move& excludedMove=invalidMove()){
     if(timeUp(ctx)) return 0;
     SearchScratchScope scratch(ctx);
     ctx.stats.nodes++;
+    const bool excludedNode = excludedMove.from < 64;
+    std::optional<SingularVerificationScope> verificationScope;
+    if(excludedNode) verificationScope.emplace(ctx);
 
     if(ply >= SearchContext::MaxSearchPly){
         const bool inCheck = bd.inCheck(bd.stm);
@@ -600,7 +659,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
         improving = staticEval > ctx.staticEvalByPly[ply - 2];
     }
 
-    if(!inCheck && depth <= 3){
+    if(!excludedNode && !inCheck && depth <= 3){
         const int rfpMargin = 95 * depth;
         if(staticEval - rfpMargin >= beta){
             return staticEval;
@@ -608,11 +667,14 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
     }
 
     Move ttMove = invalidMove();
+    std::optional<TTEntry> singularEntry;
     TranspositionTable& tt = searchTT(ctx);
-    if(const auto entry = tt.probe(bd.hash)){
+    // A score for the full legal move set cannot bound a restricted move set.
+    if(const auto entry = excludedNode ? std::nullopt : tt.probe(bd.hash)){
         const TTEntry& e = *entry;
         if(e.key==bd.hash){
             ttMove = e.best;
+            if(ctx.enableSingularExtensions) singularEntry = e;
             if(e.depth >= depth){
                 int s = scoreFromTT(e.score, ply);
                 if(e.flag==TTFlag::Exact) return s;
@@ -623,13 +685,14 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
         }
     }
 
-    if(!inCheck && depth >= 6 && ttMove.from >= 64){
+    if(!excludedNode && !inCheck && depth >= 6 && ttMove.from >= 64){
         const int iidDepth = std::max(1, depth - 2);
         (void)negamax(bd, ctx, iidDepth, alpha, beta, ply, prevMove, false);
         if(ctx.stop) return 0;
         if(const auto entry = tt.probe(bd.hash)){
             if(entry->key == bd.hash){
                 ttMove = entry->best;
+                if(ctx.enableSingularExtensions) singularEntry = *entry;
             }
         }
     }
@@ -638,7 +701,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
         return quiescence(bd, ctx, alpha, beta, ply);
     }
 
-    if(!inCheck && !pvNode && depth <= 2){
+    if(!excludedNode && !inCheck && !pvNode && depth <= 2){
         const int razorMargin = 180 + 120 * depth;
         if(staticEval + razorMargin <= alpha){
             return quiescence(bd, ctx, alpha, beta, ply);
@@ -646,7 +709,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
     }
 
     // Null-move pruning: aggressive cut when position is quiet enough and side has material.
-    if(allowNullMove && !pvNode && depth >= 3 && !inCheck &&
+    if(!excludedNode && allowNullMove && !pvNode && depth >= 3 && !inCheck &&
        hasNonPawnMaterial(bd, bd.stm) && nonKingPieceCount(bd, bd.stm) >= 2){
         NullUndo nullUndo{};
         bd.makeNullMove(nullUndo);
@@ -679,7 +742,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
     // focused on captures whose material swing can plausibly clear the wider
     // threshold. The recursive verification disables ProbCut to prevent a
     // speculative cascade from proving itself.
-    if(ctx.enableProbCut && allowProbCut && !pvNode && !inCheck && depth >= 5 &&
+    if(!excludedNode && ctx.enableProbCut && allowProbCut && !pvNode && !inCheck && depth >= 5 &&
        std::abs(beta) < MATE / 2){
         const int margin = 220 - (improving ? 40 : 0);
         const int probCutBeta = beta + margin;
@@ -743,6 +806,28 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
         depth++;
     }
 
+    Move singularMove = invalidMove();
+    if(!excludedNode && singularEntry &&
+       singularExtensionEligible(ctx, *singularEntry, depth, ply, inCheck)){
+        const Move candidate = legalTranspositionMove(singularEntry->best, moves);
+        if(candidate.from < 64){
+            const int singularBeta = scoreFromTT(singularEntry->score, ply) - 2 * depth;
+            const int verificationDepth = (depth - 1) / 2;
+            const Move savedPlyMove = ctx.plyMove[ply];
+            const int savedStaticEval = ctx.staticEvalByPly[ply];
+            ctx.stats.singularAttempts++;
+            const int alternativeScore = negamax(bd, ctx, verificationDepth, singularBeta - 1,
+                                                 singularBeta, ply, prevMove, false, false, candidate);
+            ctx.plyMove[ply] = savedPlyMove;
+            ctx.staticEvalByPly[ply] = savedStaticEval;
+            if(ctx.stop) return 0;
+            if(alternativeScore < singularBeta){
+                singularMove = candidate;
+                ttMove = candidate;
+            }
+        }
+    }
+
     StagedMovePicker movePicker(bd, ctx, moves, ttMove, ply, prevMove);
 
     int best = -INF;
@@ -758,10 +843,11 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
     Move m{};
     size_t i=0;
     while(movePicker.next(m)){
+        if(excludedNode && sameMove(m, excludedMove)) continue;
         const size_t moveIndex = i++;
         bool isQuiet = !(m.isCapture || m.isEnPassant) && (m.promo==PieceType::None);
 
-        if(!inCheck && !pvNode && isQuiet){
+        if(!excludedNode && !inCheck && !pvNode && isQuiet){
             if(depth <= 3){
                 const size_t futilitySkipAfter = size_t(4 + depth * 3);
                 const int futilityMargin = 90 + 120 * depth + (improving ? 20 : 0);
@@ -788,15 +874,19 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
         if(ply < 128) ctx.plyMove[ply] = m;
         ctx.repetition.push_back(bd.hash);
 
-        int newDepth = depth - 1;
+        const int singularExtension = singularMove.from < 64 && sameMove(m, singularMove) ? 1 : 0;
+        std::optional<SingularExtensionScope> extensionScope;
+        if(singularExtension) extensionScope.emplace(ctx, singularExtension);
+        if(singularExtension) ctx.stats.singularExtensions++;
+        int newDepth = depth - 1 + singularExtension;
         bool givesCheck = bd.inCheck(bd.stm);
-        if(givesCheck){
+        if(givesCheck && !singularExtension){
             newDepth++;
         }
         int score = 0;
 
         int reduction = 0;
-        if(newDepth >= 3 && moveIndex >= 3 && isQuiet && !givesCheck){
+        if(!excludedNode && !singularExtension && newDepth >= 3 && moveIndex >= 3 && isQuiet && !givesCheck){
             reduction = 1;
             if(moveIndex >= 4) reduction++;
             if(moveIndex >= 8) reduction++;
@@ -838,6 +928,7 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
 
         alpha = std::max(alpha, score);
         if(alpha >= beta){
+            if(excludedNode) break; // Do not train root histories on a restricted move set.
             if(isQuiet && ply<128){
                 if(!sameMove(ctx.killer[ply][0], m)){
                     ctx.killer[ply][1] = ctx.killer[ply][0];
@@ -876,6 +967,10 @@ inline int negamax(Board& bd, SearchContext& ctx, int depth, int alpha, int beta
             break;
         }
     }
+
+    // No alternatives is a fail-low sentinel, not a fabricated mate/stalemate.
+    // Never store a restricted-set result under the ordinary position hash.
+    if(excludedNode) return best == -INF ? originalAlpha : best;
 
     TTFlag flag = TTFlag::Exact;
     if(best <= originalAlpha) flag = TTFlag::Upper;
@@ -1136,6 +1231,7 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         workerCtx[size_t(w)].evaluator = ctx.evaluator;
         workerCtx[size_t(w)].incrementalNnue = ctx.incrementalNnue;
         workerCtx[size_t(w)].enableProbCut = ctx.enableProbCut;
+        workerCtx[size_t(w)].enableSingularExtensions = ctx.enableSingularExtensions;
         refreshNnueRoot(bd, workerCtx[size_t(w)]);
         std::memcpy(workerCtx[size_t(w)].killer, ctx.killer, sizeof(ctx.killer));
         std::memcpy(workerCtx[size_t(w)].countermove, ctx.countermove, sizeof(ctx.countermove));
@@ -1168,6 +1264,9 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         std::vector<u64> depthQNodes(rootMoves.size(), 0);
         std::vector<u64> depthProbCutAttempts(rootMoves.size(), 0);
         std::vector<u64> depthProbCutCutoffs(rootMoves.size(), 0);
+        std::vector<u64> depthSingularAttempts(rootMoves.size(), 0);
+        std::vector<u64> depthSingularExtensions(rootMoves.size(), 0);
+        std::vector<int> depthSingularMaxOnPath(rootMoves.size(), 0);
 
         for(int worker = 0; worker < workers; worker++){
             SearchContext& local = workerCtx[static_cast<size_t>(worker)];
@@ -1193,6 +1292,8 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             const u64 previousQNodes = local.stats.qnodes;
             const u64 previousProbCutAttempts = local.stats.probCutAttempts;
             const u64 previousProbCutCutoffs = local.stats.probCutCutoffs;
+            const u64 previousSingularAttempts = local.stats.singularAttempts;
+            const u64 previousSingularExtensions = local.stats.singularExtensions;
 
             int score = 0;
             if(fullWindow){
@@ -1208,6 +1309,9 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             depthQNodes[index] = local.stats.qnodes - previousQNodes;
             depthProbCutAttempts[index] = local.stats.probCutAttempts - previousProbCutAttempts;
             depthProbCutCutoffs[index] = local.stats.probCutCutoffs - previousProbCutCutoffs;
+            depthSingularAttempts[index] = local.stats.singularAttempts - previousSingularAttempts;
+            depthSingularExtensions[index] = local.stats.singularExtensions - previousSingularExtensions;
+            depthSingularMaxOnPath[index] = local.stats.maxSingularExtensionsOnPath;
             if(local.stop) return;
             scores[index] = score;
             owners[index] = worker;
@@ -1260,6 +1364,10 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
             ctx.stats.qnodes += depthQNodes[idx];
             ctx.stats.probCutAttempts += depthProbCutAttempts[idx];
             ctx.stats.probCutCutoffs += depthProbCutCutoffs[idx];
+            ctx.stats.singularAttempts += depthSingularAttempts[idx];
+            ctx.stats.singularExtensions += depthSingularExtensions[idx];
+            ctx.stats.maxSingularExtensionsOnPath = std::max(
+                ctx.stats.maxSingularExtensionsOnPath, depthSingularMaxOnPath[idx]);
         }
 
         auto now = std::chrono::steady_clock::now();
@@ -1469,7 +1577,8 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                               int ttSizeMB = 256, int threads = 1,
                               const PositionEvaluator* evaluator = nullptr,
                               bool incrementalNnue = true,
-                              bool enableProbCut = false){
+                              bool enableProbCut = false,
+                              bool enableSingularExtensions = false){
     const std::vector<BenchmarkPosition> positions = {
         {"Start", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
         {"Middlegame 1", "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10"},
@@ -1487,6 +1596,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
               << " nnueMode=" << (evaluator && evaluator->usingNnue()
                     ? (incrementalNnue ? "incremental" : "rebuild") : "n/a")
               << " probCut=" << (enableProbCut ? "on" : "off")
+              << " singular=" << (enableSingularExtensions ? "on" : "off")
               << " positions=" << positions.size() << "\n";
 
     for(const auto& p : positions){
@@ -1503,6 +1613,7 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
         ctx.evaluator = evaluator;
         ctx.incrementalNnue = incrementalNnue;
         ctx.enableProbCut = enableProbCut;
+        ctx.enableSingularExtensions = enableSingularExtensions;
 
         const Move best = searchBestMove(bd, ctx, depth, perPositionTimeMs, perPositionTimeMs, threads);
         const double nps = (ctx.stats.timeMs > 0)
@@ -1517,6 +1628,9 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                   << " qnodes=" << ctx.stats.qnodes
                   << " probcut=" << ctx.stats.probCutCutoffs
                   << "/" << ctx.stats.probCutAttempts
+                  << " singular=" << ctx.stats.singularExtensions
+                  << "/" << ctx.stats.singularAttempts
+                  << " singularPathMax=" << ctx.stats.maxSingularExtensionsOnPath
                   << " time=" << ctx.stats.timeMs << "ms"
                   << " nps=" << static_cast<long long>(nps)
                   << "\n";

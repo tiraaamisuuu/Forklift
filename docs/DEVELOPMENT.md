@@ -6,6 +6,14 @@ after the v1 release.
 
 ## Repository state
 
+Search implementation (2026-10-13): a conservative singular-extension prototype
+now verifies alternatives to a trusted legal TT move and grants one extra ply
+when they fail below its threshold. Excluded-root TT/history isolation,
+per-line limits, abort restoration, and NNUE incremental/rebuild parity pass.
+It is opt-in (`Singular Extensions=true`, benchmark `--singular`) pending
+equal-time strength evidence. See
+[singular-extension design and diagnostics](results/2026-10-13-singular-extensions.md).
+
 Inference update (2026-10-13): non-king NNUE moves now fuse the accumulator
 copy and feature deltas into one write per lane, including capture, promotion
 and en passant. Expanded full-rebuild parity checks pass at widths 1 through

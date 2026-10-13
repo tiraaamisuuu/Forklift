@@ -6,6 +6,13 @@ current branch throughout the process.
 
 ## First-time setup
 
+The experimental singular-extension search is disabled in production and
+benchmarks by default. Enable it explicitly with `--singular` in the tools
+benchmark or UCI `Singular Extensions=true`. Preserve the `singular=on/off`
+header and extension/verification/path-limit counters with measurements.
+Its larger/different search tree is not a speed or strength claim; see the
+[implementation report](results/2026-10-13-singular-extensions.md).
+
 Fixed-position benchmarks now use the production search defaults, including
 ProbCut disabled. Enable that experiment explicitly with
 `chess-engine-tools --bench --probcut`; `--no-probcut` remains accepted for

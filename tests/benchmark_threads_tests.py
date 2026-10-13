@@ -43,6 +43,18 @@ class BenchmarkThreadsTests(unittest.TestCase):
         self.assertEqual(summary["results"][1]["speedup"], 2.0)
         self.assertEqual(summary["results"][1]["efficiency"], 1.0)
 
+    def test_parse_search_feature_counters(self):
+        for counters in (" probcut=0/0", " probcut=0/0 singular=6/196 singularPathMax=1"):
+            with self.subTest(counters=counters):
+                parsed = benchmark_threads.parse_benchmark_output(
+                    "Start best=e2e4 depth=12 score=34 nodes=396533 qnodes=72722"
+                    + counters + " time=832ms nps=476602\n"
+                    "Benchmark summary: nodes=396533 time=832ms nps=476602\n"
+                )
+                self.assertEqual(len(parsed["positions"]), 1)
+                self.assertEqual(parsed["positions"][0]["depth"], 12)
+                self.assertEqual(parsed["positions"][0]["qnodes"], 72722)
+
 
 if __name__ == "__main__":
     unittest.main()

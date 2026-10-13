@@ -168,12 +168,14 @@ int runUCILoop(int defaultThreads){
     int hashMB = 256;
     int moveOverheadMs = 25;
     bool enableProbCut = false;
+    bool enableSingularExtensions = false;
 
     PositionEvaluator evaluator;
     SearchContext search;
     search.tt.resizeMB(static_cast<size_t>(hashMB));
     search.evaluator = &evaluator;
     search.enableProbCut = enableProbCut;
+    search.enableSingularExtensions = enableSingularExtensions;
 
     std::atomic<bool> abortSearch(false);
     std::mutex outputMutex;
@@ -191,6 +193,7 @@ int runUCILoop(int defaultThreads){
         search.tt.resizeMB(static_cast<size_t>(hashMB));
         search.evaluator = &evaluator;
         search.enableProbCut = enableProbCut;
+        search.enableSingularExtensions = enableSingularExtensions;
     };
 
     auto launchSearch = [&](int depth, TimeBudget budget, std::vector<Move> rootRestriction, bool restrictRootMoves,
@@ -260,6 +263,7 @@ int runUCILoop(int defaultThreads){
                       << "option name Use NNUE type check default false\n"
                       << "option name NNUE Weight type spin default 100 min 0 max 100\n"
                       << "option name ProbCut type check default false\n"
+                      << "option name Singular Extensions type check default false\n"
                       << "uciok\n" << std::flush;
         } else if(lower == "isready"){
             std::lock_guard<std::mutex> lock(outputMutex);
@@ -302,6 +306,11 @@ int runUCILoop(int defaultThreads){
                 stopSearch();
                 const std::string value = toLowerASCII(trim(line.substr(valuePosition + 7)));
                 enableProbCut = value == "true" || value == "1" || value == "on";
+                resetSearch();
+            } else if(lower.find("name singular extensions") != std::string::npos && valuePosition != std::string::npos){
+                stopSearch();
+                const std::string value = toLowerASCII(trim(line.substr(valuePosition + 7)));
+                enableSingularExtensions = value == "true" || value == "1" || value == "on";
                 resetSearch();
             } else if(lower.find("name hash") != std::string::npos && valuePosition != std::string::npos){
                 int value = 0;
