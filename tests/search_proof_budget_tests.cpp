@@ -81,11 +81,33 @@ void testLiveLedger(){
                "budget admission restores board, repetition and all temporary search state");
     }
 }
+
+void testInterruptedRootWork(){
+    SearchStats aggregate;
+    SearchStats interrupted;
+    interrupted.nodes = 127;
+    interrupted.qnodes = 63;
+    interrupted.singularAttempts = 2;
+    interrupted.singularExtensions = 1;
+    interrupted.singularProofNodes = 30;
+    interrupted.singularBudgetSkips = 4;
+    interrupted.maxSingularExtensionsOnPath = 1;
+    accumulateSearchWork(aggregate, interrupted);
+    expect(aggregate.nodes == 127 && aggregate.qnodes == 63 &&
+           aggregate.singularAttempts == 2 && aggregate.singularExtensions == 1 &&
+           aggregate.singularProofNodes == 30 && aggregate.singularBudgetSkips == 4 &&
+           aggregate.maxSingularExtensionsOnPath == 1,
+           "partial root work must be accounted independently of a valid score");
+    accumulateSearchWork(aggregate, SearchStats{});
+    expect(aggregate.singularProofNodes == 30 && aggregate.maxSingularExtensionsOnPath == 1,
+           "unstarted moves must add no work and cannot clear a recorded peak");
+}
 } // namespace
 
 int main(){
     testQuota();
     testLiveLedger();
+    testInterruptedRootWork();
     if(failures) return 1;
     std::cout << "Proof budget tests: PASS\n";
     return 0;

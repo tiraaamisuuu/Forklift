@@ -27,6 +27,21 @@ struct SearchStats {
     int hardwareThreads=1;
 };
 
+// Work is real even when a root move was interrupted before obtaining a score.
+// Aggregate it independently of completed-iteration/PV selection.
+inline void accumulateSearchWork(SearchStats& aggregate, const SearchStats& work){
+    aggregate.nodes += work.nodes;
+    aggregate.qnodes += work.qnodes;
+    aggregate.probCutAttempts += work.probCutAttempts;
+    aggregate.probCutCutoffs += work.probCutCutoffs;
+    aggregate.singularAttempts += work.singularAttempts;
+    aggregate.singularExtensions += work.singularExtensions;
+    aggregate.singularProofNodes += work.singularProofNodes;
+    aggregate.singularBudgetSkips += work.singularBudgetSkips;
+    aggregate.maxSingularExtensionsOnPath = std::max(
+        aggregate.maxSingularExtensionsOnPath, work.maxSingularExtensionsOnPath);
+}
+
 enum class MoveStage : u8;
 
 // Reused heap storage, indexed by active call nesting (not chess ply: IID and
@@ -1389,6 +1404,17 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
         // move-generation order can otherwise replace the exact first result
         // with a fail-low bound that merely happens to equal alpha.
         for(const size_t idx : order){
+            SearchStats work;
+            work.nodes = depthNodes[idx];
+            work.qnodes = depthQNodes[idx];
+            work.probCutAttempts = depthProbCutAttempts[idx];
+            work.probCutCutoffs = depthProbCutCutoffs[idx];
+            work.singularAttempts = depthSingularAttempts[idx];
+            work.singularExtensions = depthSingularExtensions[idx];
+            work.singularProofNodes = depthSingularProofNodes[idx];
+            work.singularBudgetSkips = depthSingularBudgetSkips[idx];
+            work.maxSingularExtensionsOnPath = depthSingularMaxOnPath[idx];
+            accumulateSearchWork(ctx.stats, work);
             if(scores[idx] == -INF){
                 incomplete = true;
                 continue;
@@ -1399,16 +1425,6 @@ inline Move searchBestMoveParallel(Board& bd, SearchContext& ctx, int maxDepth, 
                 localBestIdx = idx;
                 localBestWorker = std::max(0, owners[idx]);
             }
-            ctx.stats.nodes += depthNodes[idx];
-            ctx.stats.qnodes += depthQNodes[idx];
-            ctx.stats.probCutAttempts += depthProbCutAttempts[idx];
-            ctx.stats.probCutCutoffs += depthProbCutCutoffs[idx];
-            ctx.stats.singularAttempts += depthSingularAttempts[idx];
-            ctx.stats.singularExtensions += depthSingularExtensions[idx];
-            ctx.stats.singularProofNodes += depthSingularProofNodes[idx];
-            ctx.stats.singularBudgetSkips += depthSingularBudgetSkips[idx];
-            ctx.stats.maxSingularExtensionsOnPath = std::max(
-                ctx.stats.maxSingularExtensionsOnPath, depthSingularMaxOnPath[idx]);
         }
 
         auto now = std::chrono::steady_clock::now();
