@@ -117,11 +117,11 @@ public:
 
     void updateAfterMove(const Board& board, const Undo& undo,
                          const NnueAccumulator& parent, NnueAccumulator& child) const {
-        if(!loaded() || !parent.valid){
+        if(!loaded() || !parent.valid || parent.values[0].size() != hiddenSize_ ||
+           parent.values[1].size() != hiddenSize_){
             refresh(board, child);
             return;
         }
-        child.values = parent.values;
         child.valid = true;
 
         const Move& move = undo.m;
@@ -134,20 +134,39 @@ public:
             : int(move.to);
 
         for(const Color perspective : {Color::White, Color::Black}){
-            auto& values = child.values[colorIndex(perspective)];
+            const size_t index = colorIndex(perspective);
+            auto& values = child.values[index];
             if(kingMoved && movingPiece.c == perspective){
                 refreshPerspective(board, perspective, values);
                 continue;
             }
 
-            if(movingPiece.t != PieceType::King){
-                addFeature(board, perspective, move.from, movingPiece, -1, values);
+            if(!kingMoved){
+                // Write each lane once: copy the parent and apply all feature deltas
+                // together. Promotions and en passant use the same kernels, with
+                // the pre-move pawn and the actual captured square respectively.
+                const auto& source = parent.values[index];
+                const int16_t* removed = featureWeights(board, perspective, move.from, movingPiece);
+                const int16_t* added = featureWeights(board, perspective, move.to, resultingPiece);
+                values.resize(hiddenSize_);
+                if(!isNone(undo.captured) && undo.captured.t != PieceType::King){
+                    const int16_t* captured = featureWeights(board, perspective, captureSquare, undo.captured);
+                    for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
+                        values[hidden] = source[hidden] - removed[hidden] - captured[hidden] + added[hidden];
+                    }
+                } else {
+                    for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
+                        values[hidden] = source[hidden] - removed[hidden] + added[hidden];
+                    }
+                }
+                continue;
             }
+
+            // A king move changes its own HalfKP bucket (refreshed above). For
+            // the opposite perspective, retain the capture/castling delta path.
+            values = parent.values[index];
             if(!isNone(undo.captured) && undo.captured.t != PieceType::King){
                 addFeature(board, perspective, captureSquare, undo.captured, -1, values);
-            }
-            if(resultingPiece.t != PieceType::King){
-                addFeature(board, perspective, move.to, resultingPiece, 1, values);
             }
             if(move.isCastle){
                 const int rookFrom = move.to > move.from
@@ -210,11 +229,16 @@ private:
         return color == Color::White ? 0U : 1U;
     }
 
+    const int16_t* featureWeights(const Board& board, Color perspective, int square,
+                                  const Piece& piece) const {
+        return inputWeights_.data() + featureIndex(board, perspective, square, piece) * hiddenSize_;
+    }
+
     void addFeature(const Board& board, Color perspective, int square, const Piece& piece,
                     int sign, std::vector<int32_t>& accumulator) const {
-        const size_t offset = featureIndex(board, perspective, square, piece) * hiddenSize_;
+        const int16_t* weights = featureWeights(board, perspective, square, piece);
         for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
-            accumulator[hidden] += sign * inputWeights_[offset + hidden];
+            accumulator[hidden] += sign * weights[hidden];
         }
     }
 

@@ -6,6 +6,13 @@ after the v1 release.
 
 ## Repository state
 
+Inference update (2026-10-13): non-king NNUE moves now fuse the accumulator
+copy and feature deltas into one write per lane, including capture, promotion
+and en passant. Expanded full-rebuild parity checks pass at widths 1 through
+1,024, and the real-network fixed-depth tree matches the previous executable.
+Repeated timing is next; the running confirmation uses its unchanged frozen
+binary. See [fused accumulator work](results/2026-10-13-nnue-fused-updates.md).
+
 Interruption audit (2026-10-12): the September 27 long-control coordinator is
 absent; it stopped with 387 logged games and 389 completed PGN records. The
 complete 800-game stage remains valid, but the partial long stage is excluded

@@ -381,7 +381,7 @@ void testNnueFormat(const Zobrist& zobrist){
     std::filesystem::remove(path, removeError);
 }
 
-void testIncrementalNnue(const Zobrist& zobrist){
+void testIncrementalNnue(const Zobrist& zobrist, u32 hidden){
     const std::filesystem::path path = std::filesystem::temp_directory_path() /
         "chess-engine-nnue-incremental-test.nnue";
     {
@@ -389,19 +389,27 @@ void testIncrementalNnue(const Zobrist& zobrist){
         const std::array<char, 8> magic{{'T','N','N','U','E','1','\0','\0'}};
         const u32 version = NnueNetwork::FormatVersion;
         const u32 features = NnueNetwork::FeatureCount;
-        const u32 hidden = 4;
         const int32_t hiddenScale = 16;
         const int32_t outputScale = 4;
         const int32_t outputBias = 11;
-        const std::array<int32_t, 4> hiddenBias{{2, 3, 4, 5}};
+        std::vector<int32_t> hiddenBias(hidden);
+        for(size_t unit = 0; unit < hidden; unit++){
+            hiddenBias[unit] = 2 + static_cast<int32_t>(unit % 17);
+        }
         std::vector<int16_t> inputWeights(static_cast<size_t>(features) * hidden);
         for(size_t feature = 0; feature < features; feature++){
             for(size_t unit = 0; unit < hidden; unit++){
-                inputWeights[feature * hidden + unit] = static_cast<int16_t>(
-                    (feature * 13 + unit * 7) % 7 - 3);
+                int weight = static_cast<int>((feature * 13 + unit * 7) % 31) - 15;
+                if((feature + unit * 3) % 997 == 0){
+                    weight = feature % 2 == 0 ? -32768 : 32767;
+                }
+                inputWeights[feature * hidden + unit] = static_cast<int16_t>(weight);
             }
         }
-        const std::array<int16_t, 8> outputWeights{{3, -2, 5, -4, -3, 6, -2, 5}};
+        std::vector<int16_t> outputWeights(static_cast<size_t>(hidden) * 2);
+        for(size_t unit = 0; unit < outputWeights.size(); unit++){
+            outputWeights[unit] = static_cast<int16_t>(static_cast<int>((unit * 7) % 13) - 6);
+        }
         output.write(magic.data(), static_cast<std::streamsize>(magic.size()));
         output.write(reinterpret_cast<const char*>(&version), sizeof(version));
         output.write(reinterpret_cast<const char*>(&features), sizeof(features));
@@ -409,10 +417,12 @@ void testIncrementalNnue(const Zobrist& zobrist){
         output.write(reinterpret_cast<const char*>(&hiddenScale), sizeof(hiddenScale));
         output.write(reinterpret_cast<const char*>(&outputScale), sizeof(outputScale));
         output.write(reinterpret_cast<const char*>(&outputBias), sizeof(outputBias));
-        output.write(reinterpret_cast<const char*>(hiddenBias.data()), sizeof(hiddenBias));
+        output.write(reinterpret_cast<const char*>(hiddenBias.data()),
+                     static_cast<std::streamsize>(hiddenBias.size() * sizeof(int32_t)));
         output.write(reinterpret_cast<const char*>(inputWeights.data()),
                      static_cast<std::streamsize>(inputWeights.size() * sizeof(int16_t)));
-        output.write(reinterpret_cast<const char*>(outputWeights.data()), sizeof(outputWeights));
+        output.write(reinterpret_cast<const char*>(outputWeights.data()),
+                     static_cast<std::streamsize>(outputWeights.size() * sizeof(int16_t)));
     }
 
     NnueNetwork network;
@@ -421,13 +431,14 @@ void testIncrementalNnue(const Zobrist& zobrist){
 
     auto compare = [&](const Board& board, const NnueAccumulator& incremental,
                        const std::string& label){
+        const std::string context = label + " (width " + std::to_string(hidden) + ")";
         NnueAccumulator rebuilt;
         network.refresh(board, rebuilt);
-        expect(incremental.valid && rebuilt.valid, label + " accumulators should be valid");
+        expect(incremental.valid && rebuilt.valid, context + " accumulators should be valid");
         expect(incremental.values == rebuilt.values,
-               label + " incremental accumulator should equal a full rebuild");
+               context + " incremental accumulator should equal a full rebuild");
         expect(network.evaluate(board, incremental) == network.evaluate(board),
-               label + " incremental evaluation should equal reference inference");
+               context + " incremental evaluation should equal reference inference");
     };
 
     auto exerciseMove = [&](const std::string& fen, const std::string& uci,
@@ -442,17 +453,56 @@ void testIncrementalNnue(const Zobrist& zobrist){
         Undo undo{};
         if(move.from < 64 && board.makeMove(move, undo)){
             NnueAccumulator child;
+            child.values[0].assign(hidden, -12345);
+            child.values[1].assign(hidden, 12345);
             network.updateAfterMove(board, undo, parent, child);
             compare(board, child, label);
+
+            NnueAccumulator inPlace = parent;
+            network.updateAfterMove(board, undo, inPlace, inPlace);
+            compare(board, inPlace, label + " in-place");
+
+            NnueAccumulator invalidParent;
+            network.updateAfterMove(board, undo, invalidParent, child);
+            compare(board, child, label + " invalid-parent fallback");
+            invalidParent.valid = true;
+            invalidParent.values[0].resize(hidden + 1);
+            invalidParent.values[1].resize(hidden);
+            network.updateAfterMove(board, undo, invalidParent, child);
+            compare(board, child, label + " wrong-white-size fallback");
+            invalidParent.values[0].resize(hidden);
+            invalidParent.values[1].clear();
+            network.updateAfterMove(board, undo, invalidParent, child);
+            compare(board, child, label + " wrong-black-size fallback");
             board.undoMove(undo);
             compare(board, parent, label + " after unmake");
         }
     };
 
-    exerciseMove("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "e1g1", "castling");
-    exerciseMove("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1", "e5d6", "en passant");
-    exerciseMove("4k3/P7/8/8/8/8/8/4K3 w - - 0 1", "a7a8q", "promotion");
+    exerciseMove("4k3/8/8/8/8/8/4P3/4K3 w - - 0 1", "e2e4", "white quiet");
+    exerciseMove("4k3/4p3/8/8/8/8/8/4K3 b - - 0 1", "e7e5", "black quiet");
+    exerciseMove("4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1", "e4d5", "white capture");
+    exerciseMove("4k3/8/8/3p4/4P3/8/8/4K3 b - - 0 1", "d5e4", "black capture");
+    exerciseMove("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "e1g1", "white kingside castling");
+    exerciseMove("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "e1c1", "white queenside castling");
+    exerciseMove("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "e8g8", "black kingside castling");
+    exerciseMove("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "e8c8", "black queenside castling");
+    exerciseMove("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1", "e5d6", "white en passant");
+    exerciseMove("4k3/8/8/8/3pP3/8/8/4K3 b - e3 0 1", "d4e3", "black en passant");
+    for(const char promotion : {'q', 'r', 'b', 'n'}){
+        exerciseMove("4k3/P7/8/8/8/8/8/4K3 w - - 0 1",
+                     std::string("a7a8") + promotion, "white quiet promotion");
+        exerciseMove("1r2k3/P7/8/8/8/8/8/4K3 w - - 0 1",
+                     std::string("a7b8") + promotion, "white capture promotion");
+        exerciseMove("4k3/8/8/8/8/8/p7/4K3 b - - 0 1",
+                     std::string("a2a1") + promotion, "black quiet promotion");
+        exerciseMove("4k3/8/8/8/8/8/p7/1R2K3 b - - 0 1",
+                     std::string("a2b1") + promotion, "black capture promotion");
+    }
+    exerciseMove("4k3/8/8/8/8/8/8/4K3 w - - 0 1", "e1d1", "white king quiet");
+    exerciseMove("4k3/8/8/8/8/8/8/4K3 b - - 0 1", "e8d8", "black king quiet");
     exerciseMove("4k3/8/8/8/8/3p4/4K3/8 w - - 0 1", "e2d3", "king capture");
+    exerciseMove("8/4k3/3P4/8/8/8/8/4K3 b - - 0 1", "e7d6", "black king capture");
 
     Board board;
     board.setZobrist(&zobrist);
@@ -480,6 +530,21 @@ void testIncrementalNnue(const Zobrist& zobrist){
         undos.pop_back();
         accumulatorStack.pop_back();
         compare(board, accumulatorStack.back(), "random playout unmake");
+    }
+
+    NullUndo nullUndo{};
+    board.makeNullMove(nullUndo);
+    NnueAccumulator nullChild;
+    network.copyAccumulator(accumulatorStack.back(), nullChild);
+    compare(board, nullChild, "null-move copy");
+    board.undoNullMove(nullUndo);
+
+    // Search parity needs only one fixture width; the accumulator checks above
+    // cover scalar tails and the production/maximum widths without long searches.
+    if(hidden != 4){
+        std::error_code removeError;
+        std::filesystem::remove(path, removeError);
+        return;
     }
 
     PositionEvaluator evaluator;
@@ -868,7 +933,7 @@ int main(){
     testTranspositionClusters();
     testConcurrentTranspositionTable();
     testNnueFormat(zobrist);
-    testIncrementalNnue(zobrist);
+    for(const u32 hidden : {1U, 4U, 17U, 256U, 1024U}) testIncrementalNnue(zobrist, hidden);
     testStaticExchange(zobrist);
     testContinuationHistoryOrdering(zobrist);
     testStagedMovePicker(zobrist);
