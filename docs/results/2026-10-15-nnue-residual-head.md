@@ -5,6 +5,10 @@ ten-minute CPU validation window produced the results below. No production V2
 network, strength improvement or Stockfish parity is claimed. Tiny artificial
 training fixtures are correctness checks, not model-quality experiments.
 
+Subsequent [clip-once/certified residual SIMD work](2026-10-15-nnue-residual-simd.md)
+substantially reduces the scalar cost below and records a tiny real-label
+head-learning pilot. It does not establish a strength gain or promote V2.
+
 Implementation commits: `b17437c` (runtime and deferred C++ fixtures), `40ed977`
 (training/export, warm starts and deferred Python fixtures). These commits are
 local; no push, CI trigger or automatic schedule was started.
@@ -28,8 +32,8 @@ The residual output has no bias and starts with zero weights. Thus an enabled
 branch initially adds zero. Its hidden weights are nonzero so that it can begin
 learning after output coefficients move away from zero. Initialization uses an
 isolated CPU RNG context so enabling the branch does not perturb baseline
-parameters or subsequent data-order RNG. Those properties have deferred tests,
-not an executed verification result.
+parameters or subsequent data-order RNG. Those initially deferred properties
+passed the later CPU Python validation described below.
 
 This follows established small dense-layer, clipped-activation, residual and
 fixed-point techniques. The [Stockfish NNUE guide](https://official-stockfish.github.io/docs/nnue-pytorch-wiki/docs/nnue.html)
@@ -84,7 +88,7 @@ residual_bias_q   = round(residual_bias_float * A * W)
 residual_output_q = round(residual_output_float * targetScale * O)
 ```
 
-For each residual neuron, compute in int64:
+The independent reference computes each residual neuron in int64:
 
 ```text
 z_j = residual_bias_q[j] + sum_i(x_i * residual_matrix_q[j,i])
@@ -96,8 +100,10 @@ score_cp = clamp(truncate_toward_zero(numerator / (A * O)), -32000, 32000)
 The branches must be added **before** the final division. Dividing them
 separately changes rounding, particularly when their signs differ. No floats
 or dynamic residual allocations are used during C++ evaluation. The direct
-branch retains its existing certified SSE2/32-bit/64-bit dispatch; residual
-dot products use portable int64 and are identified in the kernel name.
+branch retains its existing certified SSE2/32-bit/64-bit dispatch. The first
+residual implementation used portable int64. The later linked optimisation
+certifies exact SSE2/32-bit residual rows, retaining int64 fallback/reference;
+the kernel name describes the selected paths.
 
 With H<=1024, R<=32, signed-int32 positive scales and int16 coefficients, both
 the widest residual dot and the total output numerator are below 2^58 in

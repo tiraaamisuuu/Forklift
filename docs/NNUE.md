@@ -13,11 +13,18 @@ No source change is required to train or test another 256-wide network.
 
 An [experimental residual-head implementation](results/2026-10-15-nnue-residual-head.md)
 now adds optional V2 training/export and integer inference. It is opt-in via
-`--residual-hidden` (0 retains V1). Bounded CPU correctness checks now pass;
-no production V2 model is trained, and measured scalar overhead blocks promotion.
+`--residual-hidden` (0 retains V1). Bounded CPU correctness checks now pass.
+[Exact clip-once/SIMD optimisation](results/2026-10-15-nnue-residual-simd.md)
+reduced R4/R8 fixed-depth time by about 50%/64% versus the old residual code;
+new costs are about 1.09x/1.21x direct in a small shared-host pilot. A nine-second
+CPU head-learning diagnostic establishes no meaningful quality advantage.
+No production V2 candidate or strength gain is established; promotion remains gated.
 `--initialize-from` and `--freeze-transformer` support controlled, matched
 head-only pilots. These flags start real training when used with the trainer:
-do not invoke them while the PC is reserved for gaming.
+do not invoke full training while the PC is reserved for gaming. The separate
+`scripts/nnue/residual_head_pilot.py` deliberately reads only 2,048/512 records
+and runs eight CPU-only head updates per arm; even this needs user-authorised
+modest CPU use and never runs automatically.
 
 The [NNUE v3 design](../research/designs/2026-10-15-nnue-v3.md) sets the next
 goal: stronger equal-time decisions at bounded inference/training cost. It

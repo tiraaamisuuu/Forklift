@@ -21,9 +21,14 @@ compare appropriate baselines across independent data/training seeds.
 - [Optional residual-head NNUE](../docs/results/2026-10-15-nnue-residual-head.md):
   independently implemented small nonlinear head, V2 fixed-point format,
   Python/C++ inference paths, strict warm starts and frozen-transformer controls.
-  CPU correctness/export checks now pass, but the scalar R4/R8 cost pilot took
-  2.09x/3.17x direct time. No production training, model-quality/strength gain
-  or scholarly novelty claim; optimize before promotion.
+  CPU correctness/export checks now pass. The initial scalar R4/R8 cost pilot
+  took 2.09x/3.17x direct time. Subsequent
+  [clip-once/certified SIMD](../docs/results/2026-10-15-nnue-residual-simd.md)
+  reduced old residual elapsed time by 49.56%/64.35% on identical trees;
+  costs are now about 1.09x/1.21x direct in a small shared-host sample.
+  An eight-update CPU training pilot found negligible quality differences
+  versus an equally trained direct control. No production candidate,
+  model-quality/strength gain or scholarly novelty claim; retain promotion gates.
   The other entries below have their own, separate measured evidence.
 
 - [Certified NNUE output kernel](../docs/results/2026-10-13-nnue-certified-output.md):

@@ -6,6 +6,17 @@ after the v1 release.
 
 ## Repository state
 
+Residual inference optimisation (2026-10-15): clip-once reuse and per-row
+overflow-certified SSE2 reduce R4/R8 fixed-depth elapsed time by 49.56%/64.35%
+against the old residual implementation in a three-pair shared-host pilot.
+All 24 runs have identical trees; new median costs are 1.09x/1.21x direct,
+not an Elo result. All 14 CTests pass, with 57,888 residual oracle comparisons,
+focused Windows ASAN and 56 export-integration comparisons. A nine-second,
+CPU-one-thread real-label pilot trained just eight head updates per arm;
+differences from the equally trained direct control were negligible. No GPU,
+matches, default change or model promotion. See the
+[implementation, evidence and limits](results/2026-10-15-nnue-residual-simd.md).
+
 Bounded validation (2026-10-15): following explicit ten-minute permission, the
 Release build passed all 13 CTests and 70 CPU-only Python checks. New integration
 fixtures passed 56 exact Python/C++ scores across exported models and tiny
@@ -16,12 +27,13 @@ on the current build. No default/release change, production V2 training or new
 strength result follows from these correctness checks. See the
 [validation record](../research/experiments/2026-10-15-nnue-v2-validation.json).
 
-The bounded cost pilot found a material blocker: zero-output R4/R8 heads took
+The initial bounded cost pilot found a material blocker: zero-output R4/R8 heads took
 2.09x/3.17x direct elapsed time on identical depth-10 trees. This is not a strength
 result. Keep residual V2 experimental and optimize its scalar work before
-production training; no default was changed.
+production training; no default was changed. The later optimisation above
+substantially reduces this overhead without establishing residual strength.
 
-NNUE architecture implementation (2026-10-15, still no compute workloads): an
+NNUE architecture implementation (2026-10-15, original source-only stage): an
 optional tiny residual head now has Python training/export and versioned V2
 C++ integer inference, preserving the direct V1/default path. Strict warm starts
 and frozen-transformer pilots, source-artifact protection, and deferred C++/
