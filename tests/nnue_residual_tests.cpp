@@ -582,6 +582,20 @@ int main(){
                 fixtures++;
             }
         }
+        // Cover both sides of each compact-scratch dispatch boundary with
+        // narrow/wide activations and mixed certified/fallback residual rows.
+        for(const u32 hidden : {255U, 256U, 257U, 511U, 512U, 513U}){
+            Fixture fixture = patterned(hidden, 3);
+            const size_t width = static_cast<size_t>(hidden) * 2;
+            std::fill(fixture.residualWeights.begin() + width,
+                      fixture.residualWeights.begin() + width * 2,
+                      std::numeric_limits<int16_t>::min());
+            for(const int32_t scale : {32767, 32768}){
+                fixture.activationScale = scale;
+                comparisons += checkOutput(fixture, file, network, generator, 12);
+                fixtures++;
+            }
+        }
         for(const int32_t scale : {1, 32767, 32768, std::numeric_limits<int32_t>::max()}){
             Fixture fixture = patterned(9, 3);
             fixture.activationScale = scale;

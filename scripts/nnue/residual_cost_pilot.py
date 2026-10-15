@@ -70,6 +70,9 @@ def main() -> None:
     parser.add_argument("--candidate-tools", required=True, type=Path)
     parser.add_argument("--initialize-from", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--baseline-residual-kernel", default="residual64",
+                        choices=("residual64", "residual-sse2"),
+                        help="Expected baseline kernel; SSE2 permits isolated scratch-layout comparisons")
     parser.add_argument("--depth", type=int, default=10, choices=range(1, 11))
     parser.add_argument("--trials", type=int, default=3, choices=range(1, 6))
     args = parser.parse_args()
@@ -89,7 +92,8 @@ def main() -> None:
                                 timeCeilingPerPositionMs=5000, trials=args.trials,
                                 hidden=256, hiddenScale=1024, outputScale=32,
                                 targetScale=600, residualWeightScale=256,
-                                zeroOutputHeads=True, seed=20261015),
+                                zeroOutputHeads=True, seed=20261015,
+                                expectedBaselineResidualKernel=args.baseline_residual_kernel),
                   models={}, warmups=[], trials=[])
     expected = None
     with tempfile.TemporaryDirectory(prefix="forklift-residual-cost-") as directory:
@@ -123,7 +127,7 @@ def main() -> None:
                 run = dict(binary=binary, residual=width, trial=trial,
                            **parse_run(result.stdout, args.depth))
                 expected_kernel = ("sse2" if width == 0 else
-                                   "sse2+residual64" if binary == "baseline" else
+                                   "sse2+" + args.baseline_residual_kernel if binary == "baseline" else
                                    "sse2+residual-sse2")
                 if run["kernel"] != expected_kernel:
                     raise RuntimeError(f"unexpected kernel: {run['kernel']}, expected {expected_kernel}")
