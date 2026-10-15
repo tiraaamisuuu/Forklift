@@ -45,6 +45,23 @@ from train import (  # noqa: E402
 
 
 class NnueTrainingTests(unittest.TestCase):
+    def test_overlapping_inputs_fail_before_output_or_training_setup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "same.nnuebin"
+            output = root / "must-not-exist" / "model.nnue"
+            arguments = [
+                "train.py", "--data", str(source),
+                "--validation-data", str(source), "--output", str(output),
+                "--device", "cpu",
+            ]
+            with mock.patch.object(sys, "argv", arguments), \
+                    mock.patch("train.torch.set_num_threads") as setup:
+                with self.assertRaisesRegex(SystemExit, "paths overlap"):
+                    main()
+                setup.assert_not_called()
+            self.assertFalse(output.parent.exists())
+
     def test_factorization_preserves_initialization_and_folds_exactly(self) -> None:
         torch.manual_seed(41)
         plain = HalfKpV1(8)

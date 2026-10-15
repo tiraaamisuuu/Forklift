@@ -39,6 +39,7 @@ from nnue_dataset import (
     write_json_atomic,
 )
 from dataset_diagnostics import labelled_bucket, position_distribution
+from dataset_paths import validate_dataset_paths
 
 
 FEATURE_COUNT = 64 * 10 * 64
@@ -793,6 +794,12 @@ def validate_resume_configuration(payload: dict[str, object], args: argparse.Nam
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    try:
+        validate_dataset_paths(args.data, args.validation_data)
+    except (ValueError, OSError) as error:
+        # SystemExit bypasses main's failed-run telemetry writer: invalid paths
+        # must not create an output directory or modify existing run evidence.
+        raise SystemExit(str(error)) from error
     if args.cpu_threads < 1:
         raise SystemExit("--cpu-threads must be positive")
     if not 1 <= args.hidden <= 1024:
@@ -858,7 +865,9 @@ def train(args: argparse.Namespace) -> int:
     dataset = PositionsDataset(args.data, args.result_weight, args.wdl_scale)
     if len(dataset) < 100:
         raise SystemExit("dataset must contain at least 100 positions")
-    split_method = "game-disjoint-shards"
+    # Supplied shards do not, by themselves, prove game/input disjointness.
+    # Generation/merge provenance and a content audit must establish that.
+    split_method = "provided-validation-shards"
     if args.validation_data:
         training: Dataset = dataset
         validation: Dataset = PositionsDataset(
@@ -1094,6 +1103,11 @@ def train(args: argparse.Namespace) -> int:
         "device": device_manifest,
         "data": {
             "splitMethod": split_method,
+            "splitIntegrity": {
+                "sourcePathCheck": "distinct-resolved-paths",
+                "gameDisjointness": "not-verified-by-trainer",
+                "effectiveInputDisjointness": "not-verified-by-trainer",
+            },
             "trainingPositions": len(training),
             "validationPositions": len(validation),
             "inputs": data_inputs,
