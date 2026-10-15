@@ -22,6 +22,8 @@ struct NnueAccumulator {
 class NnueNetwork {
 public:
     static constexpr u32 FormatVersion = 1;
+    static constexpr u32 ResidualFormatVersion = 2;
+    static constexpr u32 MaxResidualHidden = 32;
     static constexpr u32 FeatureCount = 64U * 10U * 64U; // HalfKP: king, relative piece, square.
 
     bool load(const std::filesystem::path& path, std::string* error = nullptr){
@@ -37,7 +39,8 @@ public:
         std::array<char, 8> magic{};
         input.read(magic.data(), static_cast<std::streamsize>(magic.size()));
         const std::array<char, 8> expected{{'T','N','N','U','E','1','\0','\0'}};
-        if(magic != expected) return fail("invalid NNUE magic");
+        const std::array<char, 8> residualExpected{{'T','N','N','U','E','2','\0','\0'}};
+        if(magic != expected && magic != residualExpected) return fail("invalid NNUE magic");
 
         u32 version = 0;
         u32 features = 0;
@@ -49,28 +52,85 @@ public:
            !readValue(input, hiddenScale) || !readValue(input, outputScale) || !readValue(input, outputBias)){
             return fail("truncated NNUE header");
         }
-        if(version != FormatVersion) return fail("unsupported NNUE version");
+        if(version != FormatVersion && version != ResidualFormatVersion){
+            return fail("unsupported NNUE version");
+        }
+        const bool residual = version == ResidualFormatVersion;
+        if((residual && magic != residualExpected) || (!residual && magic != expected)){
+            return fail("NNUE magic/version mismatch");
+        }
         if(features != FeatureCount) return fail("network feature layout does not match HalfKP v1");
         if(hidden == 0 || hidden > 1024) return fail("invalid NNUE hidden size");
         if(hiddenScale <= 0 || outputScale <= 0) return fail("invalid NNUE quantization scale");
+
+        u32 residualHidden = 0;
+        int32_t residualWeightScale = 0;
+        if(residual){
+            if(!readValue(input, residualHidden) || !readValue(input, residualWeightScale)){
+                return fail("truncated NNUE residual header");
+            }
+            if(residualHidden == 0 || residualHidden > MaxResidualHidden){
+                return fail("invalid NNUE residual hidden size");
+            }
+            if(residualWeightScale <= 0) return fail("invalid NNUE residual quantization scale");
+        }
 
         const size_t inputWeightCount = static_cast<size_t>(features) * hidden;
         const size_t outputWeightCount = static_cast<size_t>(hidden) * 2;
         std::vector<int32_t> newHiddenBias(hidden);
         std::vector<int16_t> newInputWeights(inputWeightCount);
         std::vector<int16_t> newOutputWeights(outputWeightCount);
+        std::vector<int32_t> newResidualBias(residualHidden);
+        std::vector<int16_t> newResidualWeights(static_cast<size_t>(residualHidden) * outputWeightCount);
+        std::vector<int16_t> newResidualOutputWeights(residualHidden);
         if(!readArray(input, newHiddenBias) || !readArray(input, newInputWeights) ||
            !readArray(input, newOutputWeights)){
             return fail("truncated NNUE weights");
         }
+        if(residual){
+            if(!readArray(input, newResidualBias) || !readArray(input, newResidualWeights) ||
+               !readArray(input, newResidualOutputWeights)){
+                return fail("truncated NNUE residual weights");
+            }
+            if(input.peek() != std::ifstream::traits_type::eof()){
+                return fail("unexpected trailing NNUE residual data");
+            }
+            if(input.bad()) return fail("could not read NNUE residual payload");
 
+            // V2 guarantees int32 transformer arithmetic even for broad board
+            // inputs. At most 64 square features can be active; abs(bias) plus
+            // 64 times the largest column weight bounds every partial sum.
+            // This also leaves room for normal remove/remove/add move deltas.
+            std::array<int32_t, 1024> maxInputMagnitude{};
+            for(size_t feature = 0; feature < features; feature++){
+                const size_t offset = feature * hidden;
+                for(size_t lane = 0; lane < hidden; lane++){
+                    maxInputMagnitude[lane] = std::max(maxInputMagnitude[lane],
+                        std::abs(static_cast<int32_t>(newInputWeights[offset + lane])));
+                }
+            }
+            for(size_t lane = 0; lane < hidden; lane++){
+                const int64_t bound = std::abs(static_cast<int64_t>(newHiddenBias[lane])) +
+                    64LL * maxInputMagnitude[lane];
+                if(bound > std::numeric_limits<int32_t>::max()){
+                    return fail("unsafe NNUE residual transformer range");
+                }
+            }
+        }
+
+        formatVersion_ = version;
         hiddenSize_ = hidden;
         hiddenScale_ = hiddenScale;
         outputScale_ = outputScale;
         outputBias_ = outputBias;
+        residualHiddenSize_ = residualHidden;
+        residualWeightScale_ = residualWeightScale;
         hiddenBias_ = std::move(newHiddenBias);
         inputWeights_ = std::move(newInputWeights);
         outputWeights_ = std::move(newOutputWeights);
+        residualBias_ = std::move(newResidualBias);
+        residualWeights_ = std::move(newResidualWeights);
+        residualOutputWeights_ = std::move(newResidualOutputWeights);
         // Every clipped activation lies in [0, hiddenScale]. Certify a bound
         // for every product and every partial reduction, not just the final
         // score. The certificate is independent of the board/accumulator.
@@ -85,30 +145,39 @@ public:
     }
 
     void clear(){
+        formatVersion_ = 0;
         hiddenSize_ = 0;
         hiddenScale_ = 0;
         outputScale_ = 0;
         outputBias_ = 0;
+        residualHiddenSize_ = 0;
+        residualWeightScale_ = 0;
         boundedOutput32_ = false;
         hiddenBias_.clear();
         inputWeights_.clear();
         outputWeights_.clear();
+        residualBias_.clear();
+        residualWeights_.clear();
+        residualOutputWeights_.clear();
         source_.clear();
     }
 
     bool loaded() const { return hiddenSize_ != 0; }
+    u32 formatVersion() const { return formatVersion_; }
     u32 hiddenSize() const { return hiddenSize_; }
+    u32 residualHiddenSize() const { return residualHiddenSize_; }
     const std::string& source() const { return source_; }
     const char* outputKernelName() const {
         if(!loaded()) return "none";
 #if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
-        return "scalar64-reference";
+        return residualHiddenSize_ ? "scalar64-reference+residual64" : "scalar64-reference";
 #else
 #if defined(FORKLIFT_NNUE_HAS_SSE2)
         if(boundedOutput32_ && hiddenScale_ <= std::numeric_limits<int16_t>::max() && hiddenSize_ >= 8){
-            return "sse2";
+            return residualHiddenSize_ ? "sse2+residual64" : "sse2";
         }
 #endif
+        if(residualHiddenSize_) return boundedOutput32_ ? "scalar32+residual64" : "scalar64+residual64";
         return boundedOutput32_ ? "scalar32" : "scalar64";
 #endif
     }
@@ -146,6 +215,9 @@ public:
             output = outputScalar<int64_t>(firstAccumulator.data(), secondAccumulator.data());
         }
 #endif
+        if(residualHiddenSize_){
+            output += outputResidual(firstAccumulator.data(), secondAccumulator.data());
+        }
         const int64_t divisor = static_cast<int64_t>(hiddenScale_) * outputScale_;
         return static_cast<int>(std::clamp<int64_t>(output / divisor, -32000, 32000));
     }
@@ -230,6 +302,27 @@ public:
     }
 
 private:
+    int64_t outputResidual(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
+        int64_t output = 0;
+        for(size_t neuron = 0; neuron < residualHiddenSize_; neuron++){
+            const int16_t* weights = residualWeights_.data() + neuron * hiddenSize_ * 2;
+            int64_t sum = residualBias_[neuron];
+            for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
+                const int32_t first = std::clamp(firstAccumulator[hidden], 0, hiddenScale_);
+                const int32_t second = std::clamp(secondAccumulator[hidden], 0, hiddenScale_);
+                sum += static_cast<int64_t>(first) * weights[hidden];
+                sum += static_cast<int64_t>(second) * weights[hiddenSize_ + hidden];
+            }
+            // Signed division deliberately truncates toward zero. The direct
+            // and residual branches share ONE final A*O division in evaluate.
+            const int64_t activation = std::clamp<int64_t>(sum / residualWeightScale_, 0, hiddenScale_);
+            output += activation * residualOutputWeights_[neuron];
+        }
+        // With H<=1024, R<=32, positive int32 scales and int16 weights,
+        // both each neuron sum and the combined output fit signed int64.
+        return output;
+    }
+
     template<typename Sum>
     int64_t outputScalar(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
         Sum output = outputBias_;
@@ -355,14 +448,20 @@ private:
         }
     }
 
+    u32 formatVersion_ = 0;
     u32 hiddenSize_ = 0;
     int32_t hiddenScale_ = 0;
     int32_t outputScale_ = 0;
     int32_t outputBias_ = 0;
+    u32 residualHiddenSize_ = 0;
+    int32_t residualWeightScale_ = 0;
     bool boundedOutput32_ = false;
     std::vector<int32_t> hiddenBias_;
     std::vector<int16_t> inputWeights_;
     std::vector<int16_t> outputWeights_;
+    std::vector<int32_t> residualBias_;
+    std::vector<int16_t> residualWeights_;
+    std::vector<int16_t> residualOutputWeights_;
     std::string source_;
 };
 
