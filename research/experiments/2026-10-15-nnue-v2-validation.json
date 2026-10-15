@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "nnue-v2-bounded-correctness-validation-20261015",
+  "sourceCommit": "14caf3f",
+  "windowUtc": {"started": "2026-10-15T11:15:00Z", "hardStop": "2026-10-15T11:25:00Z"},
+  "scope": "CPU correctness validation and tiny artificial-fixture training only; no production training or matches",
+  "resources": {"releaseBuildWorkers": 2, "asanBuildWorkers": 1, "pythonThreadPools": 1, "cudaVisibleDevices": "-1"},
+  "release": {"directory": "build-singular", "configuration": "Release", "buildExitCode": 0, "ctestPassed": 13, "ctestFailed": 0, "ctestSeconds": 8.64},
+  "python": {
+    "passed": 70,
+    "failed": 0,
+    "wallSecondsIncludingImports": 30.78,
+    "suites": {"datasetPaths": 16, "residualTraining": 13, "initialization": 7, "training": 17, "dataset": 17}
+  },
+  "exportIntegration": {
+    "testFile": "tests/nnue_residual_export_tests.py",
+    "passed": 2,
+    "failed": 0,
+    "seconds": 3.416,
+    "exportConfigurations": 12,
+    "standaloneExactCppComparisons": 48,
+    "trainingResumeExactCppComparisons": 8,
+    "totalExactCppComparisons": 56,
+    "transformerWidths": [1, 4, 7, 8, 17],
+    "residualWidths": [0, 1, 3, 4, 8],
+    "residualWeightScales": [7, 64, 256, 512],
+    "trainingFixture": {"trainingRecords": 100, "validationRecords": 20, "labels": "artificial-test-only", "hidden": 4, "residual": 4, "firstEpoch": 1, "resumedEpoch": 2, "frozenTransformerUnchanged": true, "initializationProvenanceRetained": true},
+    "fixtureCorrection": "Initial sub-centipawn synthetic outputs were all zero after truncation; corrected fixture target scale to 600 before final successful run. No production bug was found."
+  },
+  "windowsAsan": {
+    "target": "chess-nnue-residual-tests",
+    "compiler": "MSVC 19.50.35725.0",
+    "flags": ["/fsanitize=address", "/Zi", "/O2"],
+    "passed": 1,
+    "seconds": 2.16,
+    "findings": 0,
+    "environmentRepair": "First invocation failed before test execution with missing ASAN runtime DLL (0xc0000135); existing toolchain DLL directory added to process-local PATH, no install.",
+    "limitation": "Focused Windows ASAN target only; not full sanitizer or cross-platform validation. Linker warned /DEBUG would improve reports."
+  },
+  "existingV1CurrentBuild": {"cppScoreParityPassed": 4, "expectedScoresCp": [43, 38, -5, -67], "actualScoresCp": [43, 38, -5, -67]},
+  "existingConfirmationEvidence": {
+    "series": "E:/Dev/Forklift-Research/matches/nnue-long-resume-20261012/series.json",
+    "decision": "pass",
+    "checksPassed": 61,
+    "checksFailed": 0,
+    "checksPending": 0,
+    "runtimeProbePassed": true,
+    "shortStage": {"games": 800, "reused": true, "relativeElo": 93.9, "reportedUncertainty": 21.7, "lowerBound": 72.2},
+    "longStage": {"games": 1200, "relativeElo": 94.6, "reportedUncertainty": 17.0, "lowerBound": 77.6},
+    "technicalFailures": 0,
+    "defaultChanged": false,
+    "limitation": "Evidence for the existing selected V1/shared model, not the new residual architecture. A passing evidence verifier is not a completed release/default integration."
+  },
+  "residualCostPilot": {
+    "evidence": "Exploratory shared-host identical-tree cost, zero residual outputs; not trained heads or strength evidence",
+    "toolsSha256": "82815618facd333f0f411760d2d8b3eb104f4b70b98d4cc41db85f9e901c6493",
+    "sourceWeightsSha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+    "directReexportSha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c",
+    "protocol": {"hidden": 256, "depth": 10, "threads": 1, "hashMiB": 128, "positionTimeCeilingMs": 5000, "nnueWeight": 100, "probCut": false, "singular": false, "hiddenScale": 1024, "outputScale": 32, "targetScale": 600, "residualWeightScale": 256, "warmupsPerMode": 1, "measuredTrialsPerMode": 3, "orders": [["direct", "r4", "r8"], ["r8", "r4", "direct"], ["r4", "direct", "r8"]]},
+    "allTwelveTreesIdentical": true,
+    "mainNodesPerRun": 321287,
+    "quiescenceNodesPerRun": 76248,
+    "warmupPositionMs": {"direct": [211, 204, 171, 52], "r4": [442, 422, 398, 110], "r8": [672, 647, 622, 185]},
+    "measuredPositionMs": {"direct": [[206, 201, 165, 51], [221, 222, 197, 57], [214, 226, 188, 53]], "r4": [[440, 420, 372, 112], [462, 451, 389, 125], [461, 443, 395, 126]], "r8": [[681, 652, 609, 198], [706, 696, 595, 190], [704, 683, 596, 174]]},
+    "medianTotalMs": {"direct": 681, "r4": 1425, "r8": 2157},
+    "medianPairedElapsedRatio": {"r4": 2.09251, "r8": 3.16740},
+    "decision": "Keep experimental; optimize scalar residual cost before production training or promotion"
+  },
+  "claimsNotEstablished": ["residual-model strength gain", "production residual model trained", "Stockfish parity", "full cross-platform validation"]
+}

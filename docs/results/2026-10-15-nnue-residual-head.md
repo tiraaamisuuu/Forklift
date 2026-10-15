@@ -1,13 +1,13 @@
 # Optional NNUE residual head: implementation, not a strength result
 
-Date: 2026-10-15. Status: source implementation and static review only.
-No C++ build, test execution, engine launch, training, benchmark or match was
-performed. Python source syntax and Git whitespace checks are not runtime tests.
-No trained V2 network, speed improvement, Elo gain or Stockfish parity is claimed.
+Date: 2026-10-15. Initially a source-only milestone; a subsequent user-authorized
+ten-minute CPU validation window produced the results below. No production V2
+network, strength improvement or Stockfish parity is claimed. Tiny artificial
+training fixtures are correctness checks, not model-quality experiments.
 
 Implementation commits: `b17437c` (runtime and deferred C++ fixtures), `40ed977`
 (training/export, warm starts and deferred Python fixtures). These commits are
-local; no push, CI trigger, schedule or background workload was started.
+local; no push, CI trigger or automatic schedule was started.
 
 ## Motivation and prior art
 
@@ -181,6 +181,52 @@ take precedence over better data, nor does it implement the RIFT collector.
 - Warm-start/freeze and source/dataset path fixtures cover source preservation
   and configuration safety. Python parsing and Git whitespace checks passed.
 
-All fixture counts describe code written, **not passing test results**. Test
-execution, builds, GPU work, training, inference timing, promotion verification
-and matches remain deferred. No background launch or schedule was created.
+The inventory above was deferred at implementation time. The following bounded
+session supersedes that deferral for the specifically executed checks only.
+
+## Authorized validation window: October 15, 11:15–11:25 UTC
+
+- Release rebuilt successfully, at most two build workers; all 13 CTests passed
+  in 8.64 seconds, including normal/scalar V1 and residual fixtures.
+- All 70 Python checks passed with CUDA disabled and CPU pools capped at one:
+  paths 16, residual 13, initialization 7, training 17 and dataset 17.
+- New export integration: 12 configurations gave 48 exact Python/C++ scores;
+  tiny CPU training/export/resume added eight, for 56 exact comparisons. Both
+  integration tests passed. Frozen transformer weights and initialization
+  provenance survived resume. Training labels were artificial test fixtures.
+- Focused MSVC Windows ASAN residual test passed (2.16 seconds), no finding.
+  The first attempt could not start because its runtime DLL was absent from
+  PATH; using the existing installed DLL directory fixed the process-local
+  environment. This is not a full sanitizer/cross-platform result.
+- The current Release tools matched the existing V1 model's four stored Python
+  reference scores: 43, 38, -5 and -67 cp.
+- The existing shared V1 confirmation passed all 61 evidence-verifier checks,
+  including hashes, exclusion/recovery lineage and runtime network loading.
+  Its recorded 800/1,200-game gains are evidence for that model only. The default
+  evaluator and release were not changed.
+
+No production dataset was relabelled and no production network was trained.
+GPU training, new strength matches and cross-platform gates remain outstanding.
+See the [machine-readable validation record](../../research/experiments/2026-10-15-nnue-v2-validation.json).
+
+### Cost pilot: correct, but currently too expensive
+
+The existing trained H256/shared model was re-exported directly and with
+zero-output residual branches R4/R8; direct bytes matched the recorded SHA.
+Depth 10, one thread, 128 MiB hash, weight 100, ProbCut/singular off, one warmup
+and three interleaved measured trials per mode gave:
+
+| Mode | Median four-position time | Median paired elapsed ratio |
+| --- | ---: | ---: |
+| Direct | 681 ms | 1.00x |
+| R4 | 1,425 ms | 2.09x |
+| R8 | 2,157 ms | 3.17x |
+
+All 12 runs had identical moves/scores and 321,287 main / 76,248 quiescence
+nodes. This small shared-host diagnostic measures overhead, not strength.
+The scalar residual repeatedly clamps lanes and performs int64 dot products;
+clamp/pack reuse and certified SIMD are next implementation targets. Skipping
+zero-output neurons would make this synthetic benchmark look better without
+measuring trained nonzero-head cost, so it is not the proposed solution.
+Keep V2 experimental; optimize before production training. Raw timing values
+and hashes are retained in the validation record.

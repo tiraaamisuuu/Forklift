@@ -6,6 +6,21 @@ after the v1 release.
 
 ## Repository state
 
+Bounded validation (2026-10-15): following explicit ten-minute permission, the
+Release build passed all 13 CTests and 70 CPU-only Python checks. New integration
+fixtures passed 56 exact Python/C++ scores across exported models and tiny
+artificial-data training/resume, retaining frozen-transformer weights and
+provenance. Focused Windows ASAN residual check passed. The existing shared V1
+confirmation now passes all 61 evidence checks and matches four stored scores
+on the current build. No default/release change, production V2 training or new
+strength result follows from these correctness checks. See the
+[validation record](../research/experiments/2026-10-15-nnue-v2-validation.json).
+
+The bounded cost pilot found a material blocker: zero-output R4/R8 heads took
+2.09x/3.17x direct elapsed time on identical depth-10 trees. This is not a strength
+result. Keep residual V2 experimental and optimize its scalar work before
+production training; no default was changed.
+
 NNUE architecture implementation (2026-10-15, still no compute workloads): an
 optional tiny residual head now has Python training/export and versioned V2
 C++ integer inference, preserving the direct V1/default path. Strict warm starts

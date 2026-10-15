@@ -21,8 +21,9 @@ compare appropriate baselines across independent data/training seeds.
 - [Optional residual-head NNUE](../docs/results/2026-10-15-nnue-residual-head.md):
   independently implemented small nonlinear head, V2 fixed-point format,
   Python/C++ inference paths, strict warm starts and frozen-transformer controls.
-  This entry is implementation-only: tests/builds/training remain deferred;
-  no model-quality, speed or strength result, and no scholarly novelty claim.
+  CPU correctness/export checks now pass, but the scalar R4/R8 cost pilot took
+  2.09x/3.17x direct time. No production training, model-quality/strength gain
+  or scholarly novelty claim; optimize before promotion.
   The other entries below have their own, separate measured evidence.
 
 - [Certified NNUE output kernel](../docs/results/2026-10-13-nnue-certified-output.md):

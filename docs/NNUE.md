@@ -13,7 +13,8 @@ No source change is required to train or test another 256-wide network.
 
 An [experimental residual-head implementation](results/2026-10-15-nnue-residual-head.md)
 now adds optional V2 training/export and integer inference. It is opt-in via
-`--residual-hidden` (0 retains V1); no V2 model has been trained or validated.
+`--residual-hidden` (0 retains V1). Bounded CPU correctness checks now pass;
+no production V2 model is trained, and measured scalar overhead blocks promotion.
 `--initialize-from` and `--freeze-transformer` support controlled, matched
 head-only pilots. These flags start real training when used with the trainer:
 do not invoke them while the PC is reserved for gaming.
