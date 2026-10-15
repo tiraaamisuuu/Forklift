@@ -142,6 +142,36 @@ int reference(const Fixture& fixture, const NnueAccumulator& accumulator, size_t
     return static_cast<int>(std::clamp<int64_t>(output / divisor, -32000, 32000));
 }
 
+// Derive the dispatch certificate from the wire fixture, not production state.
+// In particular, widening before abs handles both signed-minimum weight/bias.
+std::string expectedResidualKernel(const Fixture& fixture){
+#if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
+    (void)fixture;
+    return "+residual64-reference";
+#else
+    size_t certified = 0;
+    for(size_t row = 0; row < fixture.residualHidden; row++){
+        int64_t magnitude = std::abs(static_cast<int64_t>(fixture.residualBias[row]));
+        for(size_t column = 0; column < static_cast<size_t>(fixture.hidden) * 2; column++){
+            magnitude += static_cast<int64_t>(fixture.activationScale) *
+                std::abs(static_cast<int64_t>(fixture.residualWeights[row * fixture.hidden * 2 + column]));
+        }
+        certified += magnitude <= std::numeric_limits<int32_t>::max();
+    }
+    if(certified == 0) return "+residual64";
+    bool vectorized = false;
+// The header deliberately undefines its private HAS_SSE2 macro after use.
+// Derive availability from the public compiler/override contract instead.
+#if !defined(FORKLIFT_NNUE_FORCE_SCALAR) && !defined(_M_ARM64EC) && !defined(__arm64ec__) && \
+    (defined(__SSE2__) || defined(_M_X64) || \
+    (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
+    vectorized = fixture.activationScale <= std::numeric_limits<int16_t>::max() && fixture.hidden * 2 >= 8;
+#endif
+    if(certified == fixture.residualHidden) return vectorized ? "+residual-sse2" : "+residual32";
+    return vectorized ? "+residual-mixed-sse2-64" : "+residual-mixed32-64";
+#endif
+}
+
 void load(NnueNetwork& network, const FixtureFile& file, const Fixture& fixture, bool legacy = false){
     file.write(encode(fixture, legacy));
     std::string error;
@@ -149,10 +179,17 @@ void load(NnueNetwork& network, const FixtureFile& file, const Fixture& fixture,
     require(network.formatVersion() == (legacy ? 1U : 2U), "format version getter mismatch");
     require(network.hiddenSize() == fixture.hidden, "hidden size getter mismatch");
     require(network.residualHiddenSize() == (legacy ? 0U : fixture.residualHidden), "residual size getter mismatch");
+    if(!legacy){
+        const std::string actual = network.outputKernelName();
+        const std::string expected = expectedResidualKernel(fixture);
+        require(actual.size() >= expected.size() &&
+                actual.compare(actual.size() - expected.size(), expected.size(), expected) == 0,
+                "residual dispatch mismatch: " + actual + ", expected suffix " + expected);
+    }
 }
 
 size_t checkOutput(const Fixture& fixture, const FixtureFile& file,
-                   NnueNetwork& network, std::mt19937& generator){
+                   NnueNetwork& network, std::mt19937& generator, size_t samples = 160){
     load(network, file, fixture);
     NnueAccumulator accumulator;
     accumulator.valid = true;
@@ -163,12 +200,18 @@ size_t checkOutput(const Fixture& fixture, const FixtureFile& file,
     const std::array<int32_t, 10> extremes{{std::numeric_limits<int32_t>::min(), -32769, -1, 0,
         1, 32767, 32768, fixture.activationScale / 2, fixture.activationScale,
         std::numeric_limits<int32_t>::max()}};
-    for(size_t sample = 0; sample < 160; sample++){
+    for(size_t sample = 0; sample < samples; sample++){
         for(size_t perspective = 0; perspective < 2; perspective++){
             for(size_t unit = 0; unit < fixture.hidden; unit++){
-                accumulator.values[perspective][unit] = sample < 20 ?
-                    extremes[(sample + unit + perspective * 3) % extremes.size()] :
+                int32_t value;
+                if(sample == 0) value = std::numeric_limits<int32_t>::max();
+                else if(sample == 1) value = std::numeric_limits<int32_t>::min();
+                else if(sample == 2) value = 0;
+                else if(sample == 3) value = (unit + perspective) % 2 ?
+                    std::numeric_limits<int32_t>::min() : std::numeric_limits<int32_t>::max();
+                else value = sample < 20 ? extremes[(sample + unit + perspective * 3) % extremes.size()] :
                     static_cast<int32_t>(static_cast<int64_t>(generator()) + std::numeric_limits<int32_t>::min());
+                accumulator.values[perspective][unit] = value;
             }
         }
         for(size_t stm = 0; stm < 2; stm++){
@@ -180,6 +223,95 @@ size_t checkOutput(const Fixture& fixture, const FixtureFile& file,
         }
     }
     return comparisons;
+}
+
+template<typename Check>
+void checkResidualRowBoundaries(const Check& check){
+    // 32767 * 65538 + 1 == INT32_MAX. Increasing only the bias by one
+    // must change dispatch, not reject the model or change exact arithmetic.
+    // All-max activations make an incorrectly narrow +1 sum wrap negative;
+    // a small output scale ensures that error remains visible in the score.
+    for(const u32 hidden : {4U, 7U, 8U, 9U, 17U, 31U, 33U}){
+        Fixture fixture = patterned(hidden, 1);
+        fixture.activationScale = 32767;
+        fixture.outputScale = 1;
+        fixture.outputBias = 0;
+        fixture.direct.assign(fixture.direct.size(), 0);
+        fixture.residualWeightScale = 65538;
+        fixture.residualWeights.assign(fixture.residualWeights.size(), 0);
+        fixture.residualWeights[0] = 32767;
+        fixture.residualWeights[1] = 32767;
+        fixture.residualWeights[2] = 4;
+        fixture.residualOutput[0] = 7;
+        fixture.residualBias[0] = 1;
+        check(fixture);
+        fixture.residualBias[0] = 2;
+        check(fixture);
+
+        // Signed-minimum weights must widen before abs. This certified row
+        // reaches -2147483645, while its scalar/SIMD paths agree after clip.
+        fixture.residualWeights[0] = std::numeric_limits<int16_t>::min();
+        fixture.residualWeights[1] = std::numeric_limits<int16_t>::min();
+        fixture.residualWeights[2] = -2;
+        fixture.residualBias[0] = 1;
+        check(fixture);
+    }
+
+    Fixture mixed = patterned(9, 5);
+    mixed.activationScale = 32767;
+    mixed.outputScale = 1;
+    mixed.outputBias = 0;
+    mixed.direct.assign(mixed.direct.size(), 0);
+    mixed.residualWeightScale = 65538;
+    mixed.residualWeights.assign(mixed.residualWeights.size(), 0);
+    const size_t width = mixed.hidden * 2;
+    for(size_t row = 0; row < 2; row++){
+        mixed.residualWeights[row * width] = 32767;
+        mixed.residualWeights[row * width + 1] = 32767;
+        mixed.residualWeights[row * width + 2] = 4;
+        mixed.residualBias[row] = static_cast<int32_t>(row + 1); // Equality, then +1.
+    }
+    mixed.residualBias[2] = std::numeric_limits<int32_t>::min();
+    mixed.residualBias[3] = std::numeric_limits<int32_t>::max();
+    mixed.residualBias[4] = 0;
+    for(size_t column = 0; column < width; column++){
+        mixed.residualWeights[4 * width + column] = std::numeric_limits<int16_t>::min();
+    }
+    mixed.residualOutput = {3, 5, 7, -2, 11};
+    check(mixed);
+    // Scale boundaries may disable SSE packing without disabling narrow rows.
+    for(const int32_t scale : {32768, std::numeric_limits<int32_t>::max()}){
+        mixed.activationScale = scale;
+        check(mixed);
+    }
+
+    // A huge activation scale alone does not make zero-weight, bounded-bias
+    // rows unsafe. INT32_MIN's absolute bound, unlike INT32_MAX's, exceeds it.
+    Fixture biasOnly = patterned(9, 1);
+    biasOnly.activationScale = std::numeric_limits<int32_t>::max();
+    biasOnly.outputScale = 1;
+    biasOnly.outputBias = 0;
+    biasOnly.direct.assign(biasOnly.direct.size(), 0);
+    biasOnly.residualWeightScale = 1;
+    biasOnly.residualWeights.assign(biasOnly.residualWeights.size(), 0);
+    biasOnly.residualOutput[0] = 13;
+    biasOnly.residualBias[0] = std::numeric_limits<int32_t>::max();
+    check(biasOnly);
+    biasOnly.residualBias[0] = std::numeric_limits<int32_t>::min();
+    check(biasOnly);
+
+    // Wide negative dot products can wrap to positive if a supposedly
+    // certified scalar/SIMD reduction is accidentally used for this row.
+    Fixture negative = patterned(9, 1);
+    negative.activationScale = 32767;
+    negative.outputScale = 1;
+    negative.outputBias = 0;
+    negative.direct.assign(negative.direct.size(), 0);
+    negative.residualWeightScale = 1;
+    negative.residualWeights.assign(negative.residualWeights.size(), std::numeric_limits<int16_t>::min());
+    negative.residualBias[0] = std::numeric_limits<int32_t>::max();
+    negative.residualOutput[0] = 17;
+    check(negative);
 }
 
 void checkRoundingAndSaturation(const FixtureFile& file, NnueNetwork& network){
@@ -238,6 +370,9 @@ void checkReloadCompatibility(const FixtureFile& file, NnueNetwork& network){
     board.reset();
     load(network, file, fixture);
     require(network.evaluate(board, accumulator) == reference(fixture, accumulator, 0), "v2 reload reference mismatch");
+    fixture.residualBias[0] = std::numeric_limits<int32_t>::min();
+    load(network, file, fixture); // Mixed certificates must not retain all-narrow dispatch.
+    require(network.evaluate(board, accumulator) == reference(fixture, accumulator, 0), "mixed-row reload mismatch");
     load(network, file, fixture, true);
     require(std::string(network.outputKernelName()).find("residual") == std::string::npos,
             "v2-to-v1 reload retained residual dispatch");
@@ -251,6 +386,10 @@ void checkReloadCompatibility(const FixtureFile& file, NnueNetwork& network){
             network.residualHiddenSize() == 0 && network.source().empty() &&
             std::string(network.outputKernelName()) == "none", "clear retained format/residual state");
     require(network.evaluate(board, accumulator) == 0, "cleared residual network must evaluate to zero");
+    fixture.residualBias.assign(fixture.residualHidden, 0);
+    fixture.residualOutput = {3, -5, 7};
+    load(network, file, fixture); // A fresh certificate must be rebuilt after clear.
+    require(network.evaluate(board, accumulator) == reference(fixture, accumulator, 0), "post-clear residual reload mismatch");
 }
 
 void checkMalformed(const FixtureFile& file, NnueNetwork& network){
@@ -430,6 +569,18 @@ int main(){
         };
         for(const u32 hidden : {1U, 4U, 7U, 8U, 9U, 17U}){
             for(const u32 residual : {1U, 3U, 8U, 32U}) check(patterned(hidden, residual));
+        }
+        checkResidualRowBoundaries(check);
+        // Exercise the end of both fixed scratch representations: packed
+        // int16 at A=32767, then int32 at A=32768. One odd maximum tail and
+        // one exact maximum width are enough; keep their sample set bounded.
+        for(const u32 hidden : {1023U, 1024U}){
+            Fixture fixture = patterned(hidden, 1);
+            for(const int32_t scale : {32767, 32768}){
+                fixture.activationScale = scale;
+                comparisons += checkOutput(fixture, file, network, generator, 12);
+                fixtures++;
+            }
         }
         for(const int32_t scale : {1, 32767, 32768, std::numeric_limits<int32_t>::max()}){
             Fixture fixture = patterned(9, 3);

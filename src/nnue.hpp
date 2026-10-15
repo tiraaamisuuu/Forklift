@@ -140,6 +140,21 @@ public:
                 std::abs(static_cast<int32_t>(weight));
         }
         boundedOutput32_ = absoluteBound <= std::numeric_limits<int32_t>::max();
+        boundedResidual32_.fill(false);
+        boundedResidual32Count_ = 0;
+        for(size_t neuron = 0; neuron < residualHiddenSize_; neuron++){
+            int64_t residualBound = std::abs(static_cast<int64_t>(residualBias_[neuron]));
+            const int16_t* weights = residualWeights_.data() + neuron * outputWeightCount;
+            for(size_t inputIndex = 0; inputIndex < outputWeightCount; inputIndex++){
+                residualBound += static_cast<int64_t>(hiddenScale_) *
+                    std::abs(static_cast<int32_t>(weights[inputIndex]));
+            }
+            // This bounds every product, SIMD lane and horizontal partial sum,
+            // including the bias. Unsafe rows retain signed int64 arithmetic.
+            boundedResidual32_[neuron] = residualBound <= std::numeric_limits<int32_t>::max();
+            boundedResidual32Count_ += boundedResidual32_[neuron] ? 1U : 0U;
+        }
+        updateOutputKernelName();
         source_ = path.string();
         return true;
     }
@@ -153,12 +168,15 @@ public:
         residualHiddenSize_ = 0;
         residualWeightScale_ = 0;
         boundedOutput32_ = false;
+        boundedResidual32_.fill(false);
+        boundedResidual32Count_ = 0;
         hiddenBias_.clear();
         inputWeights_.clear();
         outputWeights_.clear();
         residualBias_.clear();
         residualWeights_.clear();
         residualOutputWeights_.clear();
+        outputKernelName_ = "none";
         source_.clear();
     }
 
@@ -168,18 +186,7 @@ public:
     u32 residualHiddenSize() const { return residualHiddenSize_; }
     const std::string& source() const { return source_; }
     const char* outputKernelName() const {
-        if(!loaded()) return "none";
-#if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
-        return residualHiddenSize_ ? "scalar64-reference+residual64" : "scalar64-reference";
-#else
-#if defined(FORKLIFT_NNUE_HAS_SSE2)
-        if(boundedOutput32_ && hiddenScale_ <= std::numeric_limits<int16_t>::max() && hiddenSize_ >= 8){
-            return residualHiddenSize_ ? "sse2+residual64" : "sse2";
-        }
-#endif
-        if(residualHiddenSize_) return boundedOutput32_ ? "scalar32+residual64" : "scalar64+residual64";
-        return boundedOutput32_ ? "scalar32" : "scalar64";
-#endif
+        return outputKernelName_.c_str();
     }
 
     int evaluate(const Board& board) const {
@@ -216,7 +223,11 @@ public:
         }
 #endif
         if(residualHiddenSize_){
+#if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
+            output += outputResidualReference(firstAccumulator.data(), secondAccumulator.data());
+#else
             output += outputResidual(firstAccumulator.data(), secondAccumulator.data());
+#endif
         }
         const int64_t divisor = static_cast<int64_t>(hiddenScale_) * outputScale_;
         return static_cast<int>(std::clamp<int64_t>(output / divisor, -32000, 32000));
@@ -302,7 +313,36 @@ public:
     }
 
 private:
-    int64_t outputResidual(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
+    void updateOutputKernelName(){
+#if defined(FORKLIFT_NNUE_FORCE_REFERENCE)
+        outputKernelName_ = "scalar64-reference";
+        if(residualHiddenSize_) outputKernelName_ += "+residual64-reference";
+#else
+        outputKernelName_ = boundedOutput32_ ? "scalar32" : "scalar64";
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+        if(boundedOutput32_ && hiddenScale_ <= std::numeric_limits<int16_t>::max() && hiddenSize_ >= 8){
+            outputKernelName_ = "sse2";
+        }
+#endif
+        if(!residualHiddenSize_) return;
+        if(!boundedResidual32Count_){
+            outputKernelName_ += "+residual64";
+            return;
+        }
+        const bool mixed = boundedResidual32Count_ != residualHiddenSize_;
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+        if(hiddenScale_ <= std::numeric_limits<int16_t>::max() && hiddenSize_ * 2 >= 8){
+            outputKernelName_ += mixed ? "+residual-mixed-sse2-64" : "+residual-sse2";
+            return;
+        }
+#endif
+        outputKernelName_ += mixed ? "+residual-mixed32-64" : "+residual32";
+#endif
+    }
+
+    // Keep the original loop independent of the packed/certified kernels so
+    // reference builds check clipping, lane order and mixed-width dispatch too.
+    int64_t outputResidualReference(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
         int64_t output = 0;
         for(size_t neuron = 0; neuron < residualHiddenSize_; neuron++){
             const int16_t* weights = residualWeights_.data() + neuron * hiddenSize_ * 2;
@@ -321,6 +361,97 @@ private:
         // With H<=1024, R<=32, positive int32 scales and int16 weights,
         // both each neuron sum and the combined output fit signed int64.
         return output;
+    }
+
+    template<typename Sum, typename Activation>
+    Sum residualDotScalar(const Activation* activations, const int16_t* weights, int32_t bias) const {
+        Sum sum = bias;
+        for(size_t inputIndex = 0; inputIndex < hiddenSize_ * 2; inputIndex++){
+            sum += static_cast<Sum>(activations[inputIndex]) * weights[inputIndex];
+        }
+        return sum;
+    }
+
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+    int32_t residualDotSse2(const int16_t* activations, const int16_t* weights, int32_t bias) const {
+        __m128i sum = _mm_setzero_si128();
+        size_t inputIndex = 0;
+        for(; inputIndex + 8 <= hiddenSize_ * 2; inputIndex += 8){
+            const __m128i values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(activations + inputIndex));
+            const __m128i row = _mm_loadu_si128(reinterpret_cast<const __m128i*>(weights + inputIndex));
+            sum = _mm_add_epi32(sum, _mm_madd_epi16(values, row));
+        }
+        sum = _mm_add_epi32(sum, _mm_srli_si128(sum, 8));
+        sum = _mm_add_epi32(sum, _mm_srli_si128(sum, 4));
+        int32_t result = _mm_cvtsi128_si32(sum) + bias;
+        for(; inputIndex < hiddenSize_ * 2; inputIndex++){
+            result += static_cast<int32_t>(activations[inputIndex]) * weights[inputIndex];
+        }
+        return result;
+    }
+#endif
+
+    template<typename Activation>
+    int64_t outputResidualClipped(const Activation* activations) const {
+        int64_t output = 0;
+        for(size_t neuron = 0; neuron < residualHiddenSize_; neuron++){
+            const int16_t* weights = residualWeights_.data() + neuron * hiddenSize_ * 2;
+            int64_t sum;
+            if(boundedResidual32_[neuron]){
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+                if constexpr(sizeof(Activation) == sizeof(int16_t)){
+                    if(hiddenSize_ * 2 >= 8){
+                        sum = residualDotSse2(activations, weights, residualBias_[neuron]);
+                    } else {
+                        sum = residualDotScalar<int32_t>(activations, weights, residualBias_[neuron]);
+                    }
+                } else
+#endif
+                {
+                    sum = residualDotScalar<int32_t>(activations, weights, residualBias_[neuron]);
+                }
+            } else {
+                sum = residualDotScalar<int64_t>(activations, weights, residualBias_[neuron]);
+            }
+            const int64_t activation = std::clamp<int64_t>(sum / residualWeightScale_, 0, hiddenScale_);
+            output += activation * residualOutputWeights_[neuron];
+        }
+        return output;
+    }
+
+    int64_t outputResidual(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
+        if(hiddenScale_ <= std::numeric_limits<int16_t>::max()){
+            // Fixed scratch has no heap allocation or zero-fill. Only the 2H
+            // populated entries are read. Pack once, then reuse for every row.
+            int16_t activations[2048];
+            size_t hidden = 0;
+#if defined(FORKLIFT_NNUE_HAS_SSE2)
+            const __m128i zero = _mm_setzero_si128();
+            const __m128i ceiling = _mm_set1_epi16(static_cast<int16_t>(hiddenScale_));
+            for(; hidden + 8 <= hiddenSize_; hidden += 8){
+                const auto clipped = [&](const int32_t* values){
+                    const __m128i low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values));
+                    const __m128i high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values + 4));
+                    return _mm_min_epi16(_mm_max_epi16(_mm_packs_epi32(low, high), zero), ceiling);
+                };
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(activations + hidden), clipped(firstAccumulator + hidden));
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(activations + hiddenSize_ + hidden), clipped(secondAccumulator + hidden));
+            }
+#endif
+            for(; hidden < hiddenSize_; hidden++){
+                activations[hidden] = static_cast<int16_t>(std::clamp(firstAccumulator[hidden], 0, hiddenScale_));
+                activations[hiddenSize_ + hidden] = static_cast<int16_t>(std::clamp(secondAccumulator[hidden], 0, hiddenScale_));
+            }
+            return outputResidualClipped(activations);
+        }
+        // Format-valid scales wider than int16 use the same once-clipped
+        // layout, with independently certified int32 or fallback int64 dots.
+        int32_t activations[2048];
+        for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
+            activations[hidden] = std::clamp(firstAccumulator[hidden], 0, hiddenScale_);
+            activations[hiddenSize_ + hidden] = std::clamp(secondAccumulator[hidden], 0, hiddenScale_);
+        }
+        return outputResidualClipped(activations);
     }
 
     template<typename Sum>
@@ -456,12 +587,15 @@ private:
     u32 residualHiddenSize_ = 0;
     int32_t residualWeightScale_ = 0;
     bool boundedOutput32_ = false;
+    std::array<bool, MaxResidualHidden> boundedResidual32_{};
+    u32 boundedResidual32Count_ = 0;
     std::vector<int32_t> hiddenBias_;
     std::vector<int16_t> inputWeights_;
     std::vector<int16_t> outputWeights_;
     std::vector<int32_t> residualBias_;
     std::vector<int16_t> residualWeights_;
     std::vector<int16_t> residualOutputWeights_;
+    std::string outputKernelName_ = "none";
     std::string source_;
 };
 
