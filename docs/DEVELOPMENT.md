@@ -6,6 +6,14 @@ after the v1 release.
 
 ## Repository state
 
+NNUE architecture implementation (2026-10-15, still no compute workloads): an
+optional tiny residual head now has Python training/export and versioned V2
+C++ integer inference, preserving the direct V1/default path. Strict warm starts
+and frozen-transformer pilots, source-artifact protection, and deferred C++/
+Python fixtures are implemented. Only source syntax/static review/whitespace
+checks ran; no build, test, trained V2 network, speed or strength result exists.
+See the [residual-head implementation contract](results/2026-10-15-nnue-residual-head.md).
+
 NNUE preparation (2026-10-15, no compute workloads): the saved fresh long
 confirmation summary is complete: 589 wins / 270 losses / 341 draws in 1,200
 `90+0.9` games, reported +94.6 +/- 17.0 relative Elo versus classical, with zero

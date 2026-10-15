@@ -11,6 +11,13 @@ licensed games -> sampled positions -> Stockfish labels -> CUDA training
 
 No source change is required to train or test another 256-wide network.
 
+An [experimental residual-head implementation](results/2026-10-15-nnue-residual-head.md)
+now adds optional V2 training/export and integer inference. It is opt-in via
+`--residual-hidden` (0 retains V1); no V2 model has been trained or validated.
+`--initialize-from` and `--freeze-transformer` support controlled, matched
+head-only pilots. These flags start real training when used with the trainer:
+do not invoke them while the PC is reserved for gaming.
+
 The [NNUE v3 design](../research/designs/2026-10-15-nnue-v3.md) sets the next
 goal: stronger equal-time decisions at bounded inference/training cost. It
 records the now-complete saved long-confirmation summary, without treating a

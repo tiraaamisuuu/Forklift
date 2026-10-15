@@ -25,7 +25,7 @@
     {"id": "baseline", "work": "Verify completed gate and current-build integration later; do not recollect completed games unnecessarily"},
     {"id": "input-safety", "work": "Reject duplicate/cross-split resolved paths; do not certify game/input disjointness from filenames"},
     {"id": "selection", "work": "Compare random, rarity-only and RIFT at unchanged H256/shared inference architecture", "collectorImplemented": false, "concreteBudgetsFrozen": false},
-    {"id": "head", "work": "Matched direct-head versus tiny nonlinear residual-head study", "residualWidthsProposed": [4, 8], "implemented": false, "concreteBudgetsFrozen": false},
+    {"id": "head", "work": "Matched direct-head versus tiny nonlinear residual-head study", "residualWidthsProposed": [4, 8], "implemented": true, "validation": "source-only; builds/tests/training deferred", "concreteBudgetsFrozen": false},
     {"id": "representation", "work": "Separate king-inclusive/bucketed and threat-feature ablations after cost/correctness evidence", "implemented": false}
   ],
   "unresolvedBeforeExecution": [
