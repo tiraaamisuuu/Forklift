@@ -46,3 +46,47 @@ def validate_dataset_paths(
     if overlap:
         shared = min(overlap, key=str)
         raise ValueError(f"training and validation dataset paths overlap: {shared}")
+
+
+def validate_initial_weights_path(
+    initial: Path, output: Path,
+    metrics: Path | None = None, manifest: Path | None = None,
+) -> None:
+    """Keep warm-start weights outside every artifact the trainer may write.
+
+    Metadata-only, including hard-link identities for existing targets. Reserve
+    temporary names as well as final files and the whole epoch directory so a
+    pre-training progress update cannot destroy the source before it is loaded.
+    """
+    try:
+        source = initial.resolve()
+        metrics_path = metrics or output.with_suffix(".metrics.json")
+        paths = {
+            output, output.with_suffix(".pt"),
+            output.with_suffix(".checkpoint.pt"),
+            output.with_suffix(".best.checkpoint.pt"),
+            output.with_suffix(".progress.json"),
+            metrics_path, metrics_path.with_suffix(".csv"),
+            manifest or output.with_suffix(".manifest.json"),
+        }
+        periodic = output.with_suffix(".checkpoints").resolve()
+        if source == periodic or periodic in source.parents:
+            raise ValueError("initial weights must not be inside this run's checkpoint directory")
+        # An outside source can still be hard-linked to a pre-existing epoch
+        # temporary. Inspect only this run's small checkpoint directory, never
+        # dataset contents; nonexistent future files cannot already be aliases.
+        if periodic.is_dir():
+            paths.update(periodic.glob("epoch-*.pt"))
+            paths.update(periodic.glob("epoch-*.pt.tmp"))
+        paths |= {path.with_name(path.name + ".tmp") for path in paths}
+        for artifact in paths:
+            if source == artifact.resolve():
+                raise ValueError("initial weights must not overlap this run's output artifacts")
+            try:
+                same_file = source.samefile(artifact)
+            except FileNotFoundError:
+                same_file = False
+            if same_file:
+                raise ValueError("initial weights must not share a file with output artifacts")
+    except (OSError, RuntimeError) as error:
+        raise ValueError(f"cannot resolve initial/output paths: {error}") from error

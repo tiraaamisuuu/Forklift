@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train, validate, checkpoint, and export the engine's HalfKP-v1 NNUE."""
+"""Train, validate, checkpoint, and export direct/residual HalfKP NNUEs."""
 
 from __future__ import annotations
 
@@ -39,12 +39,15 @@ from nnue_dataset import (
     write_json_atomic,
 )
 from dataset_diagnostics import labelled_bucket, position_distribution
-from dataset_paths import validate_dataset_paths
+from dataset_paths import validate_dataset_paths, validate_initial_weights_path
+from initialization import freeze_feature_transformer, load_initial_weights
 
 
 FEATURE_COUNT = 64 * 10 * 64
 FORMAT_VERSION = 1
 MAGIC = b"TNNUE1\0\0"
+RESIDUAL_FORMAT_VERSION = 2
+RESIDUAL_MAGIC = b"TNNUE2\0\0"
 CHECKPOINT_VERSION = 2
 
 
@@ -59,6 +62,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden", type=int, default=256)
     parser.add_argument("--feature-factorization", action="store_true",
                         help="Share piece-square learning across king squares; fold weights at export")
+    parser.add_argument("--residual-hidden", type=int, default=0,
+                        help="Optional clipped residual head width (1-32); 0 preserves HalfKP-v1")
+    parser.add_argument("--residual-weight-scale", type=int, default=256,
+                        help="Positive int32 weight scale for the optional residual hidden layer")
+    parser.add_argument("--initialize-from", type=Path,
+                        help="Exported model .pt weights; new optimizer, not a resume checkpoint")
+    parser.add_argument("--freeze-transformer", action="store_true",
+                        help="Fine-tune output head(s) only; requires initial weights or a resume")
     parser.add_argument("--cpu-threads", type=int, default=2,
                         help="PyTorch CPU threads (data loader workers are separate)")
     parser.add_argument("--epochs", type=int, default=8)
@@ -308,8 +319,12 @@ def collate(samples: list[tuple]) -> tuple[torch.Tensor, ...]:
 
 
 class HalfKpV1(nn.Module):
-    def __init__(self, hidden: int, feature_factorization: bool = False):
+    def __init__(self, hidden: int, feature_factorization: bool = False,
+                 residual_hidden: int = 0):
         super().__init__()
+        if (isinstance(residual_hidden, bool) or not isinstance(residual_hidden, int)
+                or not 0 <= residual_hidden <= 32):
+            raise ValueError("residual hidden width must be an integer between 0 and 32")
         self.hidden = hidden
         self.feature_weights = nn.EmbeddingBag(FEATURE_COUNT, hidden, mode="sum")
         self.hidden_bias = nn.Parameter(torch.zeros(hidden))
@@ -323,6 +338,16 @@ class HalfKpV1(nn.Module):
             with torch.random.fork_rng(devices=[]):
                 self.piece_square_weights = nn.EmbeddingBag(640, hidden, mode="sum")
                 nn.init.zeros_(self.piece_square_weights.weight)
+        self.residual_hidden = residual_hidden
+        self.residual_hidden_layer = None
+        self.residual_output = None
+        if residual_hidden:
+            # Neither enabling the zero-output branch nor its parameter count
+            # changes the baseline parameters or subsequent shuffle RNG state.
+            with torch.random.fork_rng(devices=[]):
+                self.residual_hidden_layer = nn.Linear(hidden * 2, residual_hidden)
+                self.residual_output = nn.Linear(residual_hidden, 1, bias=False)
+                nn.init.zeros_(self.residual_output.weight)
 
     def effective_input_weights(self) -> torch.Tensor:
         weights = self.feature_weights.weight
@@ -340,7 +365,13 @@ class HalfKpV1(nn.Module):
                 second: torch.Tensor, second_offsets: torch.Tensor) -> torch.Tensor:
         first_activation = self.accumulator(first, first_offsets)
         second_activation = self.accumulator(second, second_offsets)
-        return self.output(torch.cat((first_activation, second_activation), dim=1)).squeeze(1)
+        activation = torch.cat((first_activation, second_activation), dim=1)
+        result = self.output(activation)
+        if self.residual_hidden_layer is not None:
+            assert self.residual_output is not None
+            residual = torch.clamp(self.residual_hidden_layer(activation), 0.0, 1.0)
+            result = result + self.residual_output(residual)
+        return result.squeeze(1)
 
 
 def batches(loader: DataLoader, device: torch.device) -> Iterator[tuple[torch.Tensor, ...]]:
@@ -356,19 +387,58 @@ class QuantizedNetwork:
     input_weights: np.ndarray
     output_weights: np.ndarray
     output_bias: int
+    residual_width: int = 0
+    residual_weight_scale: int = 256
+    residual_bias: np.ndarray | None = None
+    residual_weights: np.ndarray | None = None
+    residual_output_weights: np.ndarray | None = None
+
+
+def positive_int32(value: int, name: str) -> None:
+    if (isinstance(value, bool) or not isinstance(value, (int, np.integer))
+            or not 1 <= value <= np.iinfo(np.int32).max):
+        raise ValueError(f"{name} must be a positive int32 integer")
+
+
+def checked_quantized_array(values: np.ndarray, dtype: str, name: str) -> np.ndarray:
+    limits = np.iinfo(np.dtype(dtype))
+    # Compare int32 endpoints in float64: float32 rounds INT32_MAX up to
+    # 2**31, which must be rejected rather than converted to INT32_MIN.
+    values = np.asarray(values, dtype=np.float64)
+    if not np.all(np.isfinite(values)):
+        raise ValueError(f"{name} must be finite before quantization")
+    rounded = np.rint(values)
+    if np.any(rounded < limits.min) or np.any(rounded > limits.max):
+        raise ValueError(f"{name} exceeds {np.dtype(dtype).name} at the requested scales")
+    return rounded.astype(dtype)
 
 
 def quantize_network(model: HalfKpV1, hidden_scale: int = 1024,
-                     output_scale: int = 64, target_scale: float = 1.0) -> QuantizedNetwork:
-    if hidden_scale <= 0 or output_scale <= 0 or target_scale <= 0:
-        raise ValueError("quantization scales must be positive")
+                     output_scale: int = 64, target_scale: float = 1.0,
+                     residual_weight_scale: int = 256) -> QuantizedNetwork:
+    positive_int32(hidden_scale, "hidden scale")
+    positive_int32(output_scale, "output scale")
+    positive_int32(residual_weight_scale, "residual weight scale")
+    if not math.isfinite(target_scale) or target_scale <= 0:
+        raise ValueError("target scale must be finite and positive")
+    if not 1 <= model.hidden <= 1024:
+        raise ValueError("NNUE hidden width exceeds the C++ loader limits")
+    residual_width = getattr(model, "residual_hidden", 0)
+    if residual_width:
+        if not 1 <= residual_width <= 32:
+            raise ValueError("residual NNUE dimensions exceed the C++ loader limits")
     state = model.cpu().eval()
     # Coalesce virtual features before rounding, preserving the deployed HalfKP-v1 layout.
     input_weights = np.rint(state.effective_input_weights().detach().numpy() * hidden_scale)
+    if not np.all(np.isfinite(input_weights)):
+        raise ValueError("input weights must be finite before quantization")
     if np.any(input_weights < -32768) or np.any(input_weights > 32767):
         raise ValueError("input weights exceed int16 at the requested hidden scale")
     input_weights = input_weights.astype("<i2")
     hidden_bias = np.rint(state.hidden_bias.detach().numpy() * hidden_scale)
+    if not np.all(np.isfinite(hidden_bias)):
+        raise ValueError("hidden bias must be finite before quantization")
+    hidden_bias = hidden_bias.astype(np.float64)
     if (np.any(hidden_bias < np.iinfo(np.int32).min) or
             np.any(hidden_bias > np.iinfo(np.int32).max)):
         raise ValueError("hidden bias exceeds int32 at the requested hidden scale")
@@ -376,31 +446,77 @@ def quantize_network(model: HalfKpV1, hidden_scale: int = 1024,
     output_weights = np.rint(
         state.output.weight.detach().numpy().reshape(-1) * target_scale * output_scale,
     )
+    if not np.all(np.isfinite(output_weights)):
+        raise ValueError("output weights must be finite before quantization")
     if np.any(output_weights < -32768) or np.any(output_weights > 32767):
         raise ValueError("output weights exceed int16 at the requested output/target scale")
     output_weights = output_weights.astype("<i2")
-    output_bias = int(round(
-        float(state.output.bias.detach()[0]) * target_scale * hidden_scale * output_scale,
-    ))
+    scaled_output_bias = (
+        float(state.output.bias.detach()[0]) * target_scale * hidden_scale * output_scale
+    )
+    if not math.isfinite(scaled_output_bias):
+        raise ValueError("output bias must be finite before quantization")
+    output_bias = int(round(scaled_output_bias))
     if not np.iinfo(np.int32).min <= output_bias <= np.iinfo(np.int32).max:
         raise ValueError("quantized output bias exceeds the NNUE file format")
-    return QuantizedNetwork(
+    quantized = QuantizedNetwork(
         hidden_scale, output_scale, hidden_bias, input_weights, output_weights, output_bias,
     )
+    if residual_width:
+        # Every supported feature list contains at most 64 pieces. Widen before
+        # abs/negation so INT16_MIN and INT32_MIN cannot wrap in the certificate.
+        max_input_abs = np.maximum(
+            input_weights.max(axis=0).astype(np.int64),
+            -input_weights.min(axis=0).astype(np.int64),
+        )
+        lane_bounds = np.abs(hidden_bias.astype(np.int64)) + 64 * max_input_abs
+        if np.any(lane_bounds > np.iinfo(np.int32).max):
+            raise ValueError("residual NNUE transformer accumulator exceeds int32 safety bound")
+        assert state.residual_hidden_layer is not None
+        assert state.residual_output is not None
+        quantized.residual_width = residual_width
+        quantized.residual_weight_scale = residual_weight_scale
+        quantized.residual_bias = checked_quantized_array(
+            state.residual_hidden_layer.bias.detach().numpy() * hidden_scale * residual_weight_scale,
+            "<i4", "residual bias",
+        )
+        quantized.residual_weights = checked_quantized_array(
+            state.residual_hidden_layer.weight.detach().numpy() * residual_weight_scale,
+            "<i2", "residual weights",
+        )
+        quantized.residual_output_weights = checked_quantized_array(
+            state.residual_output.weight.detach().numpy().reshape(-1) * target_scale * output_scale,
+            "<i2", "residual output weights",
+        )
+    return quantized
 
 
 def export_network(model: HalfKpV1, destination: Path, hidden_scale: int = 1024,
-                   output_scale: int = 64, target_scale: float = 1.0) -> QuantizedNetwork:
+                   output_scale: int = 64, target_scale: float = 1.0,
+                   residual_weight_scale: int = 256) -> QuantizedNetwork:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    quantized = quantize_network(model, hidden_scale, output_scale, target_scale)
+    # Complete every conversion/range check before opening an existing file.
+    quantized = quantize_network(model, hidden_scale, output_scale, target_scale, residual_weight_scale)
     with destination.open("wb") as output:
         output.write(struct.pack(
-            "<8sIIIiii", MAGIC, FORMAT_VERSION, FEATURE_COUNT, model.hidden,
+            "<8sIIIiii",
+            RESIDUAL_MAGIC if quantized.residual_width else MAGIC,
+            RESIDUAL_FORMAT_VERSION if quantized.residual_width else FORMAT_VERSION,
+            FEATURE_COUNT, model.hidden,
             hidden_scale, output_scale, quantized.output_bias,
         ))
+        if quantized.residual_width:
+            output.write(struct.pack("<Ii", quantized.residual_width, quantized.residual_weight_scale))
         output.write(quantized.hidden_bias.tobytes(order="C"))
         output.write(quantized.input_weights.tobytes(order="C"))
         output.write(quantized.output_weights.tobytes(order="C"))
+        if quantized.residual_width:
+            assert quantized.residual_bias is not None
+            assert quantized.residual_weights is not None
+            assert quantized.residual_output_weights is not None
+            output.write(quantized.residual_bias.tobytes(order="C"))
+            output.write(quantized.residual_weights.tobytes(order="C"))
+            output.write(quantized.residual_output_weights.tobytes(order="C"))
     return quantized
 
 
@@ -427,17 +543,33 @@ def quantized_predict(quantized: QuantizedNetwork, first: list[int],
     output = quantized.output_bias
     output += int(np.dot(first_accumulator, quantized.output_weights[:hidden].astype(np.int64)))
     output += int(np.dot(second_accumulator, quantized.output_weights[hidden:].astype(np.int64)))
+    if quantized.residual_width:
+        assert quantized.residual_bias is not None
+        assert quantized.residual_weights is not None
+        assert quantized.residual_output_weights is not None
+        activation = np.concatenate((first_accumulator, second_accumulator))
+        # Independent int64 reference: legal V2 dimensions/scales bound these
+        # dots below 2**63 even when the fast native kernel cannot use int32.
+        numerators = quantized.residual_bias.astype(np.int64) + np.dot(
+            quantized.residual_weights.astype(np.int64), activation,
+        )
+        residual = np.array([
+            max(0, min(quantized.hidden_scale, truncating_division(int(value), quantized.residual_weight_scale)))
+            for value in numerators
+        ], dtype=np.int64)
+        output += int(np.dot(residual, quantized.residual_output_weights.astype(np.int64)))
     divisor = quantized.hidden_scale * quantized.output_scale
     return max(-32_000, min(32_000, truncating_division(output, divisor)))
 
 
 def verify_quantization(model: HalfKpV1, dataset: Dataset, sample_count: int,
                         seed: int, hidden_scale: int, output_scale: int,
-                        target_scale: float = 1.0) -> dict[str, float | int]:
+                        target_scale: float = 1.0,
+                        residual_weight_scale: int = 256) -> dict[str, float | int]:
     if len(dataset) == 0 or sample_count <= 0:
         return {"samples": 0, "rmseCp": 0.0, "meanErrorCp": 0.0, "maxAbsErrorCp": 0.0}
     state = model.cpu().eval()
-    quantized = quantize_network(state, hidden_scale, output_scale, target_scale)
+    quantized = quantize_network(state, hidden_scale, output_scale, target_scale, residual_weight_scale)
     random_generator = random.Random(seed)
     indices = list(range(len(dataset)))
     random_generator.shuffle(indices)
@@ -720,6 +852,7 @@ def checkpoint_payload(model: HalfKpV1, optimizer: torch.optim.Optimizer,
         "checkpointVersion": CHECKPOINT_VERSION,
         "epoch": epoch,
         "hidden": model.hidden,
+        "initialization": getattr(args, "initialization_report", None),
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict() if scheduler else None,
@@ -738,6 +871,9 @@ def checkpoint_payload(model: HalfKpV1, optimizer: torch.optim.Optimizer,
         },
         "training": {
             "featureFactorization": args.feature_factorization,
+            "residualHidden": getattr(model, "residual_hidden", 0),
+            "residualWeightScale": getattr(args, "residual_weight_scale", 256),
+            "freezeTransformer": getattr(args, "freeze_transformer", False),
             "resultWeight": args.result_weight,
             "loss": args.loss,
             "wdlScale": args.wdl_scale,
@@ -768,6 +904,9 @@ def validate_resume_configuration(payload: dict[str, object], args: argparse.Nam
         raise SystemExit("resume checkpoint is missing training configuration")
     exact_settings = {
         "featureFactorization": args.feature_factorization,
+        "residualHidden": getattr(args, "residual_hidden", 0),
+        "residualWeightScale": getattr(args, "residual_weight_scale", 256),
+        "freezeTransformer": getattr(args, "freeze_transformer", False),
         "resultWeight": args.result_weight,
         "loss": args.loss,
         "wdlScale": args.wdl_scale,
@@ -779,12 +918,16 @@ def validate_resume_configuration(payload: dict[str, object], args: argparse.Nam
         "targetScale": args.target_scale,
         "huberBetaCp": args.huber_beta_cp,
     }
+    legacy_defaults = {
+        "featureFactorization": False,
+        "residualHidden": 0,
+        "residualWeightScale": 256,
+        "freezeTransformer": False,
+        "loss": "centipawn-huber",
+        "wdlScale": 400.0,
+    }
     for key, requested in exact_settings.items():
-        saved_value = saved.get(
-            key,
-            False if key == "featureFactorization" else
-            "centipawn-huber" if key == "loss" else (400.0 if key == "wdlScale" else None),
-        )
+        saved_value = saved.get(key, legacy_defaults.get(key))
         if saved_value != requested:
             raise SystemExit(
                 f"resume checkpoint {key}={saved_value!r} does not match requested {requested!r}"
@@ -800,10 +943,33 @@ def validate_args(args: argparse.Namespace) -> None:
         # SystemExit bypasses main's failed-run telemetry writer: invalid paths
         # must not create an output directory or modify existing run evidence.
         raise SystemExit(str(error)) from error
+    initial_path = getattr(args, "initialize_from", None)
+    if initial_path is not None:
+        if args.resume:
+            raise SystemExit("--initialize-from and --resume are mutually exclusive")
+        if not initial_path.is_file():
+            raise SystemExit(f"initial model does not exist: {initial_path}")
+        try:
+            validate_initial_weights_path(initial_path, args.output, args.metrics, args.manifest)
+        except ValueError as error:
+            raise SystemExit(str(error)) from error
+    if getattr(args, "freeze_transformer", False) and not (initial_path or args.resume):
+        raise SystemExit("--freeze-transformer requires --initialize-from or --resume")
     if args.cpu_threads < 1:
         raise SystemExit("--cpu-threads must be positive")
     if not 1 <= args.hidden <= 1024:
         raise SystemExit("--hidden must be between 1 and 1024 (the C++ loader limit)")
+    residual_hidden = getattr(args, "residual_hidden", 0)
+    if (isinstance(residual_hidden, bool) or not isinstance(residual_hidden, int)
+            or not 0 <= residual_hidden <= 32):
+        raise SystemExit("--residual-hidden must be an integer between 0 and 32")
+    try:
+        positive_int32(getattr(args, "residual_weight_scale", 256), "--residual-weight-scale")
+        if residual_hidden:
+            positive_int32(args.hidden_scale, "--hidden-scale")
+            positive_int32(args.output_scale, "--output-scale")
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
     if args.epochs < 1 or args.batch_size < 1 or args.workers < 0:
         raise SystemExit("--epochs and --batch-size must be positive; --workers cannot be negative")
     if args.learning_rate <= 0 or args.minimum_learning_rate < 0:
@@ -812,6 +978,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("--result-weight must be in [0, 1]")
     if args.target_scale <= 0 or args.huber_beta_cp <= 0 or args.wdl_scale <= 0:
         raise SystemExit("--target-scale, --huber-beta-cp, and --wdl-scale must be positive")
+    if residual_hidden and not math.isfinite(args.target_scale):
+        raise SystemExit("--target-scale must be finite")
     if args.validation_data is None and not args.allow_position_split:
         raise SystemExit("--validation-data is required unless --allow-position-split is explicit")
     if not args.validation_data and not 0.0 < args.validation_fraction < 1.0:
@@ -842,6 +1010,7 @@ def train(args: argparse.Namespace) -> int:
         "schemaVersion": 1, "state": "preparing", "pid": os.getpid(),
         "startedAt": started_at.isoformat(), "epoch": 0, "epochs": args.epochs,
         "featureFactorization": args.feature_factorization, "device": args.device,
+        "residualHidden": getattr(args, "residual_hidden", 0),
     }
 
     def update_progress(state: str, **values: object) -> None:
@@ -893,8 +1062,19 @@ def train(args: argparse.Namespace) -> int:
     training_loader = DataLoader(training, shuffle=True, **loader_options)
     validation_loader = DataLoader(validation, shuffle=False, **loader_options)
 
-    model = HalfKpV1(args.hidden, args.feature_factorization).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=1e-6)
+    model = HalfKpV1(args.hidden, args.feature_factorization,
+                     getattr(args, "residual_hidden", 0))
+    args.initialization_report = None
+    if getattr(args, "initialize_from", None):
+        args.initialization_report = load_initial_weights(model, args.initialize_from)
+    args.frozen_transformer_parameters = 0
+    if getattr(args, "freeze_transformer", False):
+        args.frozen_transformer_parameters = freeze_feature_transformer(model)
+    model.to(device)
+    optimizer = torch.optim.AdamW(
+        (parameter for parameter in model.parameters() if parameter.requires_grad),
+        lr=args.learning_rate, weight_decay=1e-6,
+    )
     scheduler = None
     if args.scheduler == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -911,6 +1091,7 @@ def train(args: argparse.Namespace) -> int:
         if int(payload.get("hidden", -1)) != args.hidden:
             raise SystemExit("resume checkpoint hidden size does not match --hidden")
         validate_resume_configuration(payload, args)
+        args.initialization_report = payload.get("initialization")
         model.load_state_dict(payload["model"])
         optimizer.load_state_dict(payload["optimizer"])
         if scheduler and payload.get("scheduler"):
@@ -1046,9 +1227,11 @@ def train(args: argparse.Namespace) -> int:
     quantization = verify_quantization(
         model, validation, args.verify_samples, args.seed,
         args.hidden_scale, args.output_scale, args.target_scale,
+        getattr(args, "residual_weight_scale", 256),
     )
     quantized = export_network(
         model, args.output, args.hidden_scale, args.output_scale, args.target_scale,
+        getattr(args, "residual_weight_scale", 256),
     )
     cpp_verification = (
         verify_cpp_export(args.cpp_tools, args.output, quantized) if args.cpp_tools else None
@@ -1095,11 +1278,19 @@ def train(args: argparse.Namespace) -> int:
 
     manifest = {
         "schemaVersion": 1,
-        "networkFormat": "HalfKP-v1",
+        "networkFormat": "HalfKP-v2-residual" if model.residual_hidden else "HalfKP-v1",
+        "architecture": {
+            "featureSet": "HalfKP",
+            "transformerWidth": model.hidden,
+            "head": "direct-plus-clipped-residual" if model.residual_hidden else "direct",
+            "residualWidth": model.residual_hidden,
+            "formatVersion": RESIDUAL_FORMAT_VERSION if model.residual_hidden else FORMAT_VERSION,
+        },
         "startedAt": started_at.isoformat(),
         "completedAt": completed_at.isoformat(),
         "durationSeconds": round((completed_at - started_at).total_seconds(), 3),
         "trainer": {**git_state(root), "script": str(Path(__file__).resolve())},
+        "initialization": args.initialization_report,
         "device": device_manifest,
         "data": {
             "splitMethod": split_method,
@@ -1114,6 +1305,10 @@ def train(args: argparse.Namespace) -> int:
         },
         "configuration": {
             "featureFactorization": args.feature_factorization,
+            "residualHidden": model.residual_hidden,
+            "residualWeightScale": getattr(args, "residual_weight_scale", 256),
+            "freezeTransformer": getattr(args, "freeze_transformer", False),
+            "frozenTransformerParameters": args.frozen_transformer_parameters,
             "cpuThreads": args.cpu_threads,
             "hidden": args.hidden,
             "epochsRequested": args.epochs,
