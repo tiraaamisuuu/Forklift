@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "nnue-residual-exact-simd-bounded-20261015",
+  "candidateEngineCommit": "969e33f",
+  "baselineSourceCommit": "92379b3",
+  "scope": "Modest user-authorized CPU-only checks and tiny head learning; no production training, new matches or default change",
+  "resources": {"releaseBuildWorkers": 2, "asanBuildWorkers": 1, "trainingCpuThreads": 1, "trainingInteropThreads": 1, "dataLoaderWorkers": 0, "cudaVisibleDevices": "-1"},
+  "release": {
+    "buildDirectory": "build-singular",
+    "configuration": "Release",
+    "passed": 14,
+    "failed": 0,
+    "ctestSeconds": 19.19,
+    "residualTargets": ["chess-nnue-residual-tests", "chess-nnue-residual-scalar-tests", "chess-nnue-residual-reference-tests"],
+    "numericFixturesPerResidualTarget": 64,
+    "independentOracleComparisonsPerTarget": 19296,
+    "totalResidualOracleComparisons": 57888,
+    "initialTestRepair": "Dispatch test checked a private macro after header undefinition, incorrectly expecting scalar; corrected compiler/force-scalar feature detection. Final three targets rerun after repair. No arithmetic mismatch."
+  },
+  "windowsAsan": {
+    "buildDirectory": "build-asan-win",
+    "target": "chess-nnue-residual-tests",
+    "compiler": "MSVC 19.50.35725.0",
+    "flags": ["/fsanitize=address", "/Zi"],
+    "configuration": "Release",
+    "buildSeconds": 6.19,
+    "testSeconds": 16.63,
+    "passed": 1,
+    "findings": 0,
+    "numericFixtures": 64,
+    "oracleComparisons": 19296,
+    "runtime": "Existing VS 14.50.35717 Hostx64/x64 ASAN DLL directory on process-local PATH; no installation",
+    "limits": "Focused Windows ASAN only; cross-platform/UBSAN not locally established. Linker recommends /DEBUG for better reports."
+  },
+  "exportIntegration": {
+    "test": "tests/nnue_residual_export_tests.py",
+    "passed": 2,
+    "failed": 0,
+    "seconds": 4.535,
+    "configurations": 12,
+    "exactPythonCppComparisons": 56,
+    "tinyFixtureEpochsIncludingResume": 2,
+    "frozenTransformerAndInitializationProvenancePreserved": true,
+    "fixtureLabels": "artificial"
+  },
+  "realLabelHeadPilot": {
+    "record": "2026-10-15-nnue-residual-head-pilot.json",
+    "trainingRows": 2048,
+    "validationRows": 512,
+    "updatesPerArm": 8,
+    "arms": ["direct", "residual-4", "residual-8"],
+    "wallSecondsIncludingImports": 9.293825699998706,
+    "decision": "Head learning/export established; negligible residual advantage over equally trained direct control, no strength inference"
+  },
+  "trainedExportParity": {
+    "record": "2026-10-15-nnue-residual-head-parity.json",
+    "cppComparisons": 72,
+    "exactMatches": 72,
+    "models": 3,
+    "positionsPerModel": 12,
+    "oldAndNewComparedWithPythonInt64": true,
+    "allTransformerBytesMatchOriginalV1": true,
+    "seconds": 4.875,
+    "trainingRepeated": false
+  },
+  "cost": {
+    "record": "2026-10-15-nnue-residual-simd-cost.json",
+    "wallSecondsExcludingPythonStartup": 33.26218340000014,
+    "all24TreesIdentical": true,
+    "medianPairedTimeReductionPercent": {"r4": 49.55882352941177, "r8": 64.3450184501845},
+    "decision": "Substantially reduced old residual cost; retain experimental status pending model quality and equal-time strength evidence"
+  },
+  "defaultChanged": false,
+  "modelPromoted": false,
+  "gpuTrainingStarted": false,
+  "teacherGenerationStarted": false,
+  "newStrengthMatches": 0,
+  "backgroundWorkScheduled": false,
+  "claimsNotEstablished": ["residual playing-strength improvement", "Stockfish parity", "world-first algorithm", "idle-host or cross-platform timing replication"]
+}

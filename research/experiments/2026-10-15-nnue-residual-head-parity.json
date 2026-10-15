@@ -1,0 +1,262 @@
+{
+  "arms": [
+    {
+      "arm": "direct",
+      "positions": [
+        {
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "newCppCp": 47,
+          "oldCppCp": 47,
+          "pythonInt64Cp": 47
+        },
+        {
+          "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+          "newCppCp": 44,
+          "oldCppCp": 44,
+          "pythonInt64Cp": 44
+        },
+        {
+          "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+          "newCppCp": 0,
+          "oldCppCp": 0,
+          "pythonInt64Cp": 0
+        },
+        {
+          "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+          "newCppCp": -62,
+          "oldCppCp": -62,
+          "pythonInt64Cp": -62
+        },
+        {
+          "fen": "2r1r1k1/pp1b1pbp/5np1/q1n5/2NNp3/1P2P2P/P1Q1BPPB/2R2RK1 w - - 0 1",
+          "newCppCp": 135,
+          "oldCppCp": 135,
+          "pythonInt64Cp": 135
+        },
+        {
+          "fen": "2rq1rk1/3b1ppp/p1n2n2/1p2p3/3p4/1P1P1NP1/P2NPPBP/R2Q1RK1 w - - 0 1",
+          "newCppCp": -43,
+          "oldCppCp": -43,
+          "pythonInt64Cp": -43
+        },
+        {
+          "fen": "rn3qQ1/pp2k3/4p2p/8/8/8/PB3PPP/5RK1 w - - 0 1",
+          "newCppCp": 631,
+          "oldCppCp": 631,
+          "pythonInt64Cp": 631
+        },
+        {
+          "fen": "2k4r/p1p5/1pnbNp2/3p1P2/3P3P/2P1P3/PP6/2KR4 w - - 0 1",
+          "newCppCp": -288,
+          "oldCppCp": -288,
+          "pythonInt64Cp": -288
+        },
+        {
+          "fen": "1r2kb1r/2Bn1ppp/4p3/p7/3P4/P3PN2/1P3PPP/R2Q1RK1 b - - 0 1",
+          "newCppCp": -855,
+          "oldCppCp": -855,
+          "pythonInt64Cp": -855
+        },
+        {
+          "fen": "r7/ppk1n2p/2p3p1/8/2B5/2P1b3/PP4KP/3R4 b - - 0 1",
+          "newCppCp": 553,
+          "oldCppCp": 553,
+          "pythonInt64Cp": 553
+        },
+        {
+          "fen": "1b1r2k1/ppq2ppp/2p1p3/8/1PP3P1/P1Q2r1P/8/4RRKB w - - 0 1",
+          "newCppCp": -301,
+          "oldCppCp": -301,
+          "pythonInt64Cp": -301
+        },
+        {
+          "fen": "r4rk1/5ppp/p1p5/8/3p4/8/PP1N2PP/R4RK1 w - - 0 1",
+          "newCppCp": 280,
+          "oldCppCp": 280,
+          "pythonInt64Cp": 280
+        }
+      ],
+      "transformerBytesMatchOriginal": true
+    },
+    {
+      "arm": "residual-4",
+      "positions": [
+        {
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "newCppCp": 47,
+          "oldCppCp": 47,
+          "pythonInt64Cp": 47
+        },
+        {
+          "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+          "newCppCp": 44,
+          "oldCppCp": 44,
+          "pythonInt64Cp": 44
+        },
+        {
+          "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+          "newCppCp": 0,
+          "oldCppCp": 0,
+          "pythonInt64Cp": 0
+        },
+        {
+          "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+          "newCppCp": -62,
+          "oldCppCp": -62,
+          "pythonInt64Cp": -62
+        },
+        {
+          "fen": "2r1r1k1/pp1b1pbp/5np1/q1n5/2NNp3/1P2P2P/P1Q1BPPB/2R2RK1 w - - 0 1",
+          "newCppCp": 135,
+          "oldCppCp": 135,
+          "pythonInt64Cp": 135
+        },
+        {
+          "fen": "2rq1rk1/3b1ppp/p1n2n2/1p2p3/3p4/1P1P1NP1/P2NPPBP/R2Q1RK1 w - - 0 1",
+          "newCppCp": -43,
+          "oldCppCp": -43,
+          "pythonInt64Cp": -43
+        },
+        {
+          "fen": "rn3qQ1/pp2k3/4p2p/8/8/8/PB3PPP/5RK1 w - - 0 1",
+          "newCppCp": 631,
+          "oldCppCp": 631,
+          "pythonInt64Cp": 631
+        },
+        {
+          "fen": "2k4r/p1p5/1pnbNp2/3p1P2/3P3P/2P1P3/PP6/2KR4 w - - 0 1",
+          "newCppCp": -288,
+          "oldCppCp": -288,
+          "pythonInt64Cp": -288
+        },
+        {
+          "fen": "1r2kb1r/2Bn1ppp/4p3/p7/3P4/P3PN2/1P3PPP/R2Q1RK1 b - - 0 1",
+          "newCppCp": -855,
+          "oldCppCp": -855,
+          "pythonInt64Cp": -855
+        },
+        {
+          "fen": "r7/ppk1n2p/2p3p1/8/2B5/2P1b3/PP4KP/3R4 b - - 0 1",
+          "newCppCp": 553,
+          "oldCppCp": 553,
+          "pythonInt64Cp": 553
+        },
+        {
+          "fen": "1b1r2k1/ppq2ppp/2p1p3/8/1PP3P1/P1Q2r1P/8/4RRKB w - - 0 1",
+          "newCppCp": -301,
+          "oldCppCp": -301,
+          "pythonInt64Cp": -301
+        },
+        {
+          "fen": "r4rk1/5ppp/p1p5/8/3p4/8/PP1N2PP/R4RK1 w - - 0 1",
+          "newCppCp": 280,
+          "oldCppCp": 280,
+          "pythonInt64Cp": 280
+        }
+      ],
+      "transformerBytesMatchOriginal": true
+    },
+    {
+      "arm": "residual-8",
+      "positions": [
+        {
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "newCppCp": 47,
+          "oldCppCp": 47,
+          "pythonInt64Cp": 47
+        },
+        {
+          "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+          "newCppCp": 44,
+          "oldCppCp": 44,
+          "pythonInt64Cp": 44
+        },
+        {
+          "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+          "newCppCp": 0,
+          "oldCppCp": 0,
+          "pythonInt64Cp": 0
+        },
+        {
+          "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+          "newCppCp": -62,
+          "oldCppCp": -62,
+          "pythonInt64Cp": -62
+        },
+        {
+          "fen": "2r1r1k1/pp1b1pbp/5np1/q1n5/2NNp3/1P2P2P/P1Q1BPPB/2R2RK1 w - - 0 1",
+          "newCppCp": 135,
+          "oldCppCp": 135,
+          "pythonInt64Cp": 135
+        },
+        {
+          "fen": "2rq1rk1/3b1ppp/p1n2n2/1p2p3/3p4/1P1P1NP1/P2NPPBP/R2Q1RK1 w - - 0 1",
+          "newCppCp": -43,
+          "oldCppCp": -43,
+          "pythonInt64Cp": -43
+        },
+        {
+          "fen": "rn3qQ1/pp2k3/4p2p/8/8/8/PB3PPP/5RK1 w - - 0 1",
+          "newCppCp": 631,
+          "oldCppCp": 631,
+          "pythonInt64Cp": 631
+        },
+        {
+          "fen": "2k4r/p1p5/1pnbNp2/3p1P2/3P3P/2P1P3/PP6/2KR4 w - - 0 1",
+          "newCppCp": -287,
+          "oldCppCp": -287,
+          "pythonInt64Cp": -287
+        },
+        {
+          "fen": "1r2kb1r/2Bn1ppp/4p3/p7/3P4/P3PN2/1P3PPP/R2Q1RK1 b - - 0 1",
+          "newCppCp": -855,
+          "oldCppCp": -855,
+          "pythonInt64Cp": -855
+        },
+        {
+          "fen": "r7/ppk1n2p/2p3p1/8/2B5/2P1b3/PP4KP/3R4 b - - 0 1",
+          "newCppCp": 553,
+          "oldCppCp": 553,
+          "pythonInt64Cp": 553
+        },
+        {
+          "fen": "1b1r2k1/ppq2ppp/2p1p3/8/1PP3P1/P1Q2r1P/8/4RRKB w - - 0 1",
+          "newCppCp": -301,
+          "oldCppCp": -301,
+          "pythonInt64Cp": -301
+        },
+        {
+          "fen": "r4rk1/5ppp/p1p5/8/3p4/8/PP1N2PP/R4RK1 w - - 0 1",
+          "newCppCp": 280,
+          "oldCppCp": 280,
+          "pythonInt64Cp": 280
+        }
+      ],
+      "transformerBytesMatchOriginal": true
+    }
+  ],
+  "baseNetwork": {
+    "path": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+    "sha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+  },
+  "completedAt": "2026-10-15T11:38:52.747824+00:00",
+  "cppComparisons": 72,
+  "elapsedSeconds": 4.875083000000814,
+  "exactMatch": true,
+  "fenCaveat": "Sampled compact records reconstruct placement/turn only; castling/en-passant/clocks are unavailable and unnecessary for this HalfKP evaluation.",
+  "kind": "post-pilot-export-only-verification",
+  "newTools": {
+    "path": "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+    "sha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82"
+  },
+  "oldTools": {
+    "path": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-residual-optimisation-20261015\\baseline-tools.exe",
+    "sha256": "82815618facd333f0f411760d2d8b3eb104f4b70b98d4cc41db85f9e901c6493"
+  },
+  "originalPilotScriptSha256": "97a521644d749d00c1a84674d6f382214d7a9dfc907ad97661b6469d616335fd",
+  "positionsPerArm": 12,
+  "pythonReference": "train.quantized_predict independent int64",
+  "schemaVersion": 1,
+  "scriptSha256": "b17910157aa243b3781ecb383428c831471218e52d7fb68f01c165eccd93423e",
+  "trainingRepeated": false
+}
