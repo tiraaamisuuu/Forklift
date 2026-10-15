@@ -38,6 +38,12 @@ ROOT = Path(__file__).resolve().parents[1]
 WEB_ROOT = ROOT / "web"
 PIECE_ROOT = ROOT / "assets" / "pieces"
 PROFILE_MANIFEST = ROOT / ".tools" / "engine-match" / "profiles.json"
+# Approved shared V1 model: the preserved 800/1,200-game confirmation and
+# 61-check verification are recorded in research/experiments/
+# 2026-10-15-nnue-v2-validation.json. This pins model identity, not a new
+# development executable's playing strength or a global/release promotion.
+VERIFIED_SHARED_NNUE_SHA256 = "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+VERIFIED_SHARED_NNUE_PROFILE_ID = "verified-shared-nnue"
 USER_ENGINE_ROOT = Path(os.environ.get(
     "CHESS_USER_ENGINE_ROOT", ROOT / ".tools" / "user-engines"
 )).expanduser().resolve()
@@ -241,6 +247,26 @@ def probe_nnue_activation(command: tuple[str, ...], network: Path) -> dict[str, 
     return report
 
 
+def verified_shared_nnue_path(path: Path) -> Path:
+    """Resolve and checksum an explicitly requested approved model, fail closed."""
+    try:
+        network = path.expanduser().resolve(strict=True)
+        if not network.is_file():
+            raise ValueError(f"Verified shared NNUE is not a file: {network}")
+        digest = hashlib.sha256()
+        with network.open("rb") as source:
+            while chunk := source.read(1024 * 1024):
+                digest.update(chunk)
+    except OSError as error:
+        raise ValueError(f"Verified shared NNUE is unavailable: {path}: {error}") from error
+    if digest.hexdigest() != VERIFIED_SHARED_NNUE_SHA256:
+        raise ValueError(
+            f"Verified shared NNUE checksum mismatch: {network}; "
+            f"expected {VERIFIED_SHARED_NNUE_SHA256}, got {digest.hexdigest()}"
+        )
+    return network
+
+
 def load_user_engine_entries() -> list[dict[str, Any]]:
     if not USER_ENGINE_MANIFEST.is_file():
         return []
@@ -309,7 +335,9 @@ def revision_identity(profile_id: str) -> tuple[str, str]:
     return "revision", "BUILT REVISION"
 
 
-def discover_profiles(engine_path: Path, nnue_path: Path | None) -> list[EngineProfile]:
+def discover_profiles(engine_path: Path, nnue_path: Path | None,
+                      verified_nnue_path: Path | None = None) -> list[EngineProfile]:
+    verified_network = verified_shared_nnue_path(verified_nnue_path) if verified_nnue_path else None
     profiles = [EngineProfile(
         "current-classical",
         "Development · Classical",
@@ -320,7 +348,17 @@ def discover_profiles(engine_path: Path, nnue_path: Path | None) -> list[EngineP
         (str(engine_path), "--uci"),
     )]
     known_commands = {str(engine_path.resolve())}
-    used_ids = {profiles[0].profile_id}
+    # The reserved identity may only be assigned by the checksum-checked path,
+    # never by an arbitrary local revision/profile manifest.
+    used_ids = {profiles[0].profile_id, VERIFIED_SHARED_NNUE_PROFILE_ID}
+    if verified_network:
+        profiles.append(EngineProfile(
+            VERIFIED_SHARED_NNUE_PROFILE_ID,
+            "Verified shared NNUE",
+            "Checksummed, match-verified shared V1 model · supplied engine build",
+            "nnue", "nnue", "NNUE · VERIFIED MODEL",
+            (str(engine_path), "--uci"), verified_network,
+        ))
     manifest_profiles_loaded = False
 
     if PROFILE_MANIFEST.is_file():
@@ -397,7 +435,7 @@ def discover_profiles(engine_path: Path, nnue_path: Path | None) -> list[EngineP
     network_root = ROOT / "networks"
     if network_root.is_dir():
         networks.extend(sorted(network_root.rglob("*.nnue")))
-    seen_networks: set[str] = set()
+    seen_networks: set[str] = {str(verified_network)} if verified_network else set()
     for network in networks:
         resolved = str(network.resolve())
         if resolved in seen_networks or not network.is_file():
@@ -429,6 +467,12 @@ class EngineSession:
         self.engine_name = profile.name
         self.error: str | None = None
         try:
+            if profile.profile_id == VERIFIED_SHARED_NNUE_PROFILE_ID:
+                if profile.eval_file is None:
+                    raise RuntimeError("Verified shared NNUE profile has no evaluation file")
+                # Profiles can be selected well after startup; reject a file
+                # replaced since discovery instead of trusting its old label.
+                verified_shared_nnue_path(profile.eval_file)
             if profile.eval_file:
                 probe_nnue_activation(profile.command, profile.eval_file)
             self.engine = chess.engine.SimpleEngine.popen_uci(list(profile.command), timeout=10.0)
@@ -444,9 +488,11 @@ class EngineSession:
                 configuration["EvalFile"] = str(profile.eval_file)
                 if "Use NNUE" in self.engine.options:
                     configuration["Use NNUE"] = True
+                if "NNUE Weight" in self.engine.options:
+                    configuration["NNUE Weight"] = 100
             if configuration:
                 self.engine.configure(configuration)
-        except (OSError, chess.engine.EngineError, TimeoutError, RuntimeError) as error:
+        except (OSError, chess.engine.EngineError, TimeoutError, RuntimeError, ValueError) as error:
             self.error = str(error)
             if self.engine:
                 try:
@@ -466,11 +512,17 @@ class EngineSession:
 
 class GameService:
     def __init__(self, engine_path: Path, threads: int = 1, hash_mb: int = 256,
-                 nnue_path: Path | None = None):
+                 nnue_path: Path | None = None, default_profile_id: str | None = None,
+                 verified_nnue_path: Path | None = None):
         self.lock = threading.RLock()
-        discovered = discover_profiles(engine_path, nnue_path)
+        discovered = discover_profiles(engine_path, nnue_path, verified_nnue_path)
         self.profiles = {profile.profile_id: profile for profile in discovered}
-        self.default_profile_id = discovered[0].profile_id
+        self.default_profile_id = discovered[0].profile_id if default_profile_id is None else default_profile_id
+        if self.default_profile_id not in self.profiles:
+            raise ValueError(
+                f"Unknown default engine profile: {self.default_profile_id!r}; "
+                f"available profiles: {', '.join(self.profiles)}"
+            )
         self.threads = threads
         self.hash_mb = hash_mb
         self.sessions: dict[str, EngineSession] = {}
@@ -1292,13 +1344,21 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--threads", type=int, default=1)
     parser.add_argument("--hash", type=int, default=256, dest="hash_mb")
     parser.add_argument("--nnue", type=Path)
+    parser.add_argument("--verified-nnue", type=Path,
+                        help="Add the checksum-pinned, match-verified shared V1 model; no implicit default change")
+    parser.add_argument("--default-profile",
+                        help="Explicit startup profile ID; otherwise current-classical remains the default")
     parser.add_argument("--no-open", action="store_true")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_arguments()
-    service = GameService(args.engine.expanduser().resolve(), args.threads, args.hash_mb, args.nnue)
+    try:
+        service = GameService(args.engine.expanduser().resolve(), args.threads, args.hash_mb,
+                              args.nnue, args.default_profile, args.verified_nnue)
+    except (OSError, ValueError) as error:
+        raise SystemExit(f"Unable to start web GUI: {error}") from error
     WebHandler.service = service
     server = ThreadingHTTPServer((args.host, args.port), WebHandler)
     url = f"http://{args.host}:{server.server_address[1]}"

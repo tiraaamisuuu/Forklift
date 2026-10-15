@@ -28,6 +28,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--engine", required=True, type=Path)
+    parser.add_argument("--verified-nnue", type=Path,
+                        help="Also exercise the pinned verified model as the explicit startup profile")
     return parser.parse_args()
 
 
@@ -83,9 +85,13 @@ def main() -> int:
     environment["CHESS_STOCKFISH_ASSET_SHA256"] = stockfish_digest
     environment["CHESS_STOCKFISH_EXECUTABLE"] = stockfish_executable
     environment["CHESS_STOCKFISH_ARCHIVE_KIND"] = "zip"
+    server_command = [sys.executable, str(ROOT / "web" / "server.py"), "--engine", str(args.engine),
+                      "--port", str(port), "--no-open"]
+    if args.verified_nnue:
+        server_command.extend(["--verified-nnue", str(args.verified_nnue.resolve()),
+                               "--default-profile", "verified-shared-nnue"])
     server = subprocess.Popen(
-        [sys.executable, str(ROOT / "web" / "server.py"), "--engine", str(args.engine),
-         "--port", str(port), "--no-open"],
+        server_command,
         cwd=ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -117,11 +123,16 @@ def main() -> int:
         assert state["profiles"] and state["profiles"][0]["id"] == "current-classical"
         assert state["profiles"][0]["role"] == "development"
         assert state["profiles"][0]["badge"] == "DEV · NEWEST"
-        assert state["controllers"]["black"]["badge"] == "DEV · NEWEST"
-        assert state["engine"]["activeProfileRole"] == "development"
+        profile_id = "verified-shared-nnue" if args.verified_nnue else "current-classical"
+        expected_badge = "NNUE · VERIFIED MODEL" if args.verified_nnue else "DEV · NEWEST"
+        assert state["controllers"]["black"]["profileId"] == profile_id
+        assert state["controllers"]["black"]["badge"] == expected_badge
+        assert state["engine"]["activeProfileId"] == profile_id
+        assert state["engine"]["activeProfileRole"] == ("nnue" if args.verified_nnue else "development")
+        selected_profile = next(profile for profile in state["profiles"] if profile["id"] == profile_id)
+        assert selected_profile["usesNnue"] is bool(args.verified_nnue)
         assert state["engineLibrary"]["stockfish"]["installed"] is False
         assert state["engineLibrary"]["stockfish"]["installerAvailable"] is True
-        profile_id = state["profiles"][0]["id"]
 
         installed = request(base, "/api/engines/install-stockfish", {}, headers={
             "X-Engine-Library-Token": state["engineLibrary"]["token"],
@@ -185,6 +196,7 @@ def main() -> int:
         assert analysis["depth"] >= 1
         assert isinstance(analysis["pv"], list)
         assert analysis["profileName"]
+        assert analysis["profileId"] == profile_id
 
         exported = request(base, "/api/export", {
             "format": "pgn", "event": "Web Export Test", "white": "Alice", "black": "Engine",
@@ -260,7 +272,15 @@ def main() -> int:
             assert b"engine-library-modal" in page and b"engine-import-form" in page
             assert b"setup-engine-action" in page and b"library-install-stockfish" in page
             assert b"official-stockfish/Stockfish/releases/tag/sf_18" in page
-        print("Web GUI smoke: PASS")
+        if args.verified_nnue:
+            # Explicit opt-out stays available after playing/analyzing with NNUE.
+            state = request(base, "/api/new", {
+                "mode": "pvc", "side": "white", "engineProfile": "current-classical",
+                "engineTimeMs": 100,
+            })
+            assert state["controllers"]["black"]["profileId"] == "current-classical"
+            assert state["engine"]["activeProfileBadge"] == "DEV · NEWEST"
+        print("Web GUI smoke: PASS" + (" (verified NNUE default + classical opt-out)" if args.verified_nnue else ""))
         return 0
     finally:
         server.terminate()

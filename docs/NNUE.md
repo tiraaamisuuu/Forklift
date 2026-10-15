@@ -32,6 +32,75 @@ records the now-complete saved long-confirmation summary, without treating a
 summary read as a verified promotion. Its draft plan launches nothing; heavy
 work is explicitly deferred while the PC is used for gaming.
 
+The subsequent [matched two-seed head study](results/2026-10-15-nnue-head-study.md)
+ran after explicit machine-available permission. Its R4/R8 validation gains
+averaged under 1% and paired diagnostic-test intervals included zero. Neither
+head was promoted; the conditional strength matches were not launched.
+
+## Verified shared model in the web UI
+
+The existing shared V1 model passed its preserved 800/1,200-game strength
+confirmation and all 61 evidence checks. This is distinct from the experimental
+residual models. Ordinary UCI/web/native-desktop defaults and release packages
+remain unchanged; the desktop GUI is not newly wired for NNUE by this work.
+
+The web server now supports an **explicit** verified profile and startup choice:
+
+```powershell
+.venv-nnue/Scripts/python.exe web/server.py `
+  --engine build-nnue-native-ipo-screen/Release/chess-engine-uci.exe `
+  --verified-nnue networks/verified-shared-v1/model.nnue `
+  --default-profile verified-shared-nnue
+```
+
+The required network SHA-256 is
+`ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c`.
+It is checked on explicit registration and again before activation. Missing,
+wrong-hash or unknown-default requests fail clearly; no experimental network
+is silently substituted. The engine must also confirm loading through UCI.
+NNUE weight is explicitly 100%. Classical remains selectable and remains the
+startup default if `--default-profile` is omitted. The verified badge identifies
+the model, not a new strength confirmation of every development executable.
+
+On this workspace the approved network was copied, without changing the source,
+from `E:/Dev/Forklift-Research/models/nnue-v2-factorization-20260912/shared/model.nnue`
+to the local, Git-ignored `networks/verified-shared-v1/model.nnue`, and its hash
+was rechecked. It is **not distributed by this Git commit or a new release**.
+A different checkout needs the exact approved artifact and cannot use an
+arbitrary network with this verified profile. Existing `--nnue` remains available
+for clearly separate experimental profiles.
+
+Convenience launcher on this PC:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_verified_nnue_web.ps1 -Native
+```
+
+Without `-Native` it uses the local portable `build-singular` executable.
+`-NetworkPath` supplies the approved artifact elsewhere; `-NoOpen` leaves the
+browser closed. `-CheckOnly` validates files and prints the selected command
+without starting a server. The launcher checks the hash, never downloads weights, and
+requires the requested engine build to exist. It does not publish a release
+or apply a global promotion registry change.
+
+### Local build profile
+
+The Ryzen 9 5900X Windows screen measured approximately 7.25% less paired
+fixed-depth time for combined native+IPO versus portable, with identical trees.
+All 14 CTests pass for that configuration. It is a three-pair, best-of-three
+exploratory build screen, not an independently confirmed speed or Elo result;
+the handwritten output kernel is still SSE2. The AVX2 build is non-portable.
+
+```powershell
+cmake -S . -B build-nnue-native-ipo-screen -DCHESS_BUILD_GUI=OFF `
+  -DBUILD_TESTING=ON -DCHESS_NATIVE_ARCH=ON -DCHESS_ENABLE_IPO=ON
+cmake --build build-nnue-native-ipo-screen --config Release --parallel 6
+ctest --test-dir build-nnue-native-ipo-screen -C Release --output-on-failure
+```
+
+See [raw paired build evidence](../research/experiments/2026-10-15-nnue-native-ipo-cost.json).
+CPU-specific builds must not replace portable release binaries for other hosts.
+
 The October 13 inference optimization fuses ordinary-move accumulator copies
 and feature deltas without changing the model format or scores. Full-rebuild
 parity, cross-platform validation, and preliminary repeated timing are in

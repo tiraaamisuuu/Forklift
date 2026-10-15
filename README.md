@@ -164,6 +164,12 @@ On macOS/Linux, use `scripts/run_web_gui.sh`. The launcher creates its isolated
 Python environment, builds the headless engine when necessary, and opens the
 local interface.
 
+To explicitly start with the checksum-pinned, strength-tested shared NNUE
+(model installation required), use `scripts/run_verified_nnue_web.ps1` on
+Windows. Add `-Native` for the tested AVX2+IPO build on a compatible PC.
+Classical remains selectable; ordinary launchers and release defaults are
+unchanged. See [verified model setup and local performance](docs/NNUE.md#verified-shared-model-in-the-web-ui).
+
 Build the Forklift desktop app with SFML 2.6 available:
 
 ```powershell
