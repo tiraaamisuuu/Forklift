@@ -1,8 +1,8 @@
 # NNUE Training and Promotion
 
 The engine supports a versioned `HalfKP-v1` network as an optional evaluation
-backend. Classical evaluation remains the default until a trained network wins
-controlled matches. The intended loop is:
+backend. Classical evaluation remains the default until a trained network passes
+the strength, provenance and integration gates. The intended loop is:
 
 ```text
 licensed games -> sampled positions -> Stockfish labels -> CUDA training
@@ -10,6 +10,12 @@ licensed games -> sampled positions -> Stockfish labels -> CUDA training
 ```
 
 No source change is required to train or test another 256-wide network.
+
+The [NNUE v3 design](../research/designs/2026-10-15-nnue-v3.md) sets the next
+goal: stronger equal-time decisions at bounded inference/training cost. It
+records the now-complete saved long-confirmation summary, without treating a
+summary read as a verified promotion. Its draft plan launches nothing; heavy
+work is explicitly deferred while the PC is used for gaming.
 
 The October 13 inference optimization fuses ordinary-move accumulator copies
 and feature deltas without changing the model format or scores. Full-rebuild
@@ -48,7 +54,24 @@ The compact format stores a packed board, Stockfish centipawn label from the
 side-to-move viewpoint, game result from the same viewpoint, side to move,
 source-game id, and ply. The test suites protect the feature encoding, score and
 result perspective, deterministic whole-game split, compact binary format,
-quantization, and Python/C++ prediction agreement:
+quantization, and Python/C++ prediction agreement.
+
+The trainer rejects repeated resolved input paths within a split and any path
+shared by training and validation before creating outputs or setting up training.
+This is a cheap guard, **not** proof of game/content independence: copied files,
+hard links, duplicate games and equivalent feature inputs still require an
+audit. Supplied validation files are now labelled `provided-validation-shards`
+with explicit unverified game/effective-input status in new training manifests;
+old artifacts are not rewritten. The existing generator/merger's whole-game
+assignment and cross-split deduplication remain separate protections.
+
+When the machine is free, the path-only checks can run without Torch:
+
+```powershell
+python tests/nnue_dataset_paths_tests.py
+```
+
+The full preflight checks remain:
 
 ```powershell
 .\.venv-nnue\Scripts\python.exe tests\nnue_dataset_tests.py

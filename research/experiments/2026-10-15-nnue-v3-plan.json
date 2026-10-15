@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "studyId": "nnue-v3-stronger-decisions-per-compute-20261015",
+  "status": "draft-no-execution",
+  "design": "research/designs/2026-10-15-nnue-v3.md",
+  "resourcePolicy": {
+    "executionAuthorized": false,
+    "reason": "Dorm PC is being used for Civilization VI",
+    "allowedNow": ["small-source-and-metadata-reads", "source-and-document-edits", "git-bookkeeping"],
+    "deferred": ["tests", "builds", "torch-imports", "cuda-initialization", "dataset-scans", "bulk-hashing", "teacher-search", "training", "benchmarks", "matches", "promotion-runtime-probe"],
+    "automaticLaunchScheduled": false,
+    "requiresNewMachineAvailableApproval": true
+  },
+  "objective": "Stronger equal-wall-time Forklift play at controlled CPU inference and training cost",
+  "baselineSummary": {
+    "evidenceStatus": "read-saved-series-summary-only-not-reverified",
+    "series": "E:/Dev/Forklift-Research/matches/nnue-long-resume-20261012/series.json",
+    "stateRecorded": "complete",
+    "shortStage": {"games": 800, "reused": true, "wins": 415, "losses": 204, "draws": 181, "timeControl": "30+0.3", "reportedRelativeElo": 93.9, "reportedUncertainty": 21.7},
+    "longStage": {"games": 1200, "reused": false, "wins": 589, "losses": 270, "draws": 341, "timeControl": "90+0.9", "reportedRelativeElo": 94.6, "reportedUncertainty": 17.0},
+    "technicalFailuresRecorded": 0,
+    "promotedByThisPlan": false
+  },
+  "orderedStages": [
+    {"id": "baseline", "work": "Verify completed gate and current-build integration later; do not recollect completed games unnecessarily"},
+    {"id": "input-safety", "work": "Reject duplicate/cross-split resolved paths; do not certify game/input disjointness from filenames"},
+    {"id": "selection", "work": "Compare random, rarity-only and RIFT at unchanged H256/shared inference architecture", "collectorImplemented": false, "concreteBudgetsFrozen": false},
+    {"id": "head", "work": "Matched direct-head versus tiny nonlinear residual-head study", "residualWidthsProposed": [4, 8], "implemented": false, "concreteBudgetsFrozen": false},
+    {"id": "representation", "work": "Separate king-inclusive/bucketed and threat-feature ablations after cost/correctness evidence", "implemented": false}
+  ],
+  "unresolvedBeforeExecution": [
+    "machine-available approval",
+    "baseline provenance and promotion verification",
+    "candidate pool and train/validation/test identities",
+    "content-level game and effective-input overlap audit",
+    "actual teacher and GPU compute accounting and caps",
+    "training seeds, initialization, update budget and checkpoint policy",
+    "inference-cost screen and match sample/decision rule"
+  ],
+  "claimsNotEstablished": ["new-model improvement", "novel algorithm", "Stockfish parity", "future Elo gain", "complete holdout verification"]
+}

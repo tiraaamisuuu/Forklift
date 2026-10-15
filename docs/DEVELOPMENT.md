@@ -6,6 +6,18 @@ after the v1 release.
 
 ## Repository state
 
+NNUE preparation (2026-10-15, no compute workloads): the saved fresh long
+confirmation summary is complete: 589 wins / 270 losses / 341 draws in 1,200
+`90+0.9` games, reported +94.6 +/- 17.0 relative Elo versus classical, with zero
+recorded technical failures. This session only read the small summary; raw
+evidence, hashes and runtime loading were not re-verified and no default was
+changed. The [v3 design](../research/designs/2026-10-15-nnue-v3.md) records next
+steps and the explicit gaming-time resource boundary. A cheap trainer guard
+rejects duplicate/cross-split resolved dataset paths, and new manifest metadata
+no longer assumes supplied shards prove game disjointness. New tests are
+written but deferred; no builds, tests, Torch/CUDA, dataset scans, teacher
+searches, training or matches were started.
+
 Inference/research milestone (2026-10-13): load-time-certified narrow output
 arithmetic and exact baseline SSE2 reduction deliver +23.25% median paired
 NNUE search throughput against the current int64 reference, with identical
