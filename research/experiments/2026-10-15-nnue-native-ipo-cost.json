@@ -1,0 +1,1889 @@
+{
+  "schemaVersion": 1,
+  "state": "complete",
+  "startedAt": "2026-10-15T18:39:54.518041+00:00",
+  "binarySourceCommitDeclared": "f632217",
+  "host": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD Ryzen 9 5900X (12 cores, 24 logical)"
+  },
+  "protocol": {
+    "depth": 12,
+    "timeCeilingPerPositionMs": 30000,
+    "trialsPerCandidate": 3,
+    "threads": 1,
+    "hashMiB": 128,
+    "nnueWeight": 100,
+    "incremental": true,
+    "probCut": false,
+    "singular": false,
+    "warmupsPerBinary": 1,
+    "maximumWallSeconds": 600.0,
+    "ordering": "reverse candidate order on odd trials; alternate within-pair order",
+    "hostCondition": "root reports no concurrent project workloads; otherwise idle host",
+    "interpretation": "exploratory fixed-depth elapsed cost, not Elo or portable-release validation"
+  },
+  "network": {
+    "path": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+    "sha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+  },
+  "binaries": {
+    "portable": {
+      "path": "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+      "sha256": "e93bc537b898997e03f03a10a0e212dfe8efbe5de03129531a084a20c86721c8",
+      "cmakeSettings": {
+        "BUILD_TESTING": "ON",
+        "CHESS_BUILD_GUI": "OFF",
+        "CHESS_ENABLE_IPO": "OFF",
+        "CHESS_NATIVE_ARCH": "OFF",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+        "CMAKE_GENERATOR": "Visual Studio 18 2026",
+        "CMAKE_HOME_DIRECTORY": "E:/Dev/Chess-Engine"
+      },
+      "uci": {
+        "path": "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-uci.exe",
+        "sha256": "ab0131adbe342e4ed81ef3e4e70ff07e396cfb55e3d9654c1f20c3d1dc9b845b"
+      }
+    },
+    "native": {
+      "path": "E:\\Dev\\Chess-Engine\\build-nnue-native-screen\\Release\\chess-engine-tools.exe",
+      "sha256": "59a1baf74893391f986042fe5b48456e800c8f4e0e272668d118e0f84a941a8a",
+      "cmakeSettings": {
+        "BUILD_TESTING": "OFF",
+        "CHESS_BUILD_GUI": "OFF",
+        "CHESS_ENABLE_IPO": "OFF",
+        "CHESS_NATIVE_ARCH": "ON",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+        "CMAKE_GENERATOR": "Visual Studio 18 2026",
+        "CMAKE_HOME_DIRECTORY": "E:/Dev/Chess-Engine"
+      },
+      "uci": {
+        "path": "E:\\Dev\\Chess-Engine\\build-nnue-native-screen\\Release\\chess-engine-uci.exe",
+        "sha256": "40e4f2e3bef980f3e916433ea55e23fd7ae044d32caceaa369b5153bd9ce1b5e"
+      }
+    },
+    "ipo": {
+      "path": "E:\\Dev\\Chess-Engine\\build-nnue-ipo-screen\\Release\\chess-engine-tools.exe",
+      "sha256": "0aee86640d22cbcb8475e42cbe1f77bc398545616ddda33c072c2be4abab96d2",
+      "cmakeSettings": {
+        "BUILD_TESTING": "OFF",
+        "CHESS_BUILD_GUI": "OFF",
+        "CHESS_ENABLE_IPO": "ON",
+        "CHESS_NATIVE_ARCH": "OFF",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+        "CMAKE_GENERATOR": "Visual Studio 18 2026",
+        "CMAKE_HOME_DIRECTORY": "E:/Dev/Chess-Engine"
+      },
+      "uci": {
+        "path": "E:\\Dev\\Chess-Engine\\build-nnue-ipo-screen\\Release\\chess-engine-uci.exe",
+        "sha256": "efcd7e0319271e13d549313c2baea6063ce382e0e13b29b9c9b87736b67d61e8"
+      }
+    },
+    "native-ipo": {
+      "path": "E:\\Dev\\Chess-Engine\\build-nnue-native-ipo-screen\\Release\\chess-engine-tools.exe",
+      "sha256": "72304a0b26daf5574834f6d96db44b5ca3f8b2d1685b604551566a51508b5404",
+      "cmakeSettings": {
+        "BUILD_TESTING": "OFF",
+        "CHESS_BUILD_GUI": "OFF",
+        "CHESS_ENABLE_IPO": "ON",
+        "CHESS_NATIVE_ARCH": "ON",
+        "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+        "CMAKE_GENERATOR": "Visual Studio 18 2026",
+        "CMAKE_HOME_DIRECTORY": "E:/Dev/Chess-Engine"
+      },
+      "uci": {
+        "path": "E:\\Dev\\Chess-Engine\\build-nnue-native-ipo-screen\\Release\\chess-engine-uci.exe",
+        "sha256": "edea07b4698c1800a469fc47b131c50f077e35fe8823a226bb181025a38d6a5a"
+      }
+    }
+  },
+  "warmups": [
+    {
+      "binary": "portable",
+      "trial": -1,
+      "comparison": null,
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.937728099997912,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 601
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 629
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 315
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 106
+        }
+      ],
+      "totalMilliseconds": 1651,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=601ms nps=581856\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=629ms nps=546386\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=315ms nps=642307\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=106ms nps=692726\nBenchmark summary: nodes=969129 time=1651ms nps=586995\n"
+    },
+    {
+      "binary": "native",
+      "trial": -1,
+      "comparison": null,
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.923791599998367,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 591
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 634
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 316
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 112
+        }
+      ],
+      "totalMilliseconds": 1653,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=591ms nps=591702\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=634ms nps=542077\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=316ms nps=640275\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=112ms nps=655616\nBenchmark summary: nodes=969129 time=1653ms nps=586284\n"
+    },
+    {
+      "binary": "ipo",
+      "trial": -1,
+      "comparison": null,
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.872027800003707,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 566
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 622
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 324
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 107
+        }
+      ],
+      "totalMilliseconds": 1619,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=566ms nps=617837\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=622ms nps=552535\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=324ms nps=624466\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=107ms nps=686252\nBenchmark summary: nodes=969129 time=1619ms nps=598597\n"
+    },
+    {
+      "binary": "native-ipo",
+      "trial": -1,
+      "comparison": null,
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.9041699999943376,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 577
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 631
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 317
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 108
+        }
+      ],
+      "totalMilliseconds": 1633,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=577ms nps=606058\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=631ms nps=544654\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=317ms nps=638255\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=108ms nps=679898\nBenchmark summary: nodes=969129 time=1633ms nps=593465\n"
+    }
+  ],
+  "trials": [
+    {
+      "binary": "portable",
+      "trial": 0,
+      "comparison": "native",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.827135500003351,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 564
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 619
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 305
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 109
+        }
+      ],
+      "totalMilliseconds": 1597,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=564ms nps=620028\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=619ms nps=555213\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=305ms nps=663367\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=109ms nps=673660\nBenchmark summary: nodes=969129 time=1597ms nps=606843\n"
+    },
+    {
+      "binary": "native",
+      "trial": 0,
+      "comparison": "native",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8602558000056888,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 572
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 631
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 308
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 109
+        }
+      ],
+      "totalMilliseconds": 1620,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=572ms nps=611356\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=631ms nps=544654\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=308ms nps=656905\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=109ms nps=673660\nBenchmark summary: nodes=969129 time=1620ms nps=598227\n"
+    },
+    {
+      "binary": "ipo",
+      "trial": 0,
+      "comparison": "ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.9328332000004593,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 573
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 647
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 340
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 115
+        }
+      ],
+      "totalMilliseconds": 1675,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=573ms nps=610289\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=647ms nps=531185\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=340ms nps=595079\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=115ms nps=638513\nBenchmark summary: nodes=969129 time=1675ms nps=578584\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 0,
+      "comparison": "ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8229623999941396,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 574
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 614
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 306
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 106
+        }
+      ],
+      "totalMilliseconds": 1600,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=574ms nps=609226\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=614ms nps=559734\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=306ms nps=661199\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=106ms nps=692726\nBenchmark summary: nodes=969129 time=1600ms nps=605705\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 0,
+      "comparison": "native-ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.864745099999709,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 576
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 643
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 312
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 109
+        }
+      ],
+      "totalMilliseconds": 1640,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=576ms nps=607111\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=643ms nps=534489\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=312ms nps=648483\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=109ms nps=673660\nBenchmark summary: nodes=969129 time=1640ms nps=590932\n"
+    },
+    {
+      "binary": "native-ipo",
+      "trial": 0,
+      "comparison": "native-ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.7929612000007182,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 563
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 609
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 297
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 106
+        }
+      ],
+      "totalMilliseconds": 1575,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=563ms nps=621129\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=609ms nps=564330\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=297ms nps=681235\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=106ms nps=692726\nBenchmark summary: nodes=969129 time=1575ms nps=615320\n"
+    },
+    {
+      "binary": "native-ipo",
+      "trial": 1,
+      "comparison": "native-ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8323518999968655,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 559
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 604
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 323
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 116
+        }
+      ],
+      "totalMilliseconds": 1602,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=559ms nps=625574\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=604ms nps=569001\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=323ms nps=626399\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=116ms nps=633008\nBenchmark summary: nodes=969129 time=1602ms nps=604949\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 1,
+      "comparison": "native-ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 2.0297352999987197,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 620
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 682
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 342
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 125
+        }
+      ],
+      "totalMilliseconds": 1769,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=620ms nps=564025\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=682ms nps=503925\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=342ms nps=591599\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=125ms nps=587432\nBenchmark summary: nodes=969129 time=1769ms nps=547840\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 1,
+      "comparison": "ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8844769000061206,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 613
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 631
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 307
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 112
+        }
+      ],
+      "totalMilliseconds": 1663,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=613ms nps=570466\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=631ms nps=544654\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=307ms nps=659045\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=112ms nps=655616\nBenchmark summary: nodes=969129 time=1663ms nps=582759\n"
+    },
+    {
+      "binary": "ipo",
+      "trial": 1,
+      "comparison": "ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8364727000007406,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 573
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 629
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 305
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 109
+        }
+      ],
+      "totalMilliseconds": 1616,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=573ms nps=610289\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=629ms nps=546386\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=305ms nps=663367\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=109ms nps=673660\nBenchmark summary: nodes=969129 time=1616ms nps=599708\n"
+    },
+    {
+      "binary": "native",
+      "trial": 1,
+      "comparison": "native",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8226609999983339,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 570
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 621
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 311
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 107
+        }
+      ],
+      "totalMilliseconds": 1609,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=570ms nps=613501\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=621ms nps=553425\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=311ms nps=650569\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=107ms nps=686252\nBenchmark summary: nodes=969129 time=1609ms nps=602317\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 1,
+      "comparison": "native",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.836146000001463,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 569
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 617
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 309
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 119
+        }
+      ],
+      "totalMilliseconds": 1614,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=569ms nps=614579\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=617ms nps=557012\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=309ms nps=654779\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=119ms nps=617050\nBenchmark summary: nodes=969129 time=1614ms nps=600451\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 2,
+      "comparison": "native",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.9012316000007559,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 607
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 647
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 311
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 115
+        }
+      ],
+      "totalMilliseconds": 1680,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=607ms nps=576105\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=647ms nps=531185\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=311ms nps=650569\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=115ms nps=638513\nBenchmark summary: nodes=969129 time=1680ms nps=576862\n"
+    },
+    {
+      "binary": "native",
+      "trial": 2,
+      "comparison": "native",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8229307000001427,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 577
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 618
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 306
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 115
+        }
+      ],
+      "totalMilliseconds": 1616,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=577ms nps=606058\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=618ms nps=556111\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=306ms nps=661199\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=115ms nps=638513\nBenchmark summary: nodes=969129 time=1616ms nps=599708\n"
+    },
+    {
+      "binary": "ipo",
+      "trial": 2,
+      "comparison": "ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.8911387999978615,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 581
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 642
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 329
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 123
+        }
+      ],
+      "totalMilliseconds": 1675,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=581ms nps=601886\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=642ms nps=535322\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=329ms nps=614975\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=123ms nps=596983\nBenchmark summary: nodes=969129 time=1675ms nps=578584\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 2,
+      "comparison": "ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.928842799999984,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 598
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 671
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 318
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 118
+        }
+      ],
+      "totalMilliseconds": 1705,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=598ms nps=584775\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=671ms nps=512186\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=318ms nps=636248\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=118ms nps=622279\nBenchmark summary: nodes=969129 time=1705ms nps=568404\n"
+    },
+    {
+      "binary": "portable",
+      "trial": 2,
+      "comparison": "native-ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-singular\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 2.0224057000014,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 644
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 696
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 330
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 124
+        }
+      ],
+      "totalMilliseconds": 1794,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=644ms nps=543006\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=696ms nps=493788\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=330ms nps=613112\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=124ms nps=592169\nBenchmark summary: nodes=969129 time=1794ms nps=540205\n"
+    },
+    {
+      "binary": "native-ipo",
+      "trial": 2,
+      "comparison": "native-ipo",
+      "command": [
+        "E:\\Dev\\Chess-Engine\\build-nnue-native-ipo-screen\\Release\\chess-engine-tools.exe",
+        "--bench",
+        "--bench-depth",
+        "12",
+        "--bench-time",
+        "30000",
+        "--bench-tt",
+        "128",
+        "--threads",
+        "1",
+        "--nnue",
+        "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.nnue",
+        "--nnue-weight",
+        "100",
+        "--no-probcut",
+        "--no-singular"
+      ],
+      "processExitCode": 0,
+      "stderr": "",
+      "processWallSeconds": 1.884317199997895,
+      "header": {
+        "depth": "12",
+        "timeLimit": "30000ms",
+        "threads": "1",
+        "evaluator": "nnue",
+        "nnueWeight": "100",
+        "nnueMode": "incremental",
+        "nnueOutput": "sse2",
+        "probCut": "off",
+        "singular": "off",
+        "singularBudget": "0",
+        "positions": "4"
+      },
+      "positions": [
+        {
+          "name": "Start",
+          "best": "d2d4",
+          "depth": 12,
+          "score": 34,
+          "nodes": 349696,
+          "qnodes": 68209,
+          "milliseconds": 597
+        },
+        {
+          "name": "Middlegame 1",
+          "best": "f1b1",
+          "depth": 12,
+          "score": 46,
+          "nodes": 343677,
+          "qnodes": 87263,
+          "milliseconds": 637
+        },
+        {
+          "name": "Middlegame 2",
+          "best": "c4d5",
+          "depth": 12,
+          "score": -16,
+          "nodes": 202327,
+          "qnodes": 47128,
+          "milliseconds": 320
+        },
+        {
+          "name": "Endgame",
+          "best": "b4f4",
+          "depth": 12,
+          "score": 26,
+          "nodes": 73429,
+          "qnodes": 15808,
+          "milliseconds": 110
+        }
+      ],
+      "totalMilliseconds": 1664,
+      "rawOutput": "Benchmark: depth=12 timeLimit=30000ms threads=1 evaluator=nnue nnueWeight=100 nnueMode=incremental nnueOutput=sse2 probCut=off singular=off singularBudget=0 positions=4\nStart        best=d2d4 depth=12 score=34 nodes=349696 qnodes=68209 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=597ms nps=585755\nMiddlegame 1 best=f1b1 depth=12 score=46 nodes=343677 qnodes=87263 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=637ms nps=539524\nMiddlegame 2 best=c4d5 depth=12 score=-16 nodes=202327 qnodes=47128 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=320ms nps=632271\nEndgame      best=b4f4 depth=12 score=26 nodes=73429 qnodes=15808 probcut=0/0 singular=0/0 singularPathMax=0 singularProofNodes=0 singularSkipped=0 time=110ms nps=667536\nBenchmark summary: nodes=969129 time=1664ms nps=582409\n"
+    }
+  ],
+  "allTreesIdentical": true,
+  "treeSignature": [
+    {
+      "name": "Start",
+      "best": "d2d4",
+      "depth": 12,
+      "score": 34,
+      "nodes": 349696,
+      "qnodes": 68209
+    },
+    {
+      "name": "Middlegame 1",
+      "best": "f1b1",
+      "depth": 12,
+      "score": 46,
+      "nodes": 343677,
+      "qnodes": 87263
+    },
+    {
+      "name": "Middlegame 2",
+      "best": "c4d5",
+      "depth": 12,
+      "score": -16,
+      "nodes": 202327,
+      "qnodes": 47128
+    },
+    {
+      "name": "Endgame",
+      "best": "b4f4",
+      "depth": 12,
+      "score": 26,
+      "nodes": 73429,
+      "qnodes": 15808
+    }
+  ],
+  "medianMilliseconds": {
+    "portable": 1663,
+    "native": 1616,
+    "ipo": 1675,
+    "native-ipo": 1602
+  },
+  "medianPairedCandidateOverPortable": {
+    "native": 0.9969021065675341,
+    "ipo": 0.9824046920821115,
+    "native-ipo": 0.927536231884058
+  },
+  "wallSeconds": 41.51565120000305
+}
