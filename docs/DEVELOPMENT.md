@@ -6,6 +6,16 @@ after the v1 release.
 
 ## Repository state
 
+Matched head study (2026-10-15, machine available): an audited GPU cache and
+two-seed direct/R4/R8 study completed with 250k training, 32k validation and
+32k diagnostic-test positions. Every arm received 20 epochs / 2,460 updates.
+Residual validation gains averaged only 0.69%/0.70%, below the frozen 1% screen;
+paired game-cluster test intervals include zero, including integer exports.
+No residual promotion or conditional matches. Cache creation took 29 seconds;
+the complete six-arm study 60 seconds. A separate compact stack experiment
+failed its speed screen and was reverted, preserving expanded tests and raw
+negative evidence. See [protocol and full outcome](results/2026-10-15-nnue-head-study.md).
+
 Residual inference optimisation (2026-10-15): clip-once reuse and per-row
 overflow-certified SSE2 reduce R4/R8 fixed-depth elapsed time by 49.56%/64.35%
 against the old residual implementation in a three-pair shared-host pilot.

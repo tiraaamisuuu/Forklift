@@ -1,0 +1,120 @@
+{
+  "cacheManifestSha256": "2148024ce07da3116f72b922a808eab9d77b0bac24227b384cf778e5db0c6af4",
+  "cpuThreads": 4,
+  "elapsedSeconds": 3.3039850999994087,
+  "fullSourceGameIdsDisjoint": true,
+  "identityRecomputationScope": "16 deterministic evenly spaced rows per split; all 314000 stored hashes checked for uniqueness and disjointness",
+  "preregisteredPlanSha256": "44cac5728061e43e9892938040a2b8f83111086a436af289cbdf41ca08a00468",
+  "schemaVersion": 1,
+  "scope": "Cache integrity and CPU/GPU frozen-transformer numeric agreement only; no training, quantization, or held-out loss computation",
+  "selectedGameIdsDisjoint": true,
+  "selectedStoredEffectiveInputIdentitiesDisjoint": true,
+  "sourceWeightSha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+  "sources": {
+    "train": {
+      "rows": 5000000,
+      "sha256": "560a7dbc0b3e4a75ea3dbc1fa707a70485f3691fbbae3acbf224e4581d16c208"
+    },
+    "validation": {
+      "rows": 616632,
+      "sha256": "6ff96ade7525f345fbea59255edd301d01a348495603e9ff8e001c2acb294db7"
+    }
+  },
+  "splits": {
+    "test": {
+      "activationTolerance": 1e-06,
+      "allActivationsFiniteAndClipped": true,
+      "allFileHashesValid": true,
+      "allSelectedStoredIdentitiesUnique": true,
+      "allSourceRowBoardTurnGameIdsMatch": true,
+      "directCpTolerance": 0.01,
+      "games": 27804,
+      "maximumAbsoluteActivationDifferenceCpuVsGpuCache": 0.0,
+      "maximumAbsoluteDirectCpDifferenceCpuVsGpuCache": 0.0,
+      "rows": 32000,
+      "spotCheckedEffectiveInputHashesMatch": true,
+      "spotCheckedRowIndices": [
+        0,
+        2133,
+        4266,
+        6399,
+        8533,
+        10666,
+        12799,
+        14932,
+        17066,
+        19199,
+        21332,
+        23465,
+        25599,
+        27732,
+        29865,
+        31999
+      ]
+    },
+    "train": {
+      "activationTolerance": 1e-06,
+      "allActivationsFiniteAndClipped": true,
+      "allFileHashesValid": true,
+      "allSelectedStoredIdentitiesUnique": true,
+      "allSourceRowBoardTurnGameIdsMatch": true,
+      "directCpTolerance": 0.01,
+      "games": 233138,
+      "maximumAbsoluteActivationDifferenceCpuVsGpuCache": 0.0,
+      "maximumAbsoluteDirectCpDifferenceCpuVsGpuCache": 0.0,
+      "rows": 250000,
+      "spotCheckedEffectiveInputHashesMatch": true,
+      "spotCheckedRowIndices": [
+        0,
+        16666,
+        33333,
+        49999,
+        66666,
+        83333,
+        99999,
+        116666,
+        133332,
+        149999,
+        166666,
+        183332,
+        199999,
+        216665,
+        233332,
+        249999
+      ]
+    },
+    "validation": {
+      "activationTolerance": 1e-06,
+      "allActivationsFiniteAndClipped": true,
+      "allFileHashesValid": true,
+      "allSelectedStoredIdentitiesUnique": true,
+      "allSourceRowBoardTurnGameIdsMatch": true,
+      "directCpTolerance": 0.01,
+      "games": 27806,
+      "maximumAbsoluteActivationDifferenceCpuVsGpuCache": 0.0,
+      "maximumAbsoluteDirectCpDifferenceCpuVsGpuCache": 0.0,
+      "rows": 32000,
+      "spotCheckedEffectiveInputHashesMatch": true,
+      "spotCheckedRowIndices": [
+        0,
+        2133,
+        4266,
+        6399,
+        8533,
+        10666,
+        12799,
+        14932,
+        17066,
+        19199,
+        21332,
+        23465,
+        25599,
+        27732,
+        29865,
+        31999
+      ]
+    }
+  },
+  "spotCheckRowsPerSplit": 16,
+  "status": "complete"
+}

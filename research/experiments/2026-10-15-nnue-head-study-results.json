@@ -1,0 +1,1660 @@
+{
+  "arms": [
+    {
+      "cppVerification": {
+        "exactMatch": true,
+        "executable": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+        "executableSha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82",
+        "positions": [
+          {
+            "cppCp": 43,
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "pythonCp": 43
+          },
+          {
+            "cppCp": 38,
+            "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+            "pythonCp": 38
+          },
+          {
+            "cppCp": -5,
+            "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+            "pythonCp": -5
+          },
+          {
+            "cppCp": -67,
+            "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "pythonCp": -67
+          }
+        ]
+      },
+      "elapsedSeconds": 6.043368400001782,
+      "gpuMetrics": {
+        "elapsedCudaStreamSpanMs": 5992.69384765625,
+        "memoryNote": "peaks include resident shared training/validation tensors",
+        "peakAllocatedBytes": 652046848,
+        "peakReservedBytes": 671088640,
+        "timingNote": "event span includes CPU dispatch gaps; not active GPU compute time"
+      },
+      "history": [
+        {
+          "epoch": 0,
+          "updates": 0,
+          "validationBrier": 0.009763881197396008
+        },
+        {
+          "elapsedSeconds": 0.492911199995433,
+          "epoch": 1,
+          "trainBrier": 0.006399169921875,
+          "updates": 123,
+          "validationBrier": 0.009807337016796591
+        },
+        {
+          "elapsedSeconds": 0.2263373000023421,
+          "epoch": 2,
+          "trainBrier": 0.00636330517578125,
+          "updates": 246,
+          "validationBrier": 0.009829574647263506
+        },
+        {
+          "elapsedSeconds": 0.23699170000327285,
+          "epoch": 3,
+          "trainBrier": 0.00634807373046875,
+          "updates": 369,
+          "validationBrier": 0.009849431035473272
+        },
+        {
+          "elapsedSeconds": 0.2298363000008976,
+          "epoch": 4,
+          "trainBrier": 0.00634668212890625,
+          "updates": 492,
+          "validationBrier": 0.009853578871448573
+        },
+        {
+          "elapsedSeconds": 0.22838619999674847,
+          "epoch": 5,
+          "trainBrier": 0.006345673828125,
+          "updates": 615,
+          "validationBrier": 0.009874580632002571
+        },
+        {
+          "elapsedSeconds": 0.2531103000001167,
+          "epoch": 6,
+          "trainBrier": 0.00634236474609375,
+          "updates": 738,
+          "validationBrier": 0.009873873157108193
+        },
+        {
+          "elapsedSeconds": 0.22760620000190102,
+          "epoch": 7,
+          "trainBrier": 0.006344921875,
+          "updates": 861,
+          "validationBrier": 0.00986928625818915
+        },
+        {
+          "elapsedSeconds": 0.23130330000276444,
+          "epoch": 8,
+          "trainBrier": 0.0063436982421875,
+          "updates": 984,
+          "validationBrier": 0.009867632699676769
+        },
+        {
+          "elapsedSeconds": 0.27048590000049444,
+          "epoch": 9,
+          "trainBrier": 0.006343990234375,
+          "updates": 1107,
+          "validationBrier": 0.009897177497443755
+        },
+        {
+          "elapsedSeconds": 0.28086269999766955,
+          "epoch": 10,
+          "trainBrier": 0.0063433330078125,
+          "updates": 1230,
+          "validationBrier": 0.009872754597211339
+        },
+        {
+          "elapsedSeconds": 0.21147190000192495,
+          "epoch": 11,
+          "trainBrier": 0.0063435029296875,
+          "updates": 1353,
+          "validationBrier": 0.009873910577089407
+        },
+        {
+          "elapsedSeconds": 0.21437129999685567,
+          "epoch": 12,
+          "trainBrier": 0.0063419677734375,
+          "updates": 1476,
+          "validationBrier": 0.00986989207989315
+        },
+        {
+          "elapsedSeconds": 0.25508970000373665,
+          "epoch": 13,
+          "trainBrier": 0.00634125830078125,
+          "updates": 1599,
+          "validationBrier": 0.009888439056136887
+        },
+        {
+          "elapsedSeconds": 0.19455069999821717,
+          "epoch": 14,
+          "trainBrier": 0.0063424931640625,
+          "updates": 1722,
+          "validationBrier": 0.009893900723103973
+        },
+        {
+          "elapsedSeconds": 0.21114010000019334,
+          "epoch": 15,
+          "trainBrier": 0.00634192041015625,
+          "updates": 1845,
+          "validationBrier": 0.009877345575846588
+        },
+        {
+          "elapsedSeconds": 0.23537880000367295,
+          "epoch": 16,
+          "trainBrier": 0.006341345703125,
+          "updates": 1968,
+          "validationBrier": 0.00988427949729034
+        },
+        {
+          "elapsedSeconds": 0.2212777999957325,
+          "epoch": 17,
+          "trainBrier": 0.00634280224609375,
+          "updates": 2091,
+          "validationBrier": 0.009875692923379305
+        },
+        {
+          "elapsedSeconds": 0.20793950000370387,
+          "epoch": 18,
+          "trainBrier": 0.00634323388671875,
+          "updates": 2214,
+          "validationBrier": 0.009885171623578545
+        },
+        {
+          "elapsedSeconds": 0.2408865999968839,
+          "epoch": 19,
+          "trainBrier": 0.0063443876953125,
+          "updates": 2337,
+          "validationBrier": 0.009873083251608834
+        },
+        {
+          "elapsedSeconds": 0.23804729999392293,
+          "epoch": 20,
+          "trainBrier": 0.00634060400390625,
+          "updates": 2460,
+          "validationBrier": 0.009883108831196663
+        }
+      ],
+      "initialPredictionsExact": true,
+      "initialValidationBrier": 0.009763881197396008,
+      "initialization": {
+        "loadedTensors": 5,
+        "mode": "weights-only-new-optimizer",
+        "newZeroOutputResidualHead": false,
+        "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+        "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+      },
+      "network": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\direct\\model.nnue",
+        "sha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+      },
+      "rawWeights": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\direct\\model.pt",
+        "sha256": "93e9530d01b57700dba107e27b6e2927629434563618a48ab012c226fcf6e687"
+      },
+      "residualHidden": 0,
+      "seed": 20261015,
+      "selectedEpoch": 0,
+      "test": {
+        "floatBrier": 0.009686330080125514,
+        "floatTeacherRmseCp": 420.2501525878906,
+        "perSample": {
+          "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\direct\\test-samples.npz",
+          "sha256": "2c83c83f9a390585c84059311ab39394e544b82483de9502203d2a5f723fe67a"
+        },
+        "quantization": {
+          "brierScore": 0.009687165234600925,
+          "maxAbsErrorCpVsFloat": 4.001068115234375,
+          "note": "full test set, exact quantized transformer/head Python integer reference",
+          "rmseCpVsFloat": 0.7969982077949682,
+          "samples": 32000,
+          "teacherRmseCp": 420.2975052715636
+        },
+        "samples": 32000
+      },
+      "transformerBitIdentical": true,
+      "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+      "updates": 2460,
+      "validationBrier": 0.009763881197396008
+    },
+    {
+      "cppVerification": {
+        "exactMatch": true,
+        "executable": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+        "executableSha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82",
+        "positions": [
+          {
+            "cppCp": 55,
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "pythonCp": 55
+          },
+          {
+            "cppCp": 57,
+            "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+            "pythonCp": 57
+          },
+          {
+            "cppCp": 0,
+            "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+            "pythonCp": 0
+          },
+          {
+            "cppCp": -56,
+            "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "pythonCp": -56
+          }
+        ]
+      },
+      "elapsedSeconds": 7.742724300005648,
+      "gpuMetrics": {
+        "elapsedCudaStreamSpanMs": 7687.7958984375,
+        "memoryNote": "peaks include resident shared training/validation tensors",
+        "peakAllocatedBytes": 652149760,
+        "peakReservedBytes": 671088640,
+        "timingNote": "event span includes CPU dispatch gaps; not active GPU compute time"
+      },
+      "history": [
+        {
+          "epoch": 0,
+          "updates": 0,
+          "validationBrier": 0.009763881197396008
+        },
+        {
+          "elapsedSeconds": 0.4192810000022291,
+          "epoch": 1,
+          "trainBrier": 0.0063981572265625,
+          "updates": 123,
+          "validationBrier": 0.00980714595125723
+        },
+        {
+          "elapsedSeconds": 0.3324120000033872,
+          "epoch": 2,
+          "trainBrier": 0.0063506357421875,
+          "updates": 246,
+          "validationBrier": 0.009819584244784003
+        },
+        {
+          "elapsedSeconds": 0.3173876000000746,
+          "epoch": 3,
+          "trainBrier": 0.00628463671875,
+          "updates": 369,
+          "validationBrier": 0.009786235757937406
+        },
+        {
+          "elapsedSeconds": 0.2676301000028616,
+          "epoch": 4,
+          "trainBrier": 0.0062358740234375,
+          "updates": 492,
+          "validationBrier": 0.009757544619688604
+        },
+        {
+          "elapsedSeconds": 0.32495429999835324,
+          "epoch": 5,
+          "trainBrier": 0.0061927861328125,
+          "updates": 615,
+          "validationBrier": 0.009757987350160788
+        },
+        {
+          "elapsedSeconds": 0.3702638999966439,
+          "epoch": 6,
+          "trainBrier": 0.0061545947265625,
+          "updates": 738,
+          "validationBrier": 0.009774974634753953
+        },
+        {
+          "elapsedSeconds": 0.35009330000320915,
+          "epoch": 7,
+          "trainBrier": 0.0061384150390625,
+          "updates": 861,
+          "validationBrier": 0.009740823596256798
+        },
+        {
+          "elapsedSeconds": 0.400925299996743,
+          "epoch": 8,
+          "trainBrier": 0.0061182236328125,
+          "updates": 984,
+          "validationBrier": 0.009738560360541
+        },
+        {
+          "elapsedSeconds": 0.4027150000038091,
+          "epoch": 9,
+          "trainBrier": 0.006105109375,
+          "updates": 1107,
+          "validationBrier": 0.009787501539666229
+        },
+        {
+          "elapsedSeconds": 0.4239231999963522,
+          "epoch": 10,
+          "trainBrier": 0.00609122265625,
+          "updates": 1230,
+          "validationBrier": 0.009784038645109645
+        },
+        {
+          "elapsedSeconds": 0.35566670000116574,
+          "epoch": 11,
+          "trainBrier": 0.0060824462890625,
+          "updates": 1353,
+          "validationBrier": 0.00974700730208778
+        },
+        {
+          "elapsedSeconds": 0.40531039999768836,
+          "epoch": 12,
+          "trainBrier": 0.00607393115234375,
+          "updates": 1476,
+          "validationBrier": 0.009725930652103462
+        },
+        {
+          "elapsedSeconds": 0.2878631999992649,
+          "epoch": 13,
+          "trainBrier": 0.006066556640625,
+          "updates": 1599,
+          "validationBrier": 0.009736072549511327
+        },
+        {
+          "elapsedSeconds": 0.3066222000052221,
+          "epoch": 14,
+          "trainBrier": 0.006061099609375,
+          "updates": 1722,
+          "validationBrier": 0.009745573810516984
+        },
+        {
+          "elapsedSeconds": 0.29829220000101486,
+          "epoch": 15,
+          "trainBrier": 0.0060549912109375,
+          "updates": 1845,
+          "validationBrier": 0.009748971828460356
+        },
+        {
+          "elapsedSeconds": 0.2921554000058677,
+          "epoch": 16,
+          "trainBrier": 0.00605203857421875,
+          "updates": 1968,
+          "validationBrier": 0.009754253328553404
+        },
+        {
+          "elapsedSeconds": 0.351497500007099,
+          "epoch": 17,
+          "trainBrier": 0.0060469130859375,
+          "updates": 2091,
+          "validationBrier": 0.009741935937723814
+        },
+        {
+          "elapsedSeconds": 0.289472399999795,
+          "epoch": 18,
+          "trainBrier": 0.00604681591796875,
+          "updates": 2214,
+          "validationBrier": 0.009744441807898283
+        },
+        {
+          "elapsedSeconds": 0.334556200003135,
+          "epoch": 19,
+          "trainBrier": 0.00604437890625,
+          "updates": 2337,
+          "validationBrier": 0.00975451496548182
+        },
+        {
+          "elapsedSeconds": 0.35651920000236714,
+          "epoch": 20,
+          "trainBrier": 0.00603724853515625,
+          "updates": 2460,
+          "validationBrier": 0.009778976128493416
+        }
+      ],
+      "initialPredictionsExact": true,
+      "initialValidationBrier": 0.009763881197396008,
+      "initialization": {
+        "loadedTensors": 5,
+        "mode": "weights-only-new-optimizer",
+        "newZeroOutputResidualHead": true,
+        "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+        "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+      },
+      "network": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\residual-4\\model.nnue",
+        "sha256": "ff22fca03cd9a228c7c3841fc224741c0466a8cb7013b7f6ee6a11d2da3ba7a7"
+      },
+      "rawWeights": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\residual-4\\model.pt",
+        "sha256": "4dc44bff67cef8f4439510ae158735770ba2b3e6c9e5f25330c750926883d0d7"
+      },
+      "residualHidden": 4,
+      "seed": 20261015,
+      "selectedEpoch": 12,
+      "test": {
+        "floatBrier": 0.009700204428135096,
+        "floatTeacherRmseCp": 424.65081787109375,
+        "perSample": {
+          "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\residual-4\\test-samples.npz",
+          "sha256": "5dbbc95528cb6106df39c11c69b109b7e0a8cd84f999d2bd95f7f49a5bb9dcd1"
+        },
+        "quantization": {
+          "brierScore": 0.009703302455732187,
+          "maxAbsErrorCpVsFloat": 7.7597198486328125,
+          "note": "full test set, exact quantized transformer/head Python integer reference",
+          "rmseCpVsFloat": 1.2000448155781658,
+          "samples": 32000,
+          "teacherRmseCp": 424.7221670545346
+        },
+        "samples": 32000
+      },
+      "transformerBitIdentical": true,
+      "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+      "updates": 2460,
+      "validationBrier": 0.009725930652103462
+    },
+    {
+      "cppVerification": {
+        "exactMatch": true,
+        "executable": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+        "executableSha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82",
+        "positions": [
+          {
+            "cppCp": 54,
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "pythonCp": 54
+          },
+          {
+            "cppCp": 60,
+            "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+            "pythonCp": 60
+          },
+          {
+            "cppCp": 23,
+            "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+            "pythonCp": 23
+          },
+          {
+            "cppCp": -54,
+            "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "pythonCp": -54
+          }
+        ]
+      },
+      "elapsedSeconds": 7.863146199997573,
+      "gpuMetrics": {
+        "elapsedCudaStreamSpanMs": 7805.61328125,
+        "memoryNote": "peaks include resident shared training/validation tensors",
+        "peakAllocatedBytes": 652289024,
+        "peakReservedBytes": 671088640,
+        "timingNote": "event span includes CPU dispatch gaps; not active GPU compute time"
+      },
+      "history": [
+        {
+          "epoch": 0,
+          "updates": 0,
+          "validationBrier": 0.009763881197396008
+        },
+        {
+          "elapsedSeconds": 0.41856719999486813,
+          "epoch": 1,
+          "trainBrier": 0.00639836865234375,
+          "updates": 123,
+          "validationBrier": 0.009804063513903413
+        },
+        {
+          "elapsedSeconds": 0.3061611000011908,
+          "epoch": 2,
+          "trainBrier": 0.00634370849609375,
+          "updates": 246,
+          "validationBrier": 0.009819229394493735
+        },
+        {
+          "elapsedSeconds": 0.30875470000319183,
+          "epoch": 3,
+          "trainBrier": 0.00624936083984375,
+          "updates": 369,
+          "validationBrier": 0.009758703573398392
+        },
+        {
+          "elapsedSeconds": 0.3300965000016731,
+          "epoch": 4,
+          "trainBrier": 0.00617301220703125,
+          "updates": 492,
+          "validationBrier": 0.009728284128992274
+        },
+        {
+          "elapsedSeconds": 0.38768619999609655,
+          "epoch": 5,
+          "trainBrier": 0.00612952783203125,
+          "updates": 615,
+          "validationBrier": 0.009729742270640183
+        },
+        {
+          "elapsedSeconds": 0.37960580000071786,
+          "epoch": 6,
+          "trainBrier": 0.00609209765625,
+          "updates": 738,
+          "validationBrier": 0.009727721102658673
+        },
+        {
+          "elapsedSeconds": 0.364796000001661,
+          "epoch": 7,
+          "trainBrier": 0.00607497412109375,
+          "updates": 861,
+          "validationBrier": 0.009717518508170132
+        },
+        {
+          "elapsedSeconds": 0.40011009999579983,
+          "epoch": 8,
+          "trainBrier": 0.0060486708984375,
+          "updates": 984,
+          "validationBrier": 0.009701019308368085
+        },
+        {
+          "elapsedSeconds": 0.41758519999712007,
+          "epoch": 9,
+          "trainBrier": 0.0060329208984375,
+          "updates": 1107,
+          "validationBrier": 0.009772215286643831
+        },
+        {
+          "elapsedSeconds": 0.3364464000042062,
+          "epoch": 10,
+          "trainBrier": 0.00601698779296875,
+          "updates": 1230,
+          "validationBrier": 0.009726472839332234
+        },
+        {
+          "elapsedSeconds": 0.45699859999876935,
+          "epoch": 11,
+          "trainBrier": 0.0060050234375,
+          "updates": 1353,
+          "validationBrier": 0.009719075059287199
+        },
+        {
+          "elapsedSeconds": 0.3807860000015353,
+          "epoch": 12,
+          "trainBrier": 0.00599507177734375,
+          "updates": 1476,
+          "validationBrier": 0.009712970192915654
+        },
+        {
+          "elapsedSeconds": 0.36522550000518095,
+          "epoch": 13,
+          "trainBrier": 0.00598470703125,
+          "updates": 1599,
+          "validationBrier": 0.009728291664368763
+        },
+        {
+          "elapsedSeconds": 0.3694942000001902,
+          "epoch": 14,
+          "trainBrier": 0.0059761142578125,
+          "updates": 1722,
+          "validationBrier": 0.009706973641037253
+        },
+        {
+          "elapsedSeconds": 0.3388824000066961,
+          "epoch": 15,
+          "trainBrier": 0.00596912841796875,
+          "updates": 1845,
+          "validationBrier": 0.00970679280637974
+        },
+        {
+          "elapsedSeconds": 0.31791559999692254,
+          "epoch": 16,
+          "trainBrier": 0.00595968408203125,
+          "updates": 1968,
+          "validationBrier": 0.00975068718598787
+        },
+        {
+          "elapsedSeconds": 0.2885708000030718,
+          "epoch": 17,
+          "trainBrier": 0.0059512783203125,
+          "updates": 2091,
+          "validationBrier": 0.00970667228471511
+        },
+        {
+          "elapsedSeconds": 0.2883776000016951,
+          "epoch": 18,
+          "trainBrier": 0.0059475673828125,
+          "updates": 2214,
+          "validationBrier": 0.009739294812174271
+        },
+        {
+          "elapsedSeconds": 0.29207260000112,
+          "epoch": 19,
+          "trainBrier": 0.0059354765625,
+          "updates": 2337,
+          "validationBrier": 0.009767088781871094
+        },
+        {
+          "elapsedSeconds": 0.3088233000016771,
+          "epoch": 20,
+          "trainBrier": 0.005923978515625,
+          "updates": 2460,
+          "validationBrier": 0.009780642256200357
+        }
+      ],
+      "initialPredictionsExact": true,
+      "initialValidationBrier": 0.009763881197396008,
+      "initialization": {
+        "loadedTensors": 5,
+        "mode": "weights-only-new-optimizer",
+        "newZeroOutputResidualHead": true,
+        "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+        "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+      },
+      "network": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\residual-8\\model.nnue",
+        "sha256": "b2a53825a05f49695576f4411f002c5a3c2a0b55841b134fc0de43c087cac573"
+      },
+      "rawWeights": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\residual-8\\model.pt",
+        "sha256": "26943828525cff6110b179ab3a8562ab8f6dce0ce86250c38ba864fcaff825e1"
+      },
+      "residualHidden": 8,
+      "seed": 20261015,
+      "selectedEpoch": 8,
+      "test": {
+        "floatBrier": 0.009680054397968606,
+        "floatTeacherRmseCp": 425.6420593261719,
+        "perSample": {
+          "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261015\\residual-8\\test-samples.npz",
+          "sha256": "ad0049e70f16bf138f9bcdab2531903af344213f1dd098167e452efa562c2e84"
+        },
+        "quantization": {
+          "brierScore": 0.009675927824664182,
+          "maxAbsErrorCpVsFloat": 6.07867431640625,
+          "note": "full test set, exact quantized transformer/head Python integer reference",
+          "rmseCpVsFloat": 1.1291383186885886,
+          "samples": 32000,
+          "teacherRmseCp": 425.7131337165322
+        },
+        "samples": 32000
+      },
+      "transformerBitIdentical": true,
+      "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+      "updates": 2460,
+      "validationBrier": 0.009701019308368085
+    },
+    {
+      "cppVerification": {
+        "exactMatch": true,
+        "executable": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+        "executableSha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82",
+        "positions": [
+          {
+            "cppCp": 43,
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "pythonCp": 43
+          },
+          {
+            "cppCp": 38,
+            "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+            "pythonCp": 38
+          },
+          {
+            "cppCp": -5,
+            "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+            "pythonCp": -5
+          },
+          {
+            "cppCp": -67,
+            "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "pythonCp": -67
+          }
+        ]
+      },
+      "elapsedSeconds": 5.168989500001771,
+      "gpuMetrics": {
+        "elapsedCudaStreamSpanMs": 5115.73486328125,
+        "memoryNote": "peaks include resident shared training/validation tensors",
+        "peakAllocatedBytes": 652057600,
+        "peakReservedBytes": 671088640,
+        "timingNote": "event span includes CPU dispatch gaps; not active GPU compute time"
+      },
+      "history": [
+        {
+          "epoch": 0,
+          "updates": 0,
+          "validationBrier": 0.009763881197396008
+        },
+        {
+          "elapsedSeconds": 0.21399779999774182,
+          "epoch": 1,
+          "trainBrier": 0.00640063330078125,
+          "updates": 123,
+          "validationBrier": 0.009801460296229792
+        },
+        {
+          "elapsedSeconds": 0.19069429999944987,
+          "epoch": 2,
+          "trainBrier": 0.006359513671875,
+          "updates": 246,
+          "validationBrier": 0.0098272182413082
+        },
+        {
+          "elapsedSeconds": 0.19152990000293357,
+          "epoch": 3,
+          "trainBrier": 0.00635199169921875,
+          "updates": 369,
+          "validationBrier": 0.00986230215136634
+        },
+        {
+          "elapsedSeconds": 0.17779130000417354,
+          "epoch": 4,
+          "trainBrier": 0.00634716015625,
+          "updates": 492,
+          "validationBrier": 0.00985580349974444
+        },
+        {
+          "elapsedSeconds": 0.18533780000143452,
+          "epoch": 5,
+          "trainBrier": 0.0063446435546875,
+          "updates": 615,
+          "validationBrier": 0.009861656834617304
+        },
+        {
+          "elapsedSeconds": 0.19522179999330547,
+          "epoch": 6,
+          "trainBrier": 0.00634339306640625,
+          "updates": 738,
+          "validationBrier": 0.00987564838716235
+        },
+        {
+          "elapsedSeconds": 0.2170987999998033,
+          "epoch": 7,
+          "trainBrier": 0.00634303515625,
+          "updates": 861,
+          "validationBrier": 0.009866702027651308
+        },
+        {
+          "elapsedSeconds": 0.22587449999991804,
+          "epoch": 8,
+          "trainBrier": 0.00634287158203125,
+          "updates": 984,
+          "validationBrier": 0.009876808233092314
+        },
+        {
+          "elapsedSeconds": 0.21248779999586986,
+          "epoch": 9,
+          "trainBrier": 0.00634749609375,
+          "updates": 1107,
+          "validationBrier": 0.009879910498223976
+        },
+        {
+          "elapsedSeconds": 0.23014600000169594,
+          "epoch": 10,
+          "trainBrier": 0.00634479345703125,
+          "updates": 1230,
+          "validationBrier": 0.009870484409208123
+        },
+        {
+          "elapsedSeconds": 0.208773199999996,
+          "epoch": 11,
+          "trainBrier": 0.0063413984375,
+          "updates": 1353,
+          "validationBrier": 0.009882194502689415
+        },
+        {
+          "elapsedSeconds": 0.22727009999653092,
+          "epoch": 12,
+          "trainBrier": 0.0063433759765625,
+          "updates": 1476,
+          "validationBrier": 0.009871721011984073
+        },
+        {
+          "elapsedSeconds": 0.20817859999806387,
+          "epoch": 13,
+          "trainBrier": 0.00634234423828125,
+          "updates": 1599,
+          "validationBrier": 0.00987477218963219
+        },
+        {
+          "elapsedSeconds": 0.2537644999974873,
+          "epoch": 14,
+          "trainBrier": 0.00634327001953125,
+          "updates": 1722,
+          "validationBrier": 0.009872465823674126
+        },
+        {
+          "elapsedSeconds": 0.21979930000088643,
+          "epoch": 15,
+          "trainBrier": 0.0063416865234375,
+          "updates": 1845,
+          "validationBrier": 0.009875688077538863
+        },
+        {
+          "elapsedSeconds": 0.25662110000121174,
+          "epoch": 16,
+          "trainBrier": 0.0063411171875,
+          "updates": 1968,
+          "validationBrier": 0.009883099258280927
+        },
+        {
+          "elapsedSeconds": 0.2576435000009951,
+          "epoch": 17,
+          "trainBrier": 0.00634322314453125,
+          "updates": 2091,
+          "validationBrier": 0.009877432874099312
+        },
+        {
+          "elapsedSeconds": 0.2443773000049987,
+          "epoch": 18,
+          "trainBrier": 0.00634393310546875,
+          "updates": 2214,
+          "validationBrier": 0.009900544514271567
+        },
+        {
+          "elapsedSeconds": 0.2692116999969585,
+          "epoch": 19,
+          "trainBrier": 0.00634321826171875,
+          "updates": 2337,
+          "validationBrier": 0.009873754579601296
+        },
+        {
+          "elapsedSeconds": 0.23172540000086883,
+          "epoch": 20,
+          "trainBrier": 0.00634195849609375,
+          "updates": 2460,
+          "validationBrier": 0.009872660246736213
+        }
+      ],
+      "initialPredictionsExact": true,
+      "initialValidationBrier": 0.009763881197396008,
+      "initialization": {
+        "loadedTensors": 5,
+        "mode": "weights-only-new-optimizer",
+        "newZeroOutputResidualHead": false,
+        "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+        "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+      },
+      "network": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\direct\\model.nnue",
+        "sha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c"
+      },
+      "rawWeights": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\direct\\model.pt",
+        "sha256": "93e9530d01b57700dba107e27b6e2927629434563618a48ab012c226fcf6e687"
+      },
+      "residualHidden": 0,
+      "seed": 20261016,
+      "selectedEpoch": 0,
+      "test": {
+        "floatBrier": 0.009686330080125514,
+        "floatTeacherRmseCp": 420.2501525878906,
+        "perSample": {
+          "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\direct\\test-samples.npz",
+          "sha256": "2c83c83f9a390585c84059311ab39394e544b82483de9502203d2a5f723fe67a"
+        },
+        "quantization": {
+          "brierScore": 0.009687165234600925,
+          "maxAbsErrorCpVsFloat": 4.001068115234375,
+          "note": "full test set, exact quantized transformer/head Python integer reference",
+          "rmseCpVsFloat": 0.7969982077949682,
+          "samples": 32000,
+          "teacherRmseCp": 420.2975052715636
+        },
+        "samples": 32000
+      },
+      "transformerBitIdentical": true,
+      "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+      "updates": 2460,
+      "validationBrier": 0.009763881197396008
+    },
+    {
+      "cppVerification": {
+        "exactMatch": true,
+        "executable": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+        "executableSha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82",
+        "positions": [
+          {
+            "cppCp": 53,
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "pythonCp": 53
+          },
+          {
+            "cppCp": 51,
+            "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+            "pythonCp": 51
+          },
+          {
+            "cppCp": 20,
+            "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+            "pythonCp": 20
+          },
+          {
+            "cppCp": -69,
+            "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "pythonCp": -69
+          }
+        ]
+      },
+      "elapsedSeconds": 8.134068300001672,
+      "gpuMetrics": {
+        "elapsedCudaStreamSpanMs": 8081.4697265625,
+        "memoryNote": "peaks include resident shared training/validation tensors",
+        "peakAllocatedBytes": 652149760,
+        "peakReservedBytes": 671088640,
+        "timingNote": "event span includes CPU dispatch gaps; not active GPU compute time"
+      },
+      "history": [
+        {
+          "epoch": 0,
+          "updates": 0,
+          "validationBrier": 0.009763881197396008
+        },
+        {
+          "elapsedSeconds": 0.3444971999997506,
+          "epoch": 1,
+          "trainBrier": 0.006399685546875,
+          "updates": 123,
+          "validationBrier": 0.009803972945053788
+        },
+        {
+          "elapsedSeconds": 0.3996793000042089,
+          "epoch": 2,
+          "trainBrier": 0.006348125,
+          "updates": 246,
+          "validationBrier": 0.009803449066452663
+        },
+        {
+          "elapsedSeconds": 0.3154476000054274,
+          "epoch": 3,
+          "trainBrier": 0.00626190087890625,
+          "updates": 369,
+          "validationBrier": 0.00973847403440517
+        },
+        {
+          "elapsedSeconds": 0.37773749999905704,
+          "epoch": 4,
+          "trainBrier": 0.00620038134765625,
+          "updates": 492,
+          "validationBrier": 0.009716047994495634
+        },
+        {
+          "elapsedSeconds": 0.4027873000013642,
+          "epoch": 5,
+          "trainBrier": 0.0061754716796875,
+          "updates": 615,
+          "validationBrier": 0.009696431565037264
+        },
+        {
+          "elapsedSeconds": 0.3956352000022889,
+          "epoch": 6,
+          "trainBrier": 0.00615699560546875,
+          "updates": 738,
+          "validationBrier": 0.009708525167905817
+        },
+        {
+          "elapsedSeconds": 0.41307159999996657,
+          "epoch": 7,
+          "trainBrier": 0.0061390419921875,
+          "updates": 861,
+          "validationBrier": 0.009690683566178545
+        },
+        {
+          "elapsedSeconds": 0.4721151000048849,
+          "epoch": 8,
+          "trainBrier": 0.00612846484375,
+          "updates": 984,
+          "validationBrier": 0.009697521329516469
+        },
+        {
+          "elapsedSeconds": 0.39056279999931576,
+          "epoch": 9,
+          "trainBrier": 0.00611906640625,
+          "updates": 1107,
+          "validationBrier": 0.009687043075612817
+        },
+        {
+          "elapsedSeconds": 0.4322537999978522,
+          "epoch": 10,
+          "trainBrier": 0.0061131513671875,
+          "updates": 1230,
+          "validationBrier": 0.009678054725806759
+        },
+        {
+          "elapsedSeconds": 0.3778271000046516,
+          "epoch": 11,
+          "trainBrier": 0.00610357177734375,
+          "updates": 1353,
+          "validationBrier": 0.009683173482895059
+        },
+        {
+          "elapsedSeconds": 0.3277606000046944,
+          "epoch": 12,
+          "trainBrier": 0.0060990166015625,
+          "updates": 1476,
+          "validationBrier": 0.009685881135129243
+        },
+        {
+          "elapsedSeconds": 0.395682599999418,
+          "epoch": 13,
+          "trainBrier": 0.00609007080078125,
+          "updates": 1599,
+          "validationBrier": 0.00967792090415701
+        },
+        {
+          "elapsedSeconds": 0.35853710000083083,
+          "epoch": 14,
+          "trainBrier": 0.00608848095703125,
+          "updates": 1722,
+          "validationBrier": 0.009683402558214106
+        },
+        {
+          "elapsedSeconds": 0.34505199999694014,
+          "epoch": 15,
+          "trainBrier": 0.00607723046875,
+          "updates": 1845,
+          "validationBrier": 0.009682620467946363
+        },
+        {
+          "elapsedSeconds": 0.32047769999917364,
+          "epoch": 16,
+          "trainBrier": 0.00607646728515625,
+          "updates": 1968,
+          "validationBrier": 0.00969356432533174
+        },
+        {
+          "elapsedSeconds": 0.30527340000116965,
+          "epoch": 17,
+          "trainBrier": 0.00607311181640625,
+          "updates": 2091,
+          "validationBrier": 0.009674303468074245
+        },
+        {
+          "elapsedSeconds": 0.30660680000437424,
+          "epoch": 18,
+          "trainBrier": 0.00606864892578125,
+          "updates": 2214,
+          "validationBrier": 0.009699820077084876
+        },
+        {
+          "elapsedSeconds": 0.3217081999973743,
+          "epoch": 19,
+          "trainBrier": 0.00606680029296875,
+          "updates": 2337,
+          "validationBrier": 0.00966721427961672
+        },
+        {
+          "elapsedSeconds": 0.3619113999957335,
+          "epoch": 20,
+          "trainBrier": 0.0060617080078125,
+          "updates": 2460,
+          "validationBrier": 0.009669117206036297
+        }
+      ],
+      "initialPredictionsExact": true,
+      "initialValidationBrier": 0.009763881197396008,
+      "initialization": {
+        "loadedTensors": 5,
+        "mode": "weights-only-new-optimizer",
+        "newZeroOutputResidualHead": true,
+        "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+        "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+      },
+      "network": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\residual-4\\model.nnue",
+        "sha256": "ac812faadb019e9a879994007c546b9146181c0c03da145c5a3762879a0774d3"
+      },
+      "rawWeights": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\residual-4\\model.pt",
+        "sha256": "cd0f2f3d60da336dbad41271c1fc83c448c8793ee3f23eb4646e58549b6a5dec"
+      },
+      "residualHidden": 4,
+      "seed": 20261016,
+      "selectedEpoch": 19,
+      "test": {
+        "floatBrier": 0.009654631310728346,
+        "floatTeacherRmseCp": 427.265869140625,
+        "perSample": {
+          "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\residual-4\\test-samples.npz",
+          "sha256": "aca6b7e9659c4d4b3695ea95d835e4024bc44febfa2ad8fe01556b74187a756e"
+        },
+        "quantization": {
+          "brierScore": 0.009651714590479218,
+          "maxAbsErrorCpVsFloat": 6.984588623046875,
+          "note": "full test set, exact quantized transformer/head Python integer reference",
+          "rmseCpVsFloat": 1.0842450857996133,
+          "samples": 32000,
+          "teacherRmseCp": 427.2700675509578
+        },
+        "samples": 32000
+      },
+      "transformerBitIdentical": true,
+      "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+      "updates": 2460,
+      "validationBrier": 0.00966721427961672
+    },
+    {
+      "cppVerification": {
+        "exactMatch": true,
+        "executable": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+        "executableSha256": "0873cc0054f8556a82cc85425329504ca7a8115a24c329cc3550885df473de82",
+        "positions": [
+          {
+            "cppCp": 52,
+            "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "pythonCp": 52
+          },
+          {
+            "cppCp": 52,
+            "fen": "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10",
+            "pythonCp": 52
+          },
+          {
+            "cppCp": 15,
+            "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 b - - 0 9",
+            "pythonCp": 15
+          },
+          {
+            "cppCp": -65,
+            "fen": "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "pythonCp": -65
+          }
+        ]
+      },
+      "elapsedSeconds": 7.932736099995964,
+      "gpuMetrics": {
+        "elapsedCudaStreamSpanMs": 7880.1396484375,
+        "memoryNote": "peaks include resident shared training/validation tensors",
+        "peakAllocatedBytes": 652289024,
+        "peakReservedBytes": 671088640,
+        "timingNote": "event span includes CPU dispatch gaps; not active GPU compute time"
+      },
+      "history": [
+        {
+          "epoch": 0,
+          "updates": 0,
+          "validationBrier": 0.009763881197396008
+        },
+        {
+          "elapsedSeconds": 0.3760665000008885,
+          "epoch": 1,
+          "trainBrier": 0.0063954580078125,
+          "updates": 123,
+          "validationBrier": 0.009789665751883074
+        },
+        {
+          "elapsedSeconds": 0.36418460000277264,
+          "epoch": 2,
+          "trainBrier": 0.006297095703125,
+          "updates": 246,
+          "validationBrier": 0.009742015790973595
+        },
+        {
+          "elapsedSeconds": 0.41304269999818644,
+          "epoch": 3,
+          "trainBrier": 0.00621479541015625,
+          "updates": 369,
+          "validationBrier": 0.009729664363704395
+        },
+        {
+          "elapsedSeconds": 0.40975020000041695,
+          "epoch": 4,
+          "trainBrier": 0.006165591796875,
+          "updates": 492,
+          "validationBrier": 0.009717538413260125
+        },
+        {
+          "elapsedSeconds": 0.384739900000568,
+          "epoch": 5,
+          "trainBrier": 0.006133673828125,
+          "updates": 615,
+          "validationBrier": 0.009704752491620672
+        },
+        {
+          "elapsedSeconds": 0.3606819999986328,
+          "epoch": 6,
+          "trainBrier": 0.0061044091796875,
+          "updates": 738,
+          "validationBrier": 0.009726206404609741
+        },
+        {
+          "elapsedSeconds": 0.4253065000011702,
+          "epoch": 7,
+          "trainBrier": 0.00607511083984375,
+          "updates": 861,
+          "validationBrier": 0.009699469608680223
+        },
+        {
+          "elapsedSeconds": 0.35965919999580365,
+          "epoch": 8,
+          "trainBrier": 0.00605469580078125,
+          "updates": 984,
+          "validationBrier": 0.009709761300678027
+        },
+        {
+          "elapsedSeconds": 0.3998691000015242,
+          "epoch": 9,
+          "trainBrier": 0.00603576416015625,
+          "updates": 1107,
+          "validationBrier": 0.009707155757402258
+        },
+        {
+          "elapsedSeconds": 0.36883449999731965,
+          "epoch": 10,
+          "trainBrier": 0.006024341796875,
+          "updates": 1230,
+          "validationBrier": 0.00968942477941764
+        },
+        {
+          "elapsedSeconds": 0.36630159999913303,
+          "epoch": 11,
+          "trainBrier": 0.00601004150390625,
+          "updates": 1353,
+          "validationBrier": 0.009694965602678513
+        },
+        {
+          "elapsedSeconds": 0.331370899999456,
+          "epoch": 12,
+          "trainBrier": 0.0060030361328125,
+          "updates": 1476,
+          "validationBrier": 0.009741246141642094
+        },
+        {
+          "elapsedSeconds": 0.3096626999977161,
+          "epoch": 13,
+          "trainBrier": 0.00598746484375,
+          "updates": 1599,
+          "validationBrier": 0.009690437728733885
+        },
+        {
+          "elapsedSeconds": 0.3395380000001751,
+          "epoch": 14,
+          "trainBrier": 0.0059807587890625,
+          "updates": 1722,
+          "validationBrier": 0.00971998114958005
+        },
+        {
+          "elapsedSeconds": 0.32652470000175526,
+          "epoch": 15,
+          "trainBrier": 0.0059649326171875,
+          "updates": 1845,
+          "validationBrier": 0.009720911262731764
+        },
+        {
+          "elapsedSeconds": 0.3264385999937076,
+          "epoch": 16,
+          "trainBrier": 0.00596089306640625,
+          "updates": 1968,
+          "validationBrier": 0.009775185197076115
+        },
+        {
+          "elapsedSeconds": 0.319772800001374,
+          "epoch": 17,
+          "trainBrier": 0.00595593310546875,
+          "updates": 2091,
+          "validationBrier": 0.00975086808937259
+        },
+        {
+          "elapsedSeconds": 0.35325079999893205,
+          "epoch": 18,
+          "trainBrier": 0.00594772607421875,
+          "updates": 2214,
+          "validationBrier": 0.009764365981967204
+        },
+        {
+          "elapsedSeconds": 0.28630519999569515,
+          "epoch": 19,
+          "trainBrier": 0.0059436181640625,
+          "updates": 2337,
+          "validationBrier": 0.009727235954391058
+        },
+        {
+          "elapsedSeconds": 0.3735902999978862,
+          "epoch": 20,
+          "trainBrier": 0.0059365322265625,
+          "updates": 2460,
+          "validationBrier": 0.0097072711589996
+        }
+      ],
+      "initialPredictionsExact": true,
+      "initialValidationBrier": 0.009763881197396008,
+      "initialization": {
+        "loadedTensors": 5,
+        "mode": "weights-only-new-optimizer",
+        "newZeroOutputResidualHead": true,
+        "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+        "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+      },
+      "network": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\residual-8\\model.nnue",
+        "sha256": "89bb21e3c545509c852f89c8e40174ee4ece06fea5eb8c2ae81de291876c2b09"
+      },
+      "rawWeights": {
+        "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\residual-8\\model.pt",
+        "sha256": "65094723a356068d9521c1e4013a62b1f42e6ed316951d80da9b021b7d0b939a"
+      },
+      "residualHidden": 8,
+      "seed": 20261016,
+      "selectedEpoch": 10,
+      "test": {
+        "floatBrier": 0.009690955653291632,
+        "floatTeacherRmseCp": 425.1560363769531,
+        "perSample": {
+          "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study\\seed-20261016\\residual-8\\test-samples.npz",
+          "sha256": "bb38b79729ae17d6d94d1bd818e5fde4b33f5052f360a1805039def1ba6167b8"
+        },
+        "quantization": {
+          "brierScore": 0.009689763014935703,
+          "maxAbsErrorCpVsFloat": 7.12054443359375,
+          "note": "full test set, exact quantized transformer/head Python integer reference",
+          "rmseCpVsFloat": 1.1831743167384587,
+          "samples": 32000,
+          "teacherRmseCp": 425.1304703411648
+        },
+        "samples": 32000
+      },
+      "transformerBitIdentical": true,
+      "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+      "updates": 2460,
+      "validationBrier": 0.00968942477941764
+    }
+  ],
+  "cache": {
+    "path": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\cache\\manifest.json",
+    "sha256": "2148024ce07da3116f72b922a808eab9d77b0bac24227b384cf778e5db0c6af4"
+  },
+  "completedAt": "2026-10-15T18:34:41.596384+00:00",
+  "configuration": {
+    "batch_size": 2048,
+    "bootstrap_resamples": 2000,
+    "cache": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\cache\\manifest.json",
+    "cpp_tools": "E:\\Dev\\Chess-Engine\\artifacts\\nnue-head-study-20261015\\stack-baseline\\chess-engine-tools.exe",
+    "cpu_threads": 4,
+    "device": "cuda",
+    "epochs": 20,
+    "hidden_scale": 1024,
+    "learning_rate": 0.001,
+    "max_seconds": 900.0,
+    "output": "E:\\Dev\\Forklift-Research\\models\\nnue-head-study-20261015\\study",
+    "output_scale": 32,
+    "residual_weight_scale": 256,
+    "residual_widths": [
+      0,
+      4,
+      8
+    ],
+    "seeds": [
+      20261015,
+      20261016
+    ],
+    "source_weights": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt",
+    "target_scale": 600.0,
+    "wdl_scale": 400.0,
+    "weight_decay": 1e-06
+  },
+  "device": {
+    "cpuThreads": 4,
+    "cudaVersion": "13.0",
+    "deterministicAlgorithms": true,
+    "gpuCapability": [
+      8,
+      6
+    ],
+    "gpuName": "NVIDIA GeForce RTX 3070",
+    "requested": "cuda",
+    "studyPeakAllocatedBytes": 713659392,
+    "studyPeakReservedBytes": 738197504,
+    "tf32": false,
+    "torchVersion": "2.12.1+cu130"
+  },
+  "elapsedSeconds": 60.39380469999742,
+  "frozenSelectionSha256": "4e543b5a6a8274b9d18c2b63976de5c9c9d14ed0670ba79793b05f337ac2ff32",
+  "offlineTestGate": {
+    "passed": false,
+    "reason": "no architecture passed pre-registered validation screen"
+  },
+  "pairedComparisons": [
+    {
+      "float": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -3.487042170218971e-05,
+          6.330885205555473e-05
+        ],
+        "meanResidualMinusDirect": 1.3874379826335404e-05,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "quantized": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -3.250862231283152e-05,
+          6.550714274186544e-05
+        ],
+        "meanResidualMinusDirect": 1.6137221131261768e-05,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "residualHidden": 4,
+      "seed": 20261015
+    },
+    {
+      "float": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -5.6048114227819494e-05,
+          4.242753344051628e-05
+        ],
+        "meanResidualMinusDirect": -6.275637807647351e-06,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "quantized": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -6.03114878347119e-05,
+          3.732707894660383e-05
+        ],
+        "meanResidualMinusDirect": -1.1237409936743909e-05,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "residualHidden": 8,
+      "seed": 20261015
+    },
+    {
+      "float": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -8.14764274800617e-05,
+          1.6939674140594214e-05
+        ],
+        "meanResidualMinusDirect": -3.169873164516429e-05,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "quantized": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -8.532340499116492e-05,
+          1.2556500977085843e-05
+        ],
+        "meanResidualMinusDirect": -3.5450644121708276e-05,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "residualHidden": 4,
+      "seed": 20261016
+    },
+    {
+      "float": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -4.9691035957767446e-05,
+          5.495636620789104e-05
+        ],
+        "meanResidualMinusDirect": 4.625627556775279e-06,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "quantized": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -5.1093451455533174e-05,
+          5.332034396306268e-05
+        ],
+        "meanResidualMinusDirect": 2.5977803347767957e-06,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "residualHidden": 8,
+      "seed": 20261016
+    }
+  ],
+  "primaryPairedComparisons": [
+    {
+      "aggregation": "average paired per-position differences over seeds, then bootstrap games",
+      "float": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -5.2785489087575625e-05,
+          3.731073869924416e-05
+        ],
+        "meanResidualMinusDirect": -8.912175909414441e-06,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "quantized": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -5.359165229833154e-05,
+          3.6662548731553166e-05
+        ],
+        "meanResidualMinusDirect": -9.65671149522325e-06,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "residualHidden": 4,
+      "seeds": [
+        20261015,
+        20261016
+      ]
+    },
+    {
+      "aggregation": "average paired per-position differences over seeds, then bootstrap games",
+      "float": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -5.0589466753937265e-05,
+          4.7073407493505445e-05
+        ],
+        "meanResidualMinusDirect": -8.250051254360368e-07,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "quantized": {
+        "bootstrapResamples": 2000,
+        "games": 27804,
+        "interpretation": "negative favors residual; exploratory, not Elo or cross-seed certainty",
+        "interval95": [
+          -5.442708474103265e-05,
+          4.391935435319621e-05
+        ],
+        "meanResidualMinusDirect": -4.3198148009835535e-06,
+        "method": "paired position-weighted percentile bootstrap, whole-game clusters",
+        "positions": 32000
+      },
+      "residualHidden": 8,
+      "seeds": [
+        20261015,
+        20261016
+      ]
+    }
+  ],
+  "protocol": {
+    "checkpointSelection": "minimum validation Brier over epoch 0..epochs; earliest tie",
+    "equalUpdatesPerArm": 2460,
+    "frozenTransformer": true,
+    "novelArchitectureClaim": false,
+    "objective": "teacher WDL Brier score",
+    "optimizer": "AdamW, constant learning rate",
+    "resultWeight": 0,
+    "strengthEvidence": false,
+    "testCaveat": "diagnostic subdivision of the existing validation corpus, already used to select pretrained source; not globally untouched",
+    "testPolicy": "open test arrays only after all selections are written"
+  },
+  "schemaVersion": 1,
+  "sourceWeights": {
+    "path": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt",
+    "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643"
+  },
+  "state": "complete",
+  "transformerSha256": "6462fc8873ea1a4d473b0be4ef65dea9ad27056eee6aff59af598f3520688198",
+  "validationScreen": {
+    "comparisons": [
+      {
+        "eligible": false,
+        "everySeedImproved": true,
+        "meanRelativeReductionPercent": 0.6893645075676191,
+        "perSeed": [
+          {
+            "directBrier": 0.009763881197396008,
+            "improved": true,
+            "relativeReductionPercent": 0.388682989123904,
+            "residualBrier": 0.009725930652103462,
+            "seed": 20261015
+          },
+          {
+            "directBrier": 0.009763881197396008,
+            "improved": true,
+            "relativeReductionPercent": 0.9900460260113343,
+            "residualBrier": 0.00966721427961672,
+            "seed": 20261016
+          }
+        ],
+        "residualHidden": 4
+      },
+      {
+        "eligible": false,
+        "everySeedImproved": true,
+        "meanRelativeReductionPercent": 0.703195298212525,
+        "perSeed": [
+          {
+            "directBrier": 0.009763881197396008,
+            "improved": true,
+            "relativeReductionPercent": 0.6438207077395448,
+            "residualBrier": 0.009701019308368085,
+            "seed": 20261015
+          },
+          {
+            "directBrier": 0.009763881197396008,
+            "improved": true,
+            "relativeReductionPercent": 0.7625698886855052,
+            "residualBrier": 0.00968942477941764,
+            "seed": 20261016
+          }
+        ],
+        "residualHidden": 8
+      }
+    ],
+    "everySeedMustImprove": true,
+    "minimumMeanRelativeReductionPercent": 1.0,
+    "selectedResidualHidden": null,
+    "selectionRule": "largest mean relative validation reduction; narrower width breaks ties",
+    "selectionUsedTestLabels": false
+  }
+}

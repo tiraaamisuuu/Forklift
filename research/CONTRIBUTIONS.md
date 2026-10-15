@@ -29,6 +29,11 @@ compare appropriate baselines across independent data/training seeds.
   An eight-update CPU training pilot found negligible quality differences
   versus an equally trained direct control. No production candidate,
   model-quality/strength gain or scholarly novelty claim; retain promotion gates.
+  A subsequent [two-seed GPU head study](../docs/results/2026-10-15-nnue-head-study.md)
+  completed matched 20-epoch arms on an audited 250k/32k/32k activation cache.
+  Its sub-1% validation gains and inconclusive game-cluster test intervals failed
+  the predeclared screen, so no matches or promotion followed. This is useful
+  negative research evidence and reusable tooling, not a claimed strength gain.
   The other entries below have their own, separate measured evidence.
 
 - [Certified NNUE output kernel](../docs/results/2026-10-13-nnue-certified-output.md):

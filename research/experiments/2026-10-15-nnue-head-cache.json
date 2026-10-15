@@ -1,0 +1,316 @@
+{
+  "audit": {
+    "effectiveInputIdentity": "sha256(length+uint16-le-first,length+uint16-le-second)",
+    "fullSourceGameIdsDisjoint": true,
+    "inputAuditScope": "selected rows only; not complete source input overlap",
+    "selectedEffectiveInputsDisjoint": true,
+    "selectedGameIdsDisjoint": true,
+    "sourceGameCounts": {
+      "train": 1812069,
+      "validation": 224934
+    },
+    "validationPartition": "sha256(<uint64-le seed,uint64-le game_id>)[0] low bit"
+  },
+  "configuration": {
+    "activationDtype": "float32",
+    "batchSize": 4096,
+    "cpuThreads": 4,
+    "device": "cuda",
+    "featureFactorization": true,
+    "hidden": 256,
+    "maxSeconds": 900.0,
+    "perspectiveOrder": "side-to-move-first",
+    "resultWeight": 0.0,
+    "seed": 20261015,
+    "targetScale": 600.0,
+    "teacherClipCp": [
+      -3000,
+      3000
+    ],
+    "wdlScale": 400.0
+  },
+  "createdUtc": "2026-10-15T18:29:53.341663+00:00",
+  "elapsedSeconds": 29.12466249999852,
+  "environment": {
+    "numpyVersion": "2.5.1",
+    "torchVersion": "2.12.1+cu130"
+  },
+  "schemaVersion": 1,
+  "sourceWeights": {
+    "initialization": {
+      "loadedTensors": 5,
+      "mode": "weights-only-new-optimizer",
+      "newZeroOutputResidualHead": false,
+      "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+      "source": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt"
+    },
+    "path": "E:\\Dev\\Forklift-Research\\models\\nnue-v2-factorization-20260912\\shared\\model.pt",
+    "sha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643"
+  },
+  "sources": {
+    "train": {
+      "bytes": 210000024,
+      "count": 5000000,
+      "path": "E:\\ChessData\\halfkp-5m-sf18-20k\\train.nnuebin",
+      "sha256": "560a7dbc0b3e4a75ea3dbc1fa707a70485f3691fbbae3acbf224e4581d16c208"
+    },
+    "validation": {
+      "bytes": 25898568,
+      "count": 616632,
+      "path": "E:\\ChessData\\halfkp-5m-sf18-20k\\validation.nnuebin",
+      "sha256": "6ff96ade7525f345fbea59255edd301d01a348495603e9ff8e001c2acb294db7"
+    }
+  },
+  "splits": {
+    "test": {
+      "count": 32000,
+      "examinedRows": 32002,
+      "excludedDuplicateInputs": 2,
+      "files": {
+        "activations": {
+          "dtype": "float32",
+          "path": "test/x.npy",
+          "sha256": "48270d15fff86fff01fd665217716e20dd6c87e0f7b4a362245d54fea0214b22",
+          "shape": [
+            32000,
+            512
+          ]
+        },
+        "boards": {
+          "dtype": "uint8",
+          "path": "test/board_bytes.npy",
+          "sha256": "97e28538a45c43a07f9aa3e99b58a9378504a71d918c018e799715b88e294403",
+          "shape": [
+            32000,
+            32
+          ]
+        },
+        "game_ids": {
+          "dtype": "uint32",
+          "path": "test/game_ids.npy",
+          "sha256": "6ee8581b46b5c54c1b365e61ffcc8fe1ea3c022ebfc1dfa02c1389397dd12139",
+          "shape": [
+            32000
+          ]
+        },
+        "identity": {
+          "dtype": "uint8",
+          "path": "test/identity.npy",
+          "sha256": "2e0f92dba8e7e7e3efa6b671a65b6326e7fd2c4ee4adb143baac85cc8aa01c0a",
+          "shape": [
+            32000,
+            32
+          ]
+        },
+        "source_indices": {
+          "dtype": "int64",
+          "path": "test/rows.npy",
+          "sha256": "941cc487fb9d619058bbb6c552ee4d11b53d70449b919507a634b0f9fa1da274",
+          "shape": [
+            32000
+          ]
+        },
+        "target_cp": {
+          "dtype": "float32",
+          "path": "test/cp.npy",
+          "sha256": "306a60f4b7e67165f23b7d50d202f2f86924f48112189093165a64ef358f413a",
+          "shape": [
+            32000
+          ]
+        },
+        "target_wdl": {
+          "dtype": "float32",
+          "path": "test/wdl.npy",
+          "sha256": "986cd073dee936cd17f8f2ae5ad75bdf7eb6c41fc28595fb6c4f8f4b8bcb2501",
+          "shape": [
+            32000
+          ]
+        },
+        "teacher_cp": {
+          "dtype": "int16",
+          "path": "test/teacher_cp.npy",
+          "sha256": "5aee4a4b3ded476cb0d38e50e71e88c59328398afc6374a11bfb74743ce87682",
+          "shape": [
+            32000
+          ]
+        },
+        "turns": {
+          "dtype": "uint8",
+          "path": "test/turn.npy",
+          "sha256": "43ba8af4a58aea069933ef2ef36fd850972f40ef816b6c30af3fa04607887cf3",
+          "shape": [
+            32000
+          ]
+        }
+      },
+      "games": 27804
+    },
+    "train": {
+      "count": 250000,
+      "examinedRows": 250011,
+      "excludedDuplicateInputs": 11,
+      "files": {
+        "activations": {
+          "dtype": "float32",
+          "path": "train/x.npy",
+          "sha256": "8545b835f391a2ecccf2f25eb3bae4952f47b2967f6081abbef71e286e8e5455",
+          "shape": [
+            250000,
+            512
+          ]
+        },
+        "boards": {
+          "dtype": "uint8",
+          "path": "train/board_bytes.npy",
+          "sha256": "37b68c94246f3d75e4803075c04093a4e9a217475f1e95b2fcf7312d65bb3eb4",
+          "shape": [
+            250000,
+            32
+          ]
+        },
+        "game_ids": {
+          "dtype": "uint32",
+          "path": "train/game_ids.npy",
+          "sha256": "ebca32f590da1887ce49c482d3bfcdb8cac2da99388a41cd5287df24dd2873c6",
+          "shape": [
+            250000
+          ]
+        },
+        "identity": {
+          "dtype": "uint8",
+          "path": "train/identity.npy",
+          "sha256": "400a8ea9a559aa43e4646b86a9a0c2efb807066d9e5827b67ebebcee572ff724",
+          "shape": [
+            250000,
+            32
+          ]
+        },
+        "source_indices": {
+          "dtype": "int64",
+          "path": "train/rows.npy",
+          "sha256": "35f89ab4f4c4dc250bc38b15e8176263985de24164022413501a25667037337c",
+          "shape": [
+            250000
+          ]
+        },
+        "target_cp": {
+          "dtype": "float32",
+          "path": "train/cp.npy",
+          "sha256": "514f3e8a7d7a7e034f704362270634f9108b877f5541937f14068fe24aa7f7dd",
+          "shape": [
+            250000
+          ]
+        },
+        "target_wdl": {
+          "dtype": "float32",
+          "path": "train/wdl.npy",
+          "sha256": "3f8e778383c84b82a6d15bbd939a5dc24f8a3319fd33e62637732c564e655ce8",
+          "shape": [
+            250000
+          ]
+        },
+        "teacher_cp": {
+          "dtype": "int16",
+          "path": "train/teacher_cp.npy",
+          "sha256": "a9988041718cc73c58f02084ecad1bfdc76d633ecf57c797da35174669e55903",
+          "shape": [
+            250000
+          ]
+        },
+        "turns": {
+          "dtype": "uint8",
+          "path": "train/turn.npy",
+          "sha256": "301995fdb7ded9760699ccff89656162b28446571fe77f02767b1f62624fbf64",
+          "shape": [
+            250000
+          ]
+        }
+      },
+      "games": 233138
+    },
+    "validation": {
+      "count": 32000,
+      "examinedRows": 32002,
+      "excludedDuplicateInputs": 2,
+      "files": {
+        "activations": {
+          "dtype": "float32",
+          "path": "validation/x.npy",
+          "sha256": "8aa772db639bd327cff2c8cb076e627929ce158322a4fae45129d88399c5ef92",
+          "shape": [
+            32000,
+            512
+          ]
+        },
+        "boards": {
+          "dtype": "uint8",
+          "path": "validation/board_bytes.npy",
+          "sha256": "333fe36ee876292a18c3dbab69e51c67c034f41c757cf06478a70b282bc8779c",
+          "shape": [
+            32000,
+            32
+          ]
+        },
+        "game_ids": {
+          "dtype": "uint32",
+          "path": "validation/game_ids.npy",
+          "sha256": "e698be336d16da63405a8ebbcfe99318a3478304c63b614c4fa497b1617cde95",
+          "shape": [
+            32000
+          ]
+        },
+        "identity": {
+          "dtype": "uint8",
+          "path": "validation/identity.npy",
+          "sha256": "8ef4398550a028f9fcde19e9592f46b275eb945cbbf5f568879baa032c09f6e8",
+          "shape": [
+            32000,
+            32
+          ]
+        },
+        "source_indices": {
+          "dtype": "int64",
+          "path": "validation/rows.npy",
+          "sha256": "a9472f7b00eb4d6b1e6df9d63b43783d04d21c3c420ed7e0a11ddd63136a6288",
+          "shape": [
+            32000
+          ]
+        },
+        "target_cp": {
+          "dtype": "float32",
+          "path": "validation/cp.npy",
+          "sha256": "e55ec9f498e2d1f5d4eec1717c61b51fd4736348cff8ae40cc70be12c23824c3",
+          "shape": [
+            32000
+          ]
+        },
+        "target_wdl": {
+          "dtype": "float32",
+          "path": "validation/wdl.npy",
+          "sha256": "2de0fdde27bb8e7d1d1b324c82ac0789777a764fe3102389df9ab154e418cdc8",
+          "shape": [
+            32000
+          ]
+        },
+        "teacher_cp": {
+          "dtype": "int16",
+          "path": "validation/teacher_cp.npy",
+          "sha256": "17a4aa61458b5505fbdce557f19e4aec750ed72f8dde1ead9293fb831a3c5e8a",
+          "shape": [
+            32000
+          ]
+        },
+        "turns": {
+          "dtype": "uint8",
+          "path": "validation/turn.npy",
+          "sha256": "c9fcae3cbcc51f1bad3d2953676df15f574df279c41dfef5f326f31f701a6034",
+          "shape": [
+            32000
+          ]
+        }
+      },
+      "games": 27806
+    }
+  },
+  "status": "complete"
+}
