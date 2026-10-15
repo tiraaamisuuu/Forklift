@@ -4,17 +4,6 @@
 
 #include <limits>
 
-// Scratch-capacity specialisations must keep independent stack frames. Inlining
-// their largest arrays into the dispatcher would make small deployed networks
-// pay for the wide/maximum-size fallback, including Windows stack probes.
-#if defined(_MSC_VER)
-#define FORKLIFT_NNUE_NOINLINE __declspec(noinline)
-#elif defined(__GNUC__) || defined(__clang__)
-#define FORKLIFT_NNUE_NOINLINE __attribute__((noinline))
-#else
-#define FORKLIFT_NNUE_NOINLINE
-#endif
-
 // SSE2 is part of the x64 baseline, not an AVX/native-architecture requirement.
 // Other targets retain the portable kernels. The override allows the scalar
 // implementation to be checked by the same tests in a separate build.
@@ -430,57 +419,39 @@ private:
         return output;
     }
 
-    template<size_t Capacity>
-    FORKLIFT_NNUE_NOINLINE int64_t outputResidualNarrow(
-        const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
-        // Fixed scratch has no heap allocation or zero-fill. The dispatcher
-        // guarantees H <= Capacity; only the populated 2H entries are read.
-        int16_t activations[Capacity * 2];
-        size_t hidden = 0;
+    int64_t outputResidual(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
+        if(hiddenScale_ <= std::numeric_limits<int16_t>::max()){
+            // Fixed scratch has no heap allocation or zero-fill. Only the 2H
+            // populated entries are read. Pack once, then reuse for every row.
+            int16_t activations[2048];
+            size_t hidden = 0;
 #if defined(FORKLIFT_NNUE_HAS_SSE2)
-        const __m128i zero = _mm_setzero_si128();
-        const __m128i ceiling = _mm_set1_epi16(static_cast<int16_t>(hiddenScale_));
-        for(; hidden + 8 <= hiddenSize_; hidden += 8){
-            const auto clipped = [&](const int32_t* values){
-                const __m128i low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values));
-                const __m128i high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values + 4));
-                return _mm_min_epi16(_mm_max_epi16(_mm_packs_epi32(low, high), zero), ceiling);
-            };
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(activations + hidden), clipped(firstAccumulator + hidden));
-            _mm_storeu_si128(reinterpret_cast<__m128i*>(activations + hiddenSize_ + hidden), clipped(secondAccumulator + hidden));
-        }
+            const __m128i zero = _mm_setzero_si128();
+            const __m128i ceiling = _mm_set1_epi16(static_cast<int16_t>(hiddenScale_));
+            for(; hidden + 8 <= hiddenSize_; hidden += 8){
+                const auto clipped = [&](const int32_t* values){
+                    const __m128i low = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values));
+                    const __m128i high = _mm_loadu_si128(reinterpret_cast<const __m128i*>(values + 4));
+                    return _mm_min_epi16(_mm_max_epi16(_mm_packs_epi32(low, high), zero), ceiling);
+                };
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(activations + hidden), clipped(firstAccumulator + hidden));
+                _mm_storeu_si128(reinterpret_cast<__m128i*>(activations + hiddenSize_ + hidden), clipped(secondAccumulator + hidden));
+            }
 #endif
-        for(; hidden < hiddenSize_; hidden++){
-            activations[hidden] = static_cast<int16_t>(std::clamp(firstAccumulator[hidden], 0, hiddenScale_));
-            activations[hiddenSize_ + hidden] = static_cast<int16_t>(std::clamp(secondAccumulator[hidden], 0, hiddenScale_));
+            for(; hidden < hiddenSize_; hidden++){
+                activations[hidden] = static_cast<int16_t>(std::clamp(firstAccumulator[hidden], 0, hiddenScale_));
+                activations[hiddenSize_ + hidden] = static_cast<int16_t>(std::clamp(secondAccumulator[hidden], 0, hiddenScale_));
+            }
+            return outputResidualClipped(activations);
         }
-        return outputResidualClipped(activations);
-    }
-
-    template<size_t Capacity>
-    FORKLIFT_NNUE_NOINLINE int64_t outputResidualWide(
-        const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
         // Format-valid scales wider than int16 use the same once-clipped
         // layout, with independently certified int32 or fallback int64 dots.
-        int32_t activations[Capacity * 2];
+        int32_t activations[2048];
         for(size_t hidden = 0; hidden < hiddenSize_; hidden++){
             activations[hidden] = std::clamp(firstAccumulator[hidden], 0, hiddenScale_);
             activations[hiddenSize_ + hidden] = std::clamp(secondAccumulator[hidden], 0, hiddenScale_);
         }
         return outputResidualClipped(activations);
-    }
-
-    int64_t outputResidual(const int32_t* firstAccumulator, const int32_t* secondAccumulator) const {
-        // H256 needs only 1 KiB narrow or 2 KiB wide scratch. Keep the maximum
-        // supported H1024 fallback off its stack frame without dynamic storage.
-        if(hiddenScale_ <= std::numeric_limits<int16_t>::max()){
-            if(hiddenSize_ <= 256) return outputResidualNarrow<256>(firstAccumulator, secondAccumulator);
-            if(hiddenSize_ <= 512) return outputResidualNarrow<512>(firstAccumulator, secondAccumulator);
-            return outputResidualNarrow<1024>(firstAccumulator, secondAccumulator);
-        }
-        if(hiddenSize_ <= 256) return outputResidualWide<256>(firstAccumulator, secondAccumulator);
-        if(hiddenSize_ <= 512) return outputResidualWide<512>(firstAccumulator, secondAccumulator);
-        return outputResidualWide<1024>(firstAccumulator, secondAccumulator);
     }
 
     template<typename Sum>
@@ -631,4 +602,3 @@ private:
 #if defined(FORKLIFT_NNUE_HAS_SSE2)
 #undef FORKLIFT_NNUE_HAS_SSE2
 #endif
-#undef FORKLIFT_NNUE_NOINLINE
