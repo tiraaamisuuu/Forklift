@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "experimentId": "verified-nnue-local-profile-and-build-20261015",
+  "webImplementationCommit": "0ed395f",
+  "benchmarkImplementationCommit": "88cb568",
+  "commonCppSourceRevision": "f632217",
+  "approvedModelSha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c",
+  "modelStaging": {
+    "source": "E:/Dev/Forklift-Research/models/nnue-v2-factorization-20260912/shared/model.nnue",
+    "localCopy": "E:/Dev/Chess-Engine/networks/verified-shared-v1/model.nnue",
+    "sourceAndCopyHashesVerified": true,
+    "sourceModified": false,
+    "weightsCommittedOrReleased": false
+  },
+  "buildScreen": {
+    "record": "2026-10-15-nnue-native-ipo-cost.json",
+    "source": "Same integer NNUE/search source across all four builds",
+    "all22TreesIdentical": true,
+    "measuredTrialsPerCandidate": 3,
+    "selectedLocalBuild": "build-nnue-native-ipo-screen/Release",
+    "medianPairedElapsedRatio": 0.927536231884058,
+    "medianPairedTimeReductionPercentApproximate": 7.25,
+    "flags": ["/O2", "/Ob2", "/DNDEBUG", "/arch:AVX2", "/GL", "/LTCG"],
+    "portableDefaultChanged": false,
+    "scope": "Exploratory best-of-three build screen on the Ryzen 9 5900X, not independent confirmation, Elo or cross-platform performance evidence"
+  },
+  "nativeIpoValidation": {
+    "configuration": "Release, headless, testing ON, native ON, IPO ON",
+    "buildWorkers": 6,
+    "ctestParallelism": 1,
+    "ctestTimeoutSeconds": 60,
+    "ctestPassed": 14,
+    "ctestFailed": 0,
+    "ctestSeconds": 24.07,
+    "residualNumericFixturesPerTarget": 76,
+    "residualOracleComparisonsPerTarget": 19584,
+    "totalNormalScalarReferenceComparisons": 58752,
+    "measuredExecutableHashesUnchangedAfterTestBuild": true,
+    "knownModelScoreParity": {"expectedCp": [43, 38, -5, -67], "actualCp": [43, 38, -5, -67], "backend": "nnue", "weight": 100}
+  },
+  "newPythonToolingFixtures": {"cachePassed": 7, "studyPassed": 7, "combinedPassed": 14, "combinedSeconds": 3.548, "cudaDisabled": true},
+  "webProfiles": {
+    "fixtureTestsPassed": 12,
+    "fixtureTestsFailed": 0,
+    "checks": ["approved checksum", "missing file", "incorrect checksum", "reserved identity spoof prevention", "unknown explicit default", "classical default retained when omitted", "classical opt-out remains available", "activation-time checksum recheck", "manual NNUE profile compatibility"],
+    "realEngineApiSmoke": {"classicalStartup": "pass", "verifiedNnueStartupAndClassicalOptOut": "pass", "realEngine": "build-nnue-native-ipo-screen/Release/chess-engine-uci.exe", "noRemoteDownloads": true},
+    "launcher": {"path": "scripts/run_verified_nnue_web.ps1", "powershellSyntax": "pass", "portableCheckOnly": "pass", "nativeCheckOnly": "pass", "fullHttpSmokeThroughPythonServerCli": "pass"},
+    "explicitSelectionRequired": true
+  },
+  "globalDefaultChanged": false,
+  "desktopNnueIntegrationAdded": false,
+  "promotionRegistryApplied": false,
+  "releasePublished": false,
+  "newStrengthMatches": 0,
+  "backgroundJobsScheduled": false,
+  "limitations": ["approved weights staged locally, not distributed in Git", "native binary requires AVX2", "verified badge pins the previously confirmed model, not a fresh strength result for arbitrary current builds", "network checksum recheck does not eliminate a malicious concurrent filesystem replacement race"]
+}

@@ -6,6 +6,15 @@ after the v1 release.
 
 ## Repository state
 
+Verified local NNUE access/build screen (2026-10-15): the web UI can now opt
+explicitly into the checksum-pinned confirmed shared V1 model, with a launcher,
+startup-profile selection and classical opt-out. Both real-engine HTTP smoke
+modes and 12 profile fixtures pass. Native+IPO used about 7.25% less paired
+depth-12 time than portable in a three-pair local screen; all 22 trees match
+and all 14 native+IPO CTests pass. This is not an Elo result or a global/default
+release change; approved weights are staged locally, not distributed by Git.
+See [usable profile, validation and limits](results/2026-10-15-verified-nnue-local-profile.md).
+
 Matched head study (2026-10-15, machine available): an audited GPU cache and
 two-seed direct/R4/R8 study completed with 250k training, 32k validation and
 32k diagnostic-test positions. Every arm received 20 epochs / 2,460 updates.
