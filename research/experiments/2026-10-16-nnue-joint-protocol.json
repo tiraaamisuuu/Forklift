@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "frozenBeforeTraining": true,
+  "date": "2026-10-16",
+  "question": "Does conservative end-to-end adaptation outperform the protected pretrained source, and does R8 add useful capacity beyond matched direct adaptation?",
+  "novelAlgorithmClaim": false,
+  "sourceWeightsSha256": "ef3ca1273c287f5a79b342946d129f6b217f13fb185ba129dc8b80a133a52643",
+  "sourceNetworkSha256": "ff25cf447dc6137591ecc2522d23f14e2f9bee0a641dda36ec2cd9c67a762c7c",
+  "trainSha256": "560a7dbc0b3e4a75ea3dbc1fa707a70485f3691fbbae3acbf224e4581d16c208",
+  "parentValidationSha256": "6ff96ade7525f345fbea59255edd301d01a348495603e9ff8e001c2acb294db7",
+  "metadataCacheSha256": "2148024ce07da3116f72b922a808eab9d77b0bac24227b384cf778e5db0c6af4",
+  "architecture": {"hidden": 256, "featureFactorization": true, "residualWidths": [0, 8]},
+  "training": {
+    "seeds": [202610161, 202610162],
+    "fullTrainingPositions": 5000000,
+    "epochsPerArm": 2,
+    "arms": 4,
+    "matchedEpochOrderWithinSeed": true,
+    "batchSize": 2048,
+    "optimizer": "AdamW",
+    "transformerLearningRate": 0.00001,
+    "headLearningRate": 0.0001,
+    "weightDecay": 0.000001,
+    "objective": "teacher WDL Brier",
+    "wdlScale": 400,
+    "targetScale": 600,
+    "resultWeight": 0,
+    "cpuThreads": 4,
+    "loaderWorkers": 2,
+    "device": "CUDA RTX 3070",
+    "deterministicAlgorithms": true,
+    "tf32": false,
+    "wallCapSeconds": 2700,
+    "incompletePolicy": "stop, record incomplete, do not extend or compare unmatched arms"
+  },
+  "selection": {
+    "validationPositions": 32000,
+    "membership": "existing frozen-head cache validation metadata only; never reuse its activations",
+    "checkpoint": "minimum validation Brier over epochs 0, 1, 2; earliest tie",
+    "epochZeroMustBeSelectable": true,
+    "sourceAndAllInitialPredictionsMustMatchExactly": true,
+    "allSelectionsSealedBeforeDiagnosticLabels": true
+  },
+  "diagnostic": {
+    "positions": 32000,
+    "seed": 20261016,
+    "source": "parent validation, excluding all games and effective HalfKP inputs in old cache validation/test",
+    "exclusionDoesNotCertifyNoTrainingInputOverlap": true,
+    "globallyUntouchedTest": false,
+    "caveat": "Pretrained source was selected on parent validation; this is an additional diagnostic, not an untouched final test.",
+    "floatAndQuantizedPredictions": "per sample, per selected model; recompute quantized transformer for every model",
+    "uncertainty": "1000 whole-game paired bootstrap resamples; seed-mean per-position loss differences are primary"
+  },
+  "export": {"hiddenScale": 1024, "outputScale": 32, "residualWeightScale": 256, "cppParityFensPerArm": 4},
+  "gates": {
+    "direct": ["each seed >=1 percent relative validation Brier reduction vs source", "aggregate float diagnostic 95 percent upper CI <0", "aggregate quantized diagnostic direction improves", "exact C++ exports"],
+    "residual": ["direct gate passes", "each seed >=1 percent relative validation Brier reduction vs matched trained direct", "same diagnostic and C++ gates vs matched trained direct", "separate inference cost measurement before any strength screen"],
+    "promotion": "no automatic promotion; only a surviving candidate earns a separately preregistered paired strength screen"
+  },
+  "researchLimits": ["Brier loss is not chess strength", "two seeds do not establish generality", "do not claim architectural novelty", "protect verified source and do not alter default evaluator based on this study alone"]
+}
