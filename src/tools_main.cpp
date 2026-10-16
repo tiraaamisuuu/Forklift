@@ -27,7 +27,7 @@ void printHelp(){
         << "  chess-engine-tools --eval [--fen FEN] [--nnue NETWORK] [--nnue-weight PERCENT]\n"
         << "  chess-engine-tools --bench [--bench-depth DEPTH] [--bench-time MS]\n"
         << "                  [--bench-tt MB] [--threads N] [--nnue NETWORK]\n"
-        << "                  [--nnue-weight PERCENT]\n"
+        << "                  [--nnue-weight PERCENT] [--fen FEN]\n"
         << "                  [--nnue-rebuild] [--probcut | --no-probcut]\n"
         << "                  [--singular | --no-singular] [--singular-budget PERCENT]\n";
 }
@@ -159,10 +159,31 @@ int main(int argc, char** argv){
         evaluator.setNnueWeight(nnueWeight);
     }
     if(benchmark){
-        return runSearchBenchmark(
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+        if(threads != 1){
+            std::cerr << "legal-generation diagnostics require --threads 1\n";
+            return 1;
+        }
+        resetLegalGenerationDiagnostics();
+        const auto diagnosticStart = std::chrono::steady_clock::now();
+#endif
+        const int result = runSearchBenchmark(
             zobrist, benchmarkDepth, benchmarkTimeMs, benchmarkTTMB, threads,
             nnuePath.empty() ? nullptr : &evaluator, !nnueRebuild, enableProbCut,
-            enableSingularExtensions, singularProofBudgetPercent);
+            enableSingularExtensions, singularProofBudgetPercent, fen.empty() ? nullptr : fen.c_str());
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+        const auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now() - diagnosticStart).count();
+        const auto& work = legalGenerationDiagnostics;
+        std::cout << "Legalgen diagnostics: calls=" << work.calls
+                  << " pseudo=" << work.pseudoCandidates
+                  << " probes=" << work.fullMakeUndoProbes
+                  << " fast=" << work.fastAccepted
+                  << " checked=" << work.checkedCalls
+                  << " legalgenNs=" << work.elapsedNs
+                  << " harnessNs=" << elapsedNs << '\n';
+#endif
+        return result;
     }
 
     if(evaluate){

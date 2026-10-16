@@ -1636,13 +1636,15 @@ inline int runSearchBenchmark(const Zobrist& zob, int depth, int perPositionTime
                               bool incrementalNnue = true,
                               bool enableProbCut = false,
                               bool enableSingularExtensions = false,
-                              int singularProofBudgetPercent = 0){
-    const std::vector<BenchmarkPosition> positions = {
+                              int singularProofBudgetPercent = 0,
+                              const char* singleFen = nullptr){
+    std::vector<BenchmarkPosition> positions = {
         {"Start", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
         {"Middlegame 1", "r2q1rk1/pp2bppp/2np1n2/2p1p1B1/2P1P3/2NP1N2/PP2QPPP/R4RK1 w - - 0 10"},
         {"Middlegame 2", "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2NP1NP1/PP2PPBP/R1BQ1RK1 w - - 0 9"},
         {"Endgame", "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"}
     };
+    if(singleFen) positions = {{"Custom", singleFen}};
 
     u64 totalNodes = 0;
     int totalMs = 0;

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "frozenBeforeMeasurement": true,
+  "date": "2026-10-16",
+  "question": "Can conservative pin-based legal acceptance remove duplicate make/undo work without changing search?",
+  "novelAlgorithmClaim": false,
+  "baseline": "same source/configuration with FORKLIFT_REFERENCE_LEGALGEN; old make/undo legality for every pseudo move",
+  "candidate": "accept only unpinned non-king non-EP non-castling moves outside check; all uncertain cases use baseline",
+  "build": "MSVC Release, native AVX2 plus IPO, same flags for both uninstrumented binaries",
+  "correctness": [
+    "independent old-generation oracle, ordered complete move metadata and board restoration",
+    "castling, both-colour promotions and EP, all pin directions, checks, malformed states, random legal games and artificial boards",
+    "six externally checked perft fixtures",
+    "all CTests plus focused AddressSanitizer legality test",
+    "exact move, score, reached depth, main and qnode counts, other printed search counters in every benchmark"
+  ],
+  "measurement": {
+    "script": "scripts/benchmark_legalgen.py",
+    "evaluators": ["verified shared V1 at 100 percent, incremental", "classical"],
+    "defaultSuitePositions": 4,
+    "depth": 12,
+    "pairedTrialsPerEvaluator": 7,
+    "warmupsPerBinaryAndEvaluator": 1,
+    "breadthBook": ".tools/openings/UHO_4060_v4.epd",
+    "breadthBookSha256": "3f499996ff0b674a04f85f2634811d102dd53b5115841e8f11d18e1f550ba2ca",
+    "breadthCount": 16,
+    "breadthDepth": 10,
+    "breadthSeed": 20261016,
+    "threads": 1,
+    "hashMiB": 128,
+    "probCut": false,
+    "singularExtensions": false,
+    "ceilingPerPositionMs": 30000,
+    "wallCapSeconds": 900,
+    "host": "no concurrent project workloads during timing",
+    "primaryStatistic": "median of seven paired candidate/reference search-time ratios, reported separately for each evaluator",
+    "success": "all exactness gates pass and primary NNUE median time reduction >= 2 percent, with at least six of seven pairs faster",
+    "diagnostics": "one instrumented run per binary and evaluator, reported separately; timers include overhead and are not speed evidence"
+  },
+  "limits": ["fixed-depth local single-thread cost is not Elo", "no broad Stockfish-parity claim", "not a proof over every possible board state"]
+}

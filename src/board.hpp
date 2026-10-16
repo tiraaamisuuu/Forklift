@@ -1,6 +1,7 @@
 #pragma once
 
 #include "chess_types.hpp"
+#include "legality_diagnostics.hpp"
 
 struct Board {
     std::array<Piece, 64> b{};
@@ -657,20 +658,136 @@ struct Board {
         hash = u.hash;
     }
 
+    // Retain the original make/unmake legality filter as an independent oracle
+    // and an optional benchmark build. Do not implement this in terms of the
+    // optimised path: comparisons must be able to detect a missed pin/EP case.
     template<typename MoveContainer>
-    void genLegalMoves(MoveContainer& legal){
+    void genLegalMovesReference(MoveContainer& legal){
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+        LegalGenerationDiagnosticsScope diagnosticsScope;
+#endif
         MoveList pseudo;
         genPseudoMoves(pseudo);
         legal.clear();
         legal.reserve(pseudo.size());
 
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+        legalGenerationDiagnostics.pseudoCandidates += pseudo.size();
+        // This extra check exists only in the instrumented reference build.
+        // Preserve the original non-diagnostic filtering work unchanged.
+        if((stm == Color::White || stm == Color::Black) &&
+           findKing(stm) >= 0 && findKing(stm) < 64 && inCheck(stm)){
+            legalGenerationDiagnostics.checkedCalls++;
+        }
+#endif
         for(const auto& m : pseudo){
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+            legalGenerationDiagnostics.fullMakeUndoProbes++;
+#endif
             Undo u{};
             if(makeMove(m,u)){
                 legal.push_back(m);
                 undoMove(u);
             }
         }
+    }
+
+    // Moving a non-king piece can expose its king only along a sliding ray.
+    // Mark the first friendly blocker when a compatible enemy slider is the
+    // next occupied square. Pinned moves still use the complete old oracle;
+    // this mask is not an attempt to generate legal moves along the pin line.
+    u64 potentiallyPinnedPieces(Color side, int king) const {
+        static constexpr int directions[8][2] = {
+            {1,1},{1,-1},{-1,1},{-1,-1},{1,0},{-1,0},{0,1},{0,-1}
+        };
+        const int kingFile = king % 8;
+        const int kingRank = king / 8;
+        u64 pinned = 0;
+        for(int direction = 0; direction < 8; direction++){
+            int file = kingFile + directions[direction][0];
+            int rank = kingRank + directions[direction][1];
+            int blocker = -1;
+            while(file >= 0 && file < 8 && rank >= 0 && rank < 8){
+                const int square = rank * 8 + file;
+                const Piece piece = b[static_cast<size_t>(square)];
+                if(!isNone(piece)){
+                    if(blocker < 0){
+                        if(piece.c != side) break;
+                        blocker = square;
+                    } else {
+                        if(piece.c != side &&
+                           (piece.t == PieceType::Queen ||
+                            piece.t == (direction < 4 ? PieceType::Bishop : PieceType::Rook))){
+                            pinned |= u64(1) << blocker;
+                        }
+                        break;
+                    }
+                }
+                file += directions[direction][0];
+                rank += directions[direction][1];
+            }
+        }
+        return pinned;
+    }
+
+    template<typename MoveContainer>
+    void genLegalMoves(MoveContainer& legal){
+#if defined(FORKLIFT_REFERENCE_LEGALGEN)
+        genLegalMovesReference(legal);
+#else
+        // Board is also used by tools/tests that can construct incomplete
+        // positions directly. Only apply the fast-path proof to a recognised
+        // side and consistent cached kings; preserve the old filter otherwise.
+        const int whiteKing = kingSquare[0];
+        const int blackKing = kingSquare[1];
+        if((stm != Color::White && stm != Color::Black) ||
+           whiteKing < 0 || whiteKing >= 64 || blackKing < 0 || blackKing >= 64 ||
+           b[static_cast<size_t>(whiteKing)].t != PieceType::King ||
+           b[static_cast<size_t>(whiteKing)].c != Color::White ||
+           b[static_cast<size_t>(blackKing)].t != PieceType::King ||
+           b[static_cast<size_t>(blackKing)].c != Color::Black){
+            genLegalMovesReference(legal);
+            return;
+        }
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+        LegalGenerationDiagnosticsScope diagnosticsScope;
+#endif
+        MoveList pseudo;
+        genPseudoMoves(pseudo);
+        legal.clear();
+        legal.reserve(pseudo.size());
+
+        const bool checked = inCheck(stm);
+        const u64 pinned = checked ? 0 : potentiallyPinnedPieces(stm, findKing(stm));
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+        legalGenerationDiagnostics.pseudoCandidates += pseudo.size();
+        if(checked) legalGenerationDiagnostics.checkedCalls++;
+#endif
+        for(const Move& move : pseudo){
+            // EP removes a second square; king moves change the attacked target.
+            // Neither is covered by the single-origin unpinned-piece proof.
+            // King-target captures on malformed positions retain the original
+            // makeMove semantics rather than introducing a separate rules fix.
+            if(!checked && b[move.from].t != PieceType::King &&
+               !move.isEnPassant && !move.isCastle &&
+               b[move.to].t != PieceType::King &&
+               !(pinned & (u64(1) << move.from))){
+                legal.push_back(move);
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+                legalGenerationDiagnostics.fastAccepted++;
+#endif
+                continue;
+            }
+#if defined(FORKLIFT_LEGALGEN_DIAGNOSTICS)
+            legalGenerationDiagnostics.fullMakeUndoProbes++;
+#endif
+            Undo undo{};
+            if(makeMove(move, undo)){
+                legal.push_back(move);
+                undoMove(undo);
+            }
+        }
+#endif
     }
 
     void genLegalMovesFrom(int from, std::vector<Move>& out){
