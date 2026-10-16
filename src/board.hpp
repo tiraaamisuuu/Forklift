@@ -745,7 +745,12 @@ struct Board {
            b[static_cast<size_t>(whiteKing)].t != PieceType::King ||
            b[static_cast<size_t>(whiteKing)].c != Color::White ||
            b[static_cast<size_t>(blackKing)].t != PieceType::King ||
-           b[static_cast<size_t>(blackKing)].c != Color::Black){
+           b[static_cast<size_t>(blackKing)].c != Color::Black ||
+           // Some syntactically accepted FENs have an occupied EP target.
+           // Legacy EP undo then discards that occupant, changing subsequent
+           // probes. Cached checks/pins are not valid across those mutations;
+           // preserve the entire old filtering behaviour for such positions.
+           (epSquare >= 0 && epSquare < 64 && !isNone(b[static_cast<size_t>(epSquare)]))){
             genLegalMovesReference(legal);
             return;
         }

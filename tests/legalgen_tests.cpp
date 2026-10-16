@@ -240,6 +240,56 @@ void testSeededArtificialPositions(const Zobrist& zobrist){
     }
 }
 
+void testOccupiedEnPassantLegacyParity(const Zobrist& zobrist){
+    const char* fixtures[] = {
+        "7k/5Q2/r2N3K/3pP3/8/8/8/8 w - d6 0 1",
+        "8/8/8/8/3Pp3/R2n3k/5q2/7K b - d3 0 1",
+        // In this black variant the queen is generated after the EP pawn, so
+        // accepting it from stale pre-EP check/pin information would diverge.
+        "8/8/8/5q2/3Pp3/R2n3k/8/7K b - d3 0 1",
+    };
+    for(size_t index = 0; index < std::size(fixtures); index++){
+        const std::string label = "occupied EP target " + std::to_string(index);
+        Board initial;
+        initial.setZobrist(&zobrist);
+        expect(initial.loadFEN(fixtures[index]), label + " loads under legacy parser");
+        const int target = initial.epSquare;
+        expect(target >= 0 && target < 64 && !isNone(initial.b[static_cast<size_t>(target)]),
+               label + " begins with an occupied target");
+
+        // Unlike a reachable chess position, these malformed inputs are not
+        // restored by the legacy EP make/undo operation: the target occupant
+        // is lost. Compare independent copies and preserve that exact legacy
+        // final state rather than accidentally turning an optimisation into a
+        // chess-rule or malformed-FEN behaviour change.
+        Board oracleBoard = initial;
+        const auto oracle = independentReference(oracleBoard);
+        expect(!sameState(oracleBoard, initial), label + " exercises legacy target destruction");
+        expect(isNone(oracleBoard.b[static_cast<size_t>(target)]),
+               label + " legacy oracle discards original target occupant");
+
+        Board fastBoard = initial;
+        std::vector<Move> fast;
+        fastBoard.genLegalMoves(fast);
+        compareOrdered(fast, oracle, label + " vector ordered parity");
+        expect(sameState(fastBoard, oracleBoard), label + " vector exact legacy final-state parity");
+
+        Board fixedBoard = initial;
+        MoveList fixed;
+        fixedBoard.genLegalMoves(fixed);
+        compareOrdered(fixed, oracle, label + " fixed ordered parity");
+        expect(sameState(fixedBoard, oracleBoard), label + " fixed exact legacy final-state parity");
+
+        Board referenceBoard = initial;
+        std::vector<Move> reference;
+        referenceBoard.genLegalMovesReference(reference);
+        compareOrdered(reference, oracle, label + " public reference ordered parity");
+        expect(sameState(referenceBoard, oracleBoard), label + " public reference exact final-state parity");
+        comparedPositions++;
+        comparedMoves += static_cast<u64>(oracle.size());
+    }
+}
+
 void testSeededPlayouts(const Zobrist& zobrist){
     std::mt19937 random(0x4C454741U);
     const u64 before = comparedPositions;
@@ -313,6 +363,7 @@ int main(){
     testFixtures(zobrist);
     testAllPinRays(zobrist);
     testMalformedFallbacks(zobrist);
+    testOccupiedEnPassantLegacyParity(zobrist);
     testSeededArtificialPositions(zobrist);
     testSeededPlayouts(zobrist);
     testStandardPerfts(zobrist);
