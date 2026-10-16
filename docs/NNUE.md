@@ -268,11 +268,23 @@ coverage, phase, material imbalance, teacher magnitude/sign, game result, and
 ply distributions. Sparse king squares or many features seen only a handful of
 times are a reason to improve sampling/data before tuning the model.
 
-The completed 5M audit saw 37,890/40,960 inputs (92.50%). Of all inputs,
-3,070 were unseen and 21,184 occurred at most 100 times; the median frequency
-among seen inputs was only 114. This is a major improvement over the earlier
-71.83% coverage, but it also shows that targeted long-tail sampling remains
-more valuable than blindly repeating the same corpus.
+The historical 5M audit saw 37,890/40,960 allocated inputs (92.50%):
+3,070 were unseen and 21,184 occurred at most 100 times, including zero.
+Among seen inputs the median frequency was 114, and 18,114 occurred at most
+100 times. The raw-slot figures are retained for reproducibility, but are not
+a sound measure of missing legal-chess features.
+
+Correction (2026-10-16): 2,656 allocated slots are structurally impossible:
+a non-king piece cannot occupy the anchor king square, and pawns cannot be
+on the first/eighth ranks. Their union is 640 + 2,048 - 32 = 2,656 slots.
+The remaining denominator is 38,304. If the historical corpus has zero
+excluded activations, its 37,890 seen slots correspond to 98.919% coverage
+and only 414 unseen structurally possible slots, not 3,070 actionable gaps.
+These necessary occupancy rules do not certify reachability or balanced
+training coverage. New audits report both denominators, excluded activations
+and seen-only low-frequency counts; historical evidence is not rewritten.
+Long-tail imbalance remains a hypothesis to measure, not a demonstrated reason
+to prefer one sampling policy or repeat training.
 
 ## Combine data produced on Windows and Debian
 

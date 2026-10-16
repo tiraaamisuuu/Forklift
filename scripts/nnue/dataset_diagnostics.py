@@ -35,6 +35,65 @@ PHASE_WEIGHTS = {
 }
 
 
+def structurally_possible_feature_mask() -> tuple[bool, ...]:
+    """Necessary occupancy rules, not a certificate of reachable chess positions.
+
+    HalfKP allocates king x relative-piece x piece-square slots. No non-king
+    piece can occupy the anchor king square; neither pawn bucket can occur on
+    rank one/eight. Other legality/reachability restrictions are not modeled.
+    """
+    return tuple(
+        square != king and not (bucket in (0, 5) and square // 8 in (0, 7))
+        for king in range(64)
+        for bucket in range(10)
+        for square in range(64)
+    )
+
+
+def _frequency_summary(frequencies: list[int]) -> dict[str, object]:
+    seen_frequencies = [frequency for frequency in frequencies if frequency > 0]
+    seen = len(seen_frequencies)
+    return {
+        "featureCount": len(frequencies),
+        "seen": seen,
+        "unseen": len(frequencies) - seen,
+        "fraction": seen / len(frequencies) if frequencies else 0.0,
+        "lowFrequencyIncludesZero": True,
+        **{f"atMost{limit}": sum(frequency <= limit for frequency in frequencies)
+           for limit in (1, 10, 100)},
+        **{f"seenAtMost{limit}": sum(0 < frequency <= limit for frequency in frequencies)
+           for limit in (1, 10, 100)},
+        "seenFrequency": {
+            "minimum": min(seen_frequencies, default=0),
+            "median": percentile(seen_frequencies, 0.5),
+            "p95": percentile(seen_frequencies, 0.95),
+            "maximum": max(seen_frequencies, default=0),
+        },
+    }
+
+
+def feature_coverage(frequencies: list[int]) -> dict[str, object]:
+    """Preserve legacy raw-slot metrics and add a clearly bounded denominator."""
+    if len(frequencies) != FEATURE_COUNT:
+        raise ValueError("HalfKP frequency array must contain 40,960 slots")
+    mask = structurally_possible_feature_mask()
+    possible = [frequency for frequency, allowed in zip(frequencies, mask) if allowed]
+    excluded = [frequency for frequency, allowed in zip(frequencies, mask) if not allowed]
+    return {
+        **_frequency_summary(frequencies),
+        "denominator": "all-allocated-feature-slots",
+        "structurallyPossible": {
+            **_frequency_summary(possible),
+            "denominator": "slots-passing-necessary-occupancy-rules",
+            "rules": ["nonking-piece-off-anchor-king-square", "pawns-off-back-ranks"],
+            "legalityCertified": False,
+            "excludedFeatureCount": len(excluded),
+            "excludedSeen": sum(frequency > 0 for frequency in excluded),
+            "excludedActivations": sum(excluded),
+        },
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", required=True, type=Path, nargs="+")
@@ -118,26 +177,10 @@ def analyze_records(paths: list[Path], maximum_positions: int = 0) -> dict[str, 
         if maximum_positions and positions >= maximum_positions:
             break
 
-    seen_frequencies = [frequency for frequency in frequencies if frequency > 0]
-    seen = len(seen_frequencies)
     return {
         "positions": positions,
         "halfKpActivations": sum(frequencies),
-        "featureCoverage": {
-            "featureCount": FEATURE_COUNT,
-            "seen": seen,
-            "unseen": FEATURE_COUNT - seen,
-            "fraction": seen / FEATURE_COUNT,
-            "atMost1": sum(frequency <= 1 for frequency in frequencies),
-            "atMost10": sum(frequency <= 10 for frequency in frequencies),
-            "atMost100": sum(frequency <= 100 for frequency in frequencies),
-            "seenFrequency": {
-                "minimum": min(seen_frequencies, default=0),
-                "median": percentile(seen_frequencies, 0.5),
-                "p95": percentile(seen_frequencies, 0.95),
-                "maximum": max(seen_frequencies, default=0),
-            },
-        },
+        "featureCoverage": feature_coverage(frequencies),
         "kingSquareCounts": king_squares,
         "phaseCounts": dict(sorted(phases.items())),
         "materialImbalanceCounts": dict(sorted(material.items())),
@@ -169,8 +212,12 @@ def main() -> int:
     }
     write_json_atomic(args.output, report)
     coverage = report["diagnostics"]["featureCoverage"]
-    print(f"positions={report['diagnostics']['positions']} feature_coverage={coverage['fraction']:.2%} "
-          f"seen={coverage['seen']}/{coverage['featureCount']} output={args.output}")
+    possible = coverage["structurallyPossible"]
+    print(f"positions={report['diagnostics']['positions']} raw_slot_coverage={coverage['fraction']:.2%} "
+          f"seen={coverage['seen']}/{coverage['featureCount']} "
+          f"structurally_possible_coverage={possible['fraction']:.2%} "
+          f"seen_possible={possible['seen']}/{possible['featureCount']} "
+          f"excluded_seen={possible['excludedSeen']} output={args.output}")
     return 0
 
 

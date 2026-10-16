@@ -482,8 +482,10 @@ and extension are recorded in
 
 - Establish a tuned classical parameter baseline rather than hand-adjusting
   many correlated terms.
-- Target the 3,070 unseen and 21,184 low-frequency HalfKP inputs measured in
-  the completed 5M corpus.
+- Audit genuinely rare legal-feature combinations and model error before
+  targeted sampling. The historical 3,070 unseen allocated HalfKP slots include
+  2,656 structurally impossible slots; raw zero-inclusive frequency counts are
+  not the number of actionable gaps (see `docs/NNUE.md`).
 - Evaluate a stronger two-perspective hidden stack or HalfKA-style features,
   then scale data only if validation and playing evidence justify it.
 - Keep WDL calibration, result blending, and self-play as controlled variables.

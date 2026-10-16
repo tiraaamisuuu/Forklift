@@ -39,7 +39,11 @@ from generate_dataset import (  # noqa: E402
     position_is_sampled,
     result_for_side_to_move,
 )
-from dataset_diagnostics import analyze_records  # noqa: E402
+from dataset_diagnostics import (  # noqa: E402
+    analyze_records,
+    feature_coverage,
+    structurally_possible_feature_mask,
+)
 from generate_shards import (  # noqa: E402
     aggregate_teacher_comparisons,
     merge_shards,
@@ -293,9 +297,74 @@ class NnueDatasetTests(unittest.TestCase):
             report = analyze_records([path])
             self.assertEqual(report["positions"], 2)
             self.assertGreater(report["featureCoverage"]["seen"], 0)
+            possible = report["featureCoverage"]["structurallyPossible"]
+            self.assertEqual(possible["excludedSeen"], 0)
+            self.assertEqual(possible["seen"], report["featureCoverage"]["seen"])
+            self.assertEqual(possible["featureCount"], 38_304)
             self.assertEqual(report["phaseCounts"], {"endgame": 1, "opening": 1})
             self.assertEqual(report["teacherEvalMagnitudeCounts"], {"0-99": 1, "100-299": 1})
             self.assertEqual(report["resultCounts"], {"draw": 1, "loss": 1})
+
+    def test_halfkp_structural_mask_matches_independent_rules(self) -> None:
+        mask = structurally_possible_feature_mask()
+        self.assertEqual(len(mask), 40_960)
+        impossible = set()
+        for king in range(64):
+            for piece in range(10):
+                impossible.add(king * 640 + piece * 64 + king)
+            for pawn_piece in (0, 5):
+                for rank in (0, 7):
+                    for file in range(8):
+                        impossible.add(king * 640 + pawn_piece * 64 + rank * 8 + file)
+        self.assertEqual(len(impossible), 2_656)
+        self.assertEqual(sum(mask), 38_304)
+        self.assertEqual({index for index, allowed in enumerate(mask) if not allowed}, impossible)
+        # Black orientation reverses ranks, preserving both necessary rules.
+        for king in range(64):
+            for bucket in range(10):
+                for square in range(64):
+                    mirrored = (king ^ 56) * 640 + bucket * 64 + (square ^ 56)
+                    self.assertEqual(mask[king * 640 + bucket * 64 + square], mask[mirrored])
+
+    def test_halfkp_coverage_excludes_impossible_slots_without_hiding_bad_inputs(self) -> None:
+        mask = structurally_possible_feature_mask()
+        frequencies = [0] * 40_960
+        allowed = [index for index, possible in enumerate(mask) if possible]
+        excluded = next(index for index, possible in enumerate(mask) if not possible)
+        frequencies[allowed[0]] = 1
+        frequencies[allowed[1]] = 10
+        frequencies[allowed[2]] = 101
+        report = feature_coverage(frequencies)
+        possible = report["structurallyPossible"]
+        self.assertEqual(report["seen"], 3)
+        self.assertEqual(report["unseen"], 40_957)
+        self.assertEqual(report["atMost100"], 40_959)  # Legacy raw metric retained.
+        self.assertEqual(possible["unseen"], 38_301)
+        self.assertEqual(possible["atMost100"], 38_303)
+        self.assertEqual(possible["seenAtMost100"], 2)
+        self.assertEqual(possible["seenAtMost1"], 1)
+        self.assertEqual(possible["excludedActivations"], 0)
+        self.assertFalse(possible["legalityCertified"])
+        self.assertAlmostEqual(possible["fraction"], 3 / 38_304)
+        frequencies[excluded] = 7
+        contaminated = feature_coverage(frequencies)
+        self.assertEqual(contaminated["seen"], 4)
+        self.assertEqual(contaminated["structurallyPossible"]["seen"], 3)
+        self.assertEqual(contaminated["structurallyPossible"]["excludedSeen"], 1)
+        self.assertEqual(contaminated["structurallyPossible"]["excludedActivations"], 7)
+        with self.assertRaisesRegex(ValueError, "40,960"):
+            feature_coverage([0])
+
+    def test_halfkp_empty_coverage_keeps_zero_and_seen_counts_distinct(self) -> None:
+        report = feature_coverage([0] * 40_960)
+        self.assertEqual(report["atMost100"], 40_960)
+        self.assertEqual(report["seenAtMost100"], 0)
+        possible = report["structurallyPossible"]
+        self.assertEqual(possible["featureCount"], 38_304)
+        self.assertEqual(possible["excludedFeatureCount"], 2_656)
+        self.assertEqual(possible["atMost100"], 38_304)
+        self.assertEqual(possible["seenAtMost100"], 0)
+        self.assertEqual(possible["fraction"], 0.0)
 
     def test_portable_dataset_bundle_and_multimachine_contract(self) -> None:
         self.assertEqual(portable_name(r"D:\\data\\train.nnuebin"), "train.nnuebin")
